@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CYH VENTILACIÓN INDUSTRIAL - Cotizador Técnico</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Inter:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@100..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(26, 28, 30, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(133, 147, 152, 0.1);
+        }
+        .cyan-glow {
+            box-shadow: 0 0 15px rgba(60, 215, 255, 0.2);
+        }
+        .step-active {
+            box-shadow: 0 0 20px rgba(168, 232, 255, 0.3);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #131314;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3c494e;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "secondary": "#c6c6c9",
+                "tertiary-container": "#c2c2c9",
+                "tertiary-fixed": "#e2e2e8",
+                "on-error": "#690005",
+                "on-primary": "#003642",
+                "inverse-surface": "#e5e2e3",
+                "on-tertiary-fixed": "#191c20",
+                "surface": "#131314",
+                "primary": "#a8e8ff",
+                "on-primary-fixed": "#001f27",
+                "surface-container-low": "#1c1b1c",
+                "secondary-fixed-dim": "#c6c6c9",
+                "on-surface": "#e5e2e3",
+                "tertiary-fixed-dim": "#c5c6cc",
+                "inverse-on-surface": "#313031",
+                "surface-dim": "#131314",
+                "surface-container-high": "#2a2a2b",
+                "surface-container-highest": "#353436",
+                "surface-container-lowest": "#0e0e0f",
+                "surface-tint": "#3cd7ff",
+                "outline-variant": "#3c494e",
+                "inverse-primary": "#00677e",
+                "tertiary": "#dedee5",
+                "primary-fixed": "#b4ebff",
+                "on-tertiary-container": "#4e5055",
+                "on-primary-container": "#00586b",
+                "background": "#131314",
+                "on-secondary": "#2f3133",
+                "on-surface-variant": "#bbc9cf",
+                "on-secondary-fixed": "#1a1c1e",
+                "outline": "#859398",
+                "on-secondary-container": "#b4b5b7",
+                "on-secondary-fixed-variant": "#454749",
+                "surface-bright": "#3a393a",
+                "primary-fixed-dim": "#3cd7ff",
+                "primary-container": "#00d4ff",
+                "surface-container": "#201f20",
+                "on-error-container": "#ffdad6",
+                "on-primary-fixed-variant": "#004e5f",
+                "error-container": "#93000a",
+                "on-background": "#e5e2e3",
+                "error": "#ffb4ab",
+                "on-tertiary-fixed-variant": "#45474c",
+                "surface-variant": "#353436",
+                "secondary-container": "#454749",
+                "secondary-fixed": "#e2e2e5",
+                "on-tertiary": "#2e3035"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+              },
+              "spacing": {
+                "gutter": "24px",
+                "container-padding": "40px",
+                "unit": "8px",
+                "section-gap": "64px"
+              },
+              "fontFamily": {
+                "body-lg": ["Inter"],
+                "body-md": ["Inter"],
+                "headline-md": ["Bebas Neue"],
+                "headline-lg": ["Bebas Neue"],
+                "label-caps": ["Inter"],
+                "data-mono": ["Inter"],
+                "display-lg": ["Bebas Neue"]
+              },
+              "fontSize": {
+                "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-md": ["24px", {"lineHeight": "28px", "letterSpacing": "0.02em", "fontWeight": "400"}],
+                "headline-lg": ["40px", {"lineHeight": "44px", "letterSpacing": "0.03em", "fontWeight": "400"}],
+                "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                "display-lg": ["72px", {"lineHeight": "72px", "letterSpacing": "0.05em", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 h-16">
+<div class="flex justify-between items-center w-full px-gutter h-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-on-surface tracking-widest">CYH VENTILACIÓN INDUSTRIAL</span>
+</div>
+<nav class="hidden md:flex gap-8 items-center">
+<a class="font-body-md text-body-md tracking-wider text-on-surface-variant hover:text-on-surface transition-colors" href="#">Telemetría</a>
+<a class="font-body-md text-body-md tracking-wider text-primary font-bold border-b-2 border-primary pb-1" href="#">Ventilación</a>
+<a class="font-body-md text-body-md tracking-wider text-on-surface-variant hover:text-on-surface transition-colors" href="#">Diagnóstico</a>
+<a class="font-body-md text-body-md tracking-wider text-on-surface-variant hover:text-on-surface transition-colors" href="#">Sistemas</a>
+</nav>
+<div class="flex items-center gap-6">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all">settings</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center overflow-hidden">
+<img alt="Operador de Sistemas" class="w-full h-full object-cover opacity-80" data-alt="A professional close-up portrait of a female industrial systems engineer in a high-tech control room environment. She wears a clean charcoal work uniform with subtle electronic insignias. The background is a sophisticated blur of blue and cyan data displays and server racks, creating an atmosphere of precision, authority, and B2B enterprise reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvQeHmq4CQAnVMSs84gNKKu4VWr73f4zMPKEikWhgslu8ySbRVjU1Dcf70vJAEpDtFiqYbldNXxwaGOTC7sU2uqWMmePyWZ5mOt_pOAhP2werHLGj6T9XvEjcqlD8bDcU-Y1XjouyP33goVN5G9ISkUuY0JCOP_WKbatzoD5fFlL32Cg2fOm_DzBWwiy0VVt0UqZgzGAX63xGKmnhjr1CJoM2SWqNNSMcySxp7t7N4TGoZBbhcMLoleCwfLlzSsc2uWyVyb92Elrs"/>
+</div>
+</div>
+</div>
+</header>
+<main class="relative min-h-screen pt-16 flex flex-col items-center justify-start pb-20">
+<!-- Background Decorative Element -->
+<div class="fixed inset-0 pointer-events-none opacity-20 z-0">
+<img alt="Industrial Backdrop" class="w-full h-full object-cover" data-alt="An expansive, low-exposure wide shot of a massive industrial ventilation facility inside a clean, modern factory. Large steel ducts and silver turbine housings reflect sharp cyan light. The scene is shot from a low angle to emphasize the scale and power of the machinery, set against a dark, charcoal-hued interior with high-contrast shadows. The mood is cinematic, professional, and technologically advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD0U8k1_ZWIdNacSl16ujOCoLv03xEKv_Vuebe1kL9cePvNoa4vEOY3vI5aqb9d4CWoua4VXLCt7kHKT1GNrSo_0Gdy6DmtovLug3B22SIobSB6lEs5t_X0gaMSvNCai-0nIgq-ZaRY8W5jCIuaEoLKDqdqjSGpNi11LyIZPeAEF8ZElTnAJrc0fwEEJS7JT_ZKUsntWPfCA5e50OnWZAfzKK6eiQgwmFY-3RqtWpl1MtFKCGVfxFo-JNZ9ld16mwZqs4j8yfZSS0"/>
+</div>
+<section class="relative z-10 w-full max-w-[1200px] px-gutter mt-section-gap">
+<!-- Header Section -->
+<div class="text-center mb-12">
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-[0.2em] mb-4 block">COTIZADOR TÉCNICO V.04</span>
+<h1 class="font-display-lg text-display-lg text-on-surface uppercase mb-4">Sistemas de Ventilación Industrial</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">Configure los parámetros técnicos para el cálculo preciso de caudal, presión y potencia requerida para su infraestructura.</p>
+</div>
+<!-- Stepper -->
+<div class="flex items-center justify-between max-w-4xl mx-auto mb-16 relative">
+<!-- Progress Line -->
+<div class="absolute top-1/2 left-0 w-full h-[1px] bg-outline-variant/30 -translate-y-1/2 z-0"></div>
+<div class="absolute top-1/2 left-0 w-1/4 h-[1px] bg-primary -translate-y-1/2 z-0 transition-all duration-500" id="progress-bar"></div>
+<!-- Step 01 -->
+<div class="relative z-10 flex flex-col items-center gap-3">
+<div class="w-12 h-12 rounded-full glass-panel border-primary flex items-center justify-center step-active border-2 transition-all">
+<span class="font-data-mono text-data-mono text-primary">01</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary">SERVICIO</span>
+</div>
+<!-- Step 02 -->
+<div class="relative z-10 flex flex-col items-center gap-3 opacity-40">
+<div class="w-12 h-12 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center transition-all">
+<span class="font-data-mono text-data-mono">02</span>
+</div>
+<span class="font-label-caps text-label-caps">CÁLCULO</span>
+</div>
+<!-- Step 03 -->
+<div class="relative z-10 flex flex-col items-center gap-3 opacity-40">
+<div class="w-12 h-12 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center transition-all">
+<span class="font-data-mono text-data-mono">03</span>
+</div>
+<span class="font-label-caps text-label-caps">TÉCNICO</span>
+</div>
+<!-- Step 04 -->
+<div class="relative z-10 flex flex-col items-center gap-3 opacity-40">
+<div class="w-12 h-12 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center transition-all">
+<span class="font-data-mono text-data-mono">04</span>
+</div>
+<span class="font-label-caps text-label-caps">RESULTADO</span>
+</div>
+</div>
+<!-- Content Area: Wizard Container -->
+<div class="glass-panel rounded-xl p-container-padding max-w-5xl mx-auto min-h-[500px] flex flex-col">
+<div class="flex-grow">
+<!-- Step 01 Content -->
+<div id="step-content">
+<div class="mb-8">
+<h2 class="font-headline-lg text-headline-lg mb-2">SELECCIÓN DE DIRECTIVA CORE</h2>
+<p class="font-body-md text-on-surface-variant">Elija la aplicación principal para determinar los coeficientes de renovación volumétrica estándar.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="group relative cursor-pointer" onclick="selectCard(this)">
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-all rounded-lg"></div>
+<div class="border border-outline-variant/50 p-6 rounded-lg transition-all group-hover:border-primary group-hover:cyan-glow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">factory</span>
+<div class="w-4 h-4 rounded-full border border-outline-variant group-[.selected]:bg-primary group-[.selected]:border-primary transition-all"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md mb-1">PLANTAS PESADAS</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Manufactura, fundición, química.</p>
+</div>
+<div class="mt-2 text-primary font-data-mono text-[10px] tracking-widest opacity-60">REF: ISO-16890</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group relative cursor-pointer" onclick="selectCard(this)">
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-all rounded-lg"></div>
+<div class="border border-outline-variant/50 p-6 rounded-lg transition-all group-hover:border-primary group-hover:cyan-glow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">warehouse</span>
+<div class="w-4 h-4 rounded-full border border-outline-variant group-[.selected]:bg-primary group-[.selected]:border-primary transition-all"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md mb-1">LOGÍSTICA / DATA</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Almacenes, centros de datos.</p>
+</div>
+<div class="mt-2 text-primary font-data-mono text-[10px] tracking-widest opacity-60">REF: ASHRAE 90.1</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group relative cursor-pointer" onclick="selectCard(this)">
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-all rounded-lg"></div>
+<div class="border border-outline-variant/50 p-6 rounded-lg transition-all group-hover:border-primary group-hover:cyan-glow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">manufacturing</span>
+<div class="w-4 h-4 rounded-full border border-outline-variant group-[.selected]:bg-primary group-[.selected]:border-primary transition-all"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md mb-1">EXTRACCIÓN MINERA</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Túneles, socavones, ventilación forzada.</p>
+</div>
+<div class="mt-2 text-primary font-data-mono text-[10px] tracking-widest opacity-60">REF: MSHA PART 75</div>
+</div>
+</div>
+</div>
+<!-- Technical Inputs -->
+<div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex justify-between">
+                                    ÁREA TOTAL (M²) 
+                                    <span class="text-primary font-data-mono">CALCULAR AUTO</span>
+</label>
+<input class="bg-surface-container-low border border-outline-variant rounded p-3 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all" placeholder="0.00" type="number"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">ALTURA DE TECHO (M)</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded p-3 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all" placeholder="0.00" type="number"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-data-mono text-xs">METERS</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Wizard Actions -->
+<div class="mt-16 flex justify-between items-center border-t border-outline-variant/20 pt-8">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse cyan-glow"></span>
+<span class="font-data-mono text-[10px] text-on-surface-variant uppercase tracking-widest">ESTADO: CONFIGURANDO</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="px-8 py-3 border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors font-label-caps text-label-caps flex items-center gap-2">
+                            CANCELAR
+                        </button>
+<button class="px-10 py-3 bg-primary text-on-primary font-bold hover:opacity-90 transition-all flex items-center gap-3 font-label-caps text-label-caps cyan-glow">
+                            SIGUIENTE PASO <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Sidebar / Technical Metrics Overlay (Floating Desktop) -->
+<aside class="hidden xl:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col gap-4 z-20">
+<div class="glass-panel p-4 rounded-lg flex flex-col gap-1 w-48">
+<span class="font-label-caps text-[10px] text-on-surface-variant">CAUDAL ESTIMADO</span>
+<span class="font-headline-md text-primary">0.00 <small class="text-xs">m³/h</small></span>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden mt-2">
+<div class="w-0 h-full bg-primary transition-all duration-1000"></div>
+</div>
+</div>
+<div class="glass-panel p-4 rounded-lg flex flex-col gap-1 w-48">
+<span class="font-label-caps text-[10px] text-on-surface-variant">POTENCIA MOTOR</span>
+<span class="font-headline-md text-on-surface">-- <small class="text-xs">HP</small></span>
+</div>
+<div class="glass-panel p-4 rounded-lg flex flex-col gap-1 w-48">
+<span class="font-label-caps text-[10px] text-on-surface-variant">TEMP. OPERACIÓN</span>
+<span class="font-headline-md text-on-surface">24<small class="text-xs">°C</small></span>
+</div>
+</aside>
+<!-- Right Side Quick Info -->
+<aside class="hidden xl:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-4 z-20">
+<div class="w-64 glass-panel p-6 rounded-lg">
+<h4 class="font-label-caps text-primary mb-4 border-b border-outline-variant pb-2">RESUMEN TÉCNICO</h4>
+<ul class="space-y-4">
+<li class="flex justify-between border-b border-outline-variant/10 pb-2">
+<span class="font-data-mono text-[11px] text-on-surface-variant">VERSIÓN API</span>
+<span class="font-data-mono text-[11px]">V.04.22</span>
+</li>
+<li class="flex justify-between border-b border-outline-variant/10 pb-2">
+<span class="font-data-mono text-[11px] text-on-surface-variant">CARGA TÉRMICA</span>
+<span class="font-data-mono text-[11px]">CALCULANDO...</span>
+</li>
+<li class="flex justify-between border-b border-outline-variant/10 pb-2">
+<span class="font-data-mono text-[11px] text-on-surface-variant">ESTÁNDAR</span>
+<span class="font-data-mono text-[11px]">NMX-J-515</span>
+</li>
+</ul>
+<div class="mt-6">
+<img alt="Technical Illustration" class="rounded opacity-60 grayscale hover:grayscale-0 transition-all duration-500" data-alt="A macro scientific photography of a high-precision metal turbine blade showing micro-textures of industrial machining. The metal is dark steel with subtle blue-cyan light reflections along the sharp edges. The depth of field is shallow, focusing on the precision of the engineering. Atmosphere is clinical, professional, and sophisticated B2B industrial." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQOshujBwKgb6JSh-cUp7AWn8WJEW5_YVVB3BQcDQ1U93eZR5xbt_Rbosl_r04p1EaBw2NohRCYznmWrDmhD5hW4_iCNF7Ri-Q2rHlhZJco7QRifgDl7yx3mfE1r1HJNDlevvWhbZLoadsOAsUb9-9RpFCdSsQBeyW1ijXnOkPkgaBBSZWWShfV6b3bTkfWnznQn7H_kmDxp5zNmiNGLzxeGYGN-aSl02Sce0iG1wnWWgPwRao8k-TakvD-mU5XuBtcpqFYt13Eck"/>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant/10 h-12 z-50">
+<div class="w-full h-full px-gutter flex justify-between items-center max-w-[1440px] mx-auto">
+<span class="font-label-caps text-[10px] text-on-surface tracking-widest">© 2024 CYH VENTILACIÓN INDUSTRIAL. TODOS LOS DERECHOS RESERVADOS.</span>
+<div class="flex gap-8">
+<span class="font-data-mono text-[10px] text-on-surface-variant uppercase flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary opacity-50"></span> LATENCIA: 14MS
+                </span>
+<span class="font-data-mono text-[10px] text-on-surface-variant uppercase flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary opacity-50"></span> UPTIME: 99.9%
+                </span>
+<span class="font-data-mono text-[10px] text-on-surface-variant uppercase flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary opacity-50"></span> TEMP: 24°C
+                </span>
+<span class="font-data-mono text-[10px] text-primary uppercase flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_5px_rgba(168,232,255,0.8)]"></span> API: ACTIVE
+                </span>
+</div>
+</div>
+</footer>
+<script>
+        function selectCard(element) {
+            // Unselect all cards
+            document.querySelectorAll('.selected').forEach(card => {
+                card.classList.remove('selected');
+                card.querySelector('.border-primary')?.classList.remove('border-primary', 'cyan-glow');
+                card.querySelector('.bg-primary')?.classList.remove('bg-primary');
+            });
+            
+            // Select current card
+            element.classList.add('selected');
+            const innerContainer = element.querySelector('div:nth-child(2)');
+            innerContainer.classList.add('border-primary', 'cyan-glow');
+            
+            const radio = element.querySelector('.w-4.h-4');
+            radio.classList.add('bg-primary', 'border-primary');
+
+            // Feedback visual stimulation
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = '35%';
+        }
+
+        // Simple interactive pulse for industrial feel
+        setInterval(() => {
+            const pips = document.querySelectorAll('.animate-pulse');
+            pips.forEach(p => {
+                p.style.opacity = p.style.opacity === '0.5' ? '1' : '0.5';
+            });
+        }, 1500);
+    </script>
+</body></html>

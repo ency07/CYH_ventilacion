@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CYH VENTILACIÓN INDUSTRIAL | Ingeniería de Flujo de Aire</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Bebas+Neue&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "secondary": "#c6c6c9",
+                "tertiary-container": "#c2c2c9",
+                "tertiary-fixed": "#e2e2e8",
+                "on-error": "#690005",
+                "on-primary": "#003642",
+                "inverse-surface": "#e5e2e3",
+                "on-tertiary-fixed": "#191c20",
+                "surface": "#131314",
+                "primary": "#a8e8ff",
+                "on-primary-fixed": "#001f27",
+                "surface-container-low": "#1c1b1c",
+                "secondary-fixed-dim": "#c6c6c9",
+                "on-surface": "#e5e2e3",
+                "tertiary-fixed-dim": "#c5c6cc",
+                "inverse-on-surface": "#313031",
+                "surface-dim": "#131314",
+                "surface-container-high": "#2a2a2b",
+                "surface-container-highest": "#353436",
+                "surface-container-lowest": "#0e0e0f",
+                "surface-tint": "#3cd7ff",
+                "outline-variant": "#3c494e",
+                "inverse-primary": "#00677e",
+                "tertiary": "#dedee5",
+                "primary-fixed": "#b4ebff",
+                "on-tertiary-container": "#4e5055",
+                "on-primary-container": "#00586b",
+                "background": "#131314",
+                "on-secondary": "#2f3133",
+                "on-surface-variant": "#bbc9cf",
+                "on-secondary-fixed": "#1a1c1e",
+                "outline": "#859398",
+                "on-secondary-container": "#b4b5b7",
+                "on-secondary-fixed-variant": "#454749",
+                "surface-bright": "#3a393a",
+                "primary-fixed-dim": "#3cd7ff",
+                "primary-container": "#00d4ff",
+                "surface-container": "#201f20",
+                "on-error-container": "#ffdad6",
+                "on-primary-fixed-variant": "#004e5f",
+                "error-container": "#93000a",
+                "on-background": "#e5e2e3",
+                "error": "#ffb4ab",
+                "on-tertiary-fixed-variant": "#45474c",
+                "surface-variant": "#353436",
+                "secondary-container": "#454749",
+                "secondary-fixed": "#e2e2e5",
+                "on-tertiary": "#2e3035"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "gutter": "24px",
+                "container-padding": "40px",
+                "unit": "8px",
+                "section-gap": "64px"
+            },
+            "fontFamily": {
+                "body-lg": ["Inter"],
+                "body-md": ["Inter"],
+                "headline-md": ["Bebas Neue"],
+                "headline-lg": ["Bebas Neue"],
+                "label-caps": ["Inter"],
+                "data-mono": ["Inter"],
+                "display-lg": ["Bebas Neue"]
+            },
+            "fontSize": {
+                "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-md": ["24px", {"lineHeight": "28px", "letterSpacing": "0.02em", "fontWeight": "400"}],
+                "headline-lg": ["40px", {"lineHeight": "44px", "letterSpacing": "0.03em", "fontWeight": "400"}],
+                "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                "display-lg": ["72px", {"lineHeight": "72px", "letterSpacing": "0.05em", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(26, 28, 30, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(133, 147, 152, 0.1);
+        }
+        .bloom-indicator {
+            box-shadow: 0 0 12px rgba(168, 232, 255, 0.4);
+        }
+        .industrial-gradient {
+            background: linear-gradient(180deg, rgba(19, 19, 20, 0) 0%, rgba(19, 19, 20, 1) 100%);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0e0e0f; }
+        ::-webkit-scrollbar-thumb { background: #3c494e; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary selection:text-on-primary">
+<!-- Top Navigation Shell -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30">
+<div class="flex justify-between items-center w-full px-gutter h-16 max-w-[1440px] mx-auto">
+<div class="font-headline-md text-headline-md text-on-surface tracking-widest">
+                CYH VENTILACIÓN INDUSTRIAL
+            </div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md text-body-md tracking-wider" href="#">Telemetría</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md tracking-wider" href="#">Ventilación</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md tracking-wider" href="#">Diagnóstico</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md tracking-wider" href="#">Sistemas</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all">settings</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all">notifications</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant overflow-hidden">
+<img alt="Operador de Sistemas" data-alt="A close-up portrait of a professional industrial systems operator in a modern control room. The lighting is low-key with subtle cyan highlights reflecting off his face from monitors. He has a serious, focused expression, embodying enterprise-level expertise. The background is a blurred high-tech interface with data streams in the corporate dark-mode style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXNaqAIJymaD_UnQ5-2zTM87XgqKQpAOzIdgBq8JP63chGIJhOmQ7VlTtVGrgedxCD-c0vbdISeBrxQDp5DCDHmYTFZR8C1J8Tah9I5qb_9RiuW81y58nn90o0IxByVOAV3ce-YepcC0ajuFCM2w_3FloZ8JTlfSe3h5QBSbZCtkqTa8POPw0Bx5h_JV-tye_0uyU7gM3KUqDwsjuNo56JY40NcJ5hhAGIyD4oJorSoDSGJWy93UJ3QYuygfSC3D6dTteYYR5SKfk"/>
+</div>
+</div>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative h-screen flex flex-col justify-end overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover grayscale brightness-50" data-alt="A massive industrial ventilation turbine inside a dark, cinematic factory environment. High-contrast lighting captures the metallic textures of the blades and structural components. Subtle teal and cyan glints reflect off the polished surfaces, creating a premium aerospace aesthetic. Deep shadows frame the composition, emphasizing the raw power and engineering precision of the machinery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD87_LLIdsnmUuiAbMNCF5rSAEedjeoxIwjzPp57nDVYRixkhSXGECLfg_mlXh6D5Zcsij6jdLOMDXFmOPhX0Kz5CV_ZP-dK9nfFvcqoSUoozYRg7m5y8wnlFESJMT1UqdfxYtLIiU8TG0I5Xr3bqi77wLuhkKo11sWHF7bSLP4u5g7YL-0hJIogWI_uc-_21_SHN7HBvBuetVwCGGC1WLGFPj8pWHgcg8VIg0ffXoGQ9q4kg0pD6mLDSpnu9nRskA0Krg3RDiDlsQ"/>
+<div class="absolute inset-0 industrial-gradient"></div>
+</div>
+<div class="relative z-10 max-w-[1440px] mx-auto w-full px-gutter pb-section-gap">
+<div class="max-w-4xl space-y-6">
+<div class="flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-primary bloom-indicator"></span>
+<span class="font-label-caps text-label-caps text-primary tracking-[0.2em] uppercase">Estado del Sistema: Óptimo</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-on-surface leading-none uppercase">
+                        CYH VENTILACIÓN INDUSTRIAL
+                    </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                        Ingeniería de Flujo de Aire para Entornos Críticos. Soluciones de ventilación de alto rendimiento diseñadas para la industria pesada y centros de datos.
+                    </p>
+<div class="flex gap-4 pt-4">
+<button class="px-8 py-4 bg-primary text-on-primary font-label-caps text-label-caps tracking-widest transition-transform active:scale-95">
+                            INICIAR DIAGNÓSTICO TÉCNICO
+                        </button>
+<button class="px-8 py-4 border border-outline text-on-surface font-label-caps text-label-caps tracking-widest hover:border-primary hover:text-primary transition-all">
+                            VER CAPACIDADES
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Authority Section -->
+<section class="bg-surface py-section-gap border-y border-outline-variant/10">
+<div class="max-w-[1440px] mx-auto px-gutter">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+<div class="space-y-6">
+<span class="font-label-caps text-label-caps text-primary tracking-widest">ESTÁNDAR INDUSTRIAL</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Autoridad en Sistemas de Flujo</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Lideramos la industria con implementaciones de flujo de aire que desafían los límites de la termodinámica convencional. Nuestra infraestructura está diseñada para operar sin interrupciones en las condiciones más hostiles del planeta, desde minas subterráneas hasta laboratorios de bioseguridad nivel 4.
+                        </p>
+</div>
+<div class="grid grid-cols-2 gap-8">
+<div class="glass-panel p-8">
+<div class="font-headline-lg text-headline-lg text-primary">2.4K+</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mt-2">Nodos Activos</div>
+</div>
+<div class="glass-panel p-8">
+<div class="font-headline-lg text-headline-lg text-primary">99.9%</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mt-2">Uptime de Sistema</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Technical Solutions Grid -->
+<section class="py-section-gap bg-surface-container-lowest">
+<div class="max-w-[1440px] mx-auto px-gutter">
+<div class="mb-12">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Soluciones Técnicas</h2>
+<div class="w-16 h-1 bg-primary"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Fabricación -->
+<div class="glass-panel p-8 hover:bg-surface-container-highest transition-colors group">
+<span class="material-symbols-outlined text-primary mb-6 text-4xl" data-icon="factory">factory</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Fabricación</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Unidades de ventilación a medida con aleaciones aeroespaciales.</p>
+<a class="inline-flex items-center gap-2 text-primary font-label-caps text-label-caps group-hover:gap-4 transition-all" href="#">
+                            ESPECIFICACIONES <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<!-- Venta -->
+<div class="glass-panel p-8 hover:bg-surface-container-highest transition-colors group">
+<span class="material-symbols-outlined text-primary mb-6 text-4xl" data-icon="shopping_cart">shopping_cart</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Venta</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Distribución de componentes premium certificados ISO 9001.</p>
+<a class="inline-flex items-center gap-2 text-primary font-label-caps text-label-caps group-hover:gap-4 transition-all" href="#">
+                            CATÁLOGO <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<!-- Mantenimiento -->
+<div class="glass-panel p-8 hover:bg-surface-container-highest transition-colors group">
+<span class="material-symbols-outlined text-primary mb-6 text-4xl" data-icon="build">build</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Mantenimiento</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Programas preventivos basados en telemetría predictiva.</p>
+<a class="inline-flex items-center gap-2 text-primary font-label-caps text-label-caps group-hover:gap-4 transition-all" href="#">
+                            PLANES <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<!-- Reparación -->
+<div class="glass-panel p-8 hover:bg-surface-container-highest transition-colors group">
+<span class="material-symbols-outlined text-primary mb-6 text-4xl" data-icon="construction">construction</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Reparación</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Intervención crítica 24/7 con repuestos originales CYH.</p>
+<a class="inline-flex items-center gap-2 text-primary font-label-caps text-label-caps group-hover:gap-4 transition-all" href="#">
+                            ASISTENCIA <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Process Architecture -->
+<section class="py-section-gap bg-surface relative overflow-hidden">
+<div class="max-w-[1440px] mx-auto px-gutter relative z-10">
+<div class="text-center mb-16">
+<span class="font-label-caps text-label-caps text-primary tracking-widest uppercase">Protocolo Operativo</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mt-4">Arquitectura de Proceso</h2>
+</div>
+<div class="flex flex-col md:flex-row justify-between items-start gap-8 relative">
+<!-- Connector Line -->
+<div class="hidden md:block absolute top-12 left-0 w-full h-[1px] bg-outline-variant/30 z-0"></div>
+<div class="flex-1 space-y-6 relative z-10 bg-surface md:pr-4">
+<div class="w-12 h-12 flex items-center justify-center bg-primary text-on-primary font-headline-md text-headline-md">01</div>
+<h4 class="font-label-caps text-label-caps text-on-surface">DIAGNÓSTICO</h4>
+<p class="text-on-surface-variant text-sm">Análisis computacional de fluidos y mapeo térmico de sitio.</p>
+</div>
+<div class="flex-1 space-y-6 relative z-10 bg-surface md:px-4">
+<div class="w-12 h-12 flex items-center justify-center bg-surface-container-highest border border-outline-variant text-on-surface font-headline-md text-headline-md">02</div>
+<h4 class="font-label-caps text-label-caps text-on-surface">INGENIERÍA</h4>
+<p class="text-on-surface-variant text-sm">Desarrollo de planos CAD y selección de materiales técnicos.</p>
+</div>
+<div class="flex-1 space-y-6 relative z-10 bg-surface md:px-4">
+<div class="w-12 h-12 flex items-center justify-center bg-surface-container-highest border border-outline-variant text-on-surface font-headline-md text-headline-md">03</div>
+<h4 class="font-label-caps text-label-caps text-on-surface">EJECUCIÓN</h4>
+<p class="text-on-surface-variant text-sm">Instalación por equipos certificados en entornos de alto riesgo.</p>
+</div>
+<div class="flex-1 space-y-6 relative z-10 bg-surface md:pl-4">
+<div class="w-12 h-12 flex items-center justify-center bg-surface-container-highest border border-outline-variant text-on-surface font-headline-md text-headline-md">04</div>
+<h4 class="font-label-caps text-label-caps text-on-surface">ENTREGA</h4>
+<p class="text-on-surface-variant text-sm">Comisionamiento final y monitoreo activo de rendimiento.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- System Deployments (Cases) -->
+<section class="py-section-gap bg-surface-container-low">
+<div class="max-w-[1440px] mx-auto px-gutter">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-12 text-center">Despliegues del Sistema</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-1">
+<!-- Case 1 -->
+<div class="relative group h-[500px] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 brightness-50" data-alt="A dark, atmospheric view of an industrial extraction site labeled Sector 7-B. The scene features heavy machinery and massive steel ducts emerging from the ground. The lighting is dominated by a deep blue nocturnal ambient with sharp orange safety lights. The composition highlights the grit and resilience of the equipment in a harsh outdoor environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIqftA4vLRc4TpXTFISV0gm3qzoKXExMXQfgaQCKToiJkMemDKle6PG7E0E1w-xcl0mUylYG7pBoKaopJyDaPGBKgDf-ifKKVFZ2BjfeMJlyLZCo1E7-D49nVXhEpWWXA1lQhUf9-ju761WJi6rw4iBhJLJBydGnnIADxvq-ULe0Z5QW5UhHNwgNFFs6qSsvdFsI5X4S4dmICO62-0XYSxs1SA_D2HBsl0BIt20GXgk3CnWJ780AvmVYP_I4GGMHSVP5w-HHRl4vQ"/>
+<div class="absolute inset-0 bg-black/40 flex flex-col justify-end p-8">
+<span class="font-label-caps text-label-caps text-primary mb-2">INFRAESTRUCTURA</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">SECTOR 7-B</h3>
+<p class="font-body-md text-sm text-on-surface-variant mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Extracción de gases pesados en planta de procesamiento mineral.</p>
+</div>
+</div>
+<!-- Case 2 -->
+<div class="relative group h-[500px] overflow-hidden border-x border-outline-variant/20">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 brightness-50" data-alt="The interior of a high-density cloud data center with long rows of server racks. The cooling system is highlighted by integrated cyan LED strips running along the ceiling vents. The environment is sterile, perfectly organized, and illuminated by a clinical, high-tech glow. The perspective draws the eye down a long, infinite corridor of advanced computing hardware." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6knLzP8Y3tAmLb5mITYDdBuDdhaWx2vNMmoOyv8050rMnmd7KOtubaxrfPJZ5Ii7YglfO86ePsfgDZt-2NjGZNsHJqVzrMdnwavOUl-AL1gwOBOJHTYSF4ttNP97fFpuDFy5qxQomKLoJ6VkIlkxo00voQw6BE1lprXzn5-jNu5Yr7oziSsxb3v8qFOl-AruVJXWJR7svsuRLJbyXSs32yVnzbPtDCFvzKhKpB0nZD-P6DSrJzYyP31_q9KVmwA0Oykdcpht7g0U"/>
+<div class="absolute inset-0 bg-black/40 flex flex-col justify-end p-8">
+<span class="font-label-caps text-label-caps text-primary mb-2">TELEMETRÍA</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">NODOS CLOUD</h3>
+<p class="font-body-md text-sm text-on-surface-variant mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Sistema de enfriamiento líquido y flujo forzado para racks de alta densidad.</p>
+</div>
+</div>
+<!-- Case 3 -->
+<div class="relative group h-[500px] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 brightness-50" data-alt="A futuristic laboratory setting for bio-research featuring glass partitions and sophisticated air filtration units. The lighting is clean, bright white with subtle blue undertones, emphasizing sterility and precision. Technicians in specialized gear are visible in the background, working behind high-efficiency particulate air filters. The style is ultra-modern and corporate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0_zu5TINP7IWxwOTwRSgV-2rljh6R1caz_cXj5vdMY9bN-jkXY4TDMFHKBS_G_SpyB__vKlOqLwDSHvTcTLZmjF2mJUG_EX0RdoqFrxwJB9o7UPzCwhq4ixOWVYnQglfBXjwEzSKJLddOlzeJMjmFvTRj-0MHn-aNu3QNJZqNkpeV-snJL1fwUEcGhan2mDLmxGm7lstlzvGZ5WelLG3dETOwi6iXds1bDqXuIyFz60z8oN7stXHCmVRJbMcWrdtiOU0QEd72Do8"/>
+<div class="absolute inset-0 bg-black/40 flex flex-col justify-end p-8">
+<span class="font-label-caps text-label-caps text-primary mb-2">CONTENCIÓN</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">BIO-LAB ALPHA</h3>
+<p class="font-body-md text-sm text-on-surface-variant mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Filtración HEPA de grado médico con presión diferencial automatizada.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant/10">
+<div class="w-full py-8 px-gutter flex flex-col md:flex-row justify-between items-center max-w-[1440px] mx-auto gap-8">
+<div class="flex flex-col gap-2">
+<div class="font-label-caps text-label-caps text-on-surface">CYH VENTILACIÓN INDUSTRIAL</div>
+<div class="font-data-mono text-data-mono uppercase text-on-surface-variant text-[10px]">
+                    © 2024 TODOS LOS DERECHOS RESERVADOS.
+                </div>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary bloom-indicator"></span>
+<span class="font-data-mono text-data-mono uppercase text-on-surface-variant">LATENCIA: 14MS</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary bloom-indicator"></span>
+<span class="font-data-mono text-data-mono uppercase text-on-surface-variant">UPTIME: 99.9%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary bloom-indicator"></span>
+<span class="font-data-mono text-data-mono uppercase text-on-surface-variant">TEMP: 24°C</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary bloom-indicator"></span>
+<span class="font-data-mono text-data-mono uppercase text-on-surface-variant">API: ACTIVE</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">language</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">shield</button>
+</div>
+</div>
+</footer>
+<!-- Side HUD Decor (Subtle) -->
+<div class="fixed left-6 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-8 z-40">
+<div class="h-24 w-[1px] bg-gradient-to-b from-transparent via-primary/50 to-transparent"></div>
+<div class="rotate-90 origin-left translate-x-2 text-[10px] font-data-mono text-primary/40 tracking-[0.4em] whitespace-nowrap">SYSTEM_CORE_V.04</div>
+<div class="h-24 w-[1px] bg-gradient-to-b from-transparent via-primary/50 to-transparent"></div>
+</div>
+<script>
+        // Micro-interaction for the HUD elements
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            // Subtle parallax for some elements could go here
+            // Keeping it simple for clean engineering feel
+        });
+
+        // Intersection Observer for fade-in effects
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100');
+                    entry.target.classList.remove('translate-y-4');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.glass-panel').forEach(el => {
+            el.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-4');
+            observer.observe(el);
+        });
+    </script>
+</body></html>
