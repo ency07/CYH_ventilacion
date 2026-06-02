@@ -108,7 +108,7 @@ export default function HeroSection() {
             </div>
             <div className="flex justify-between">
               <span className="font-mono text-[10px] text-text-muted">CUMPLIMIENTO</span>
-              <span className="font-mono text-[10px] font-semibold text-text-primary">NMX-J-515-ANCE</span>
+              <span className="font-mono text-[10px] font-semibold text-text-primary">RETIE / NTC 2050</span>
             </div>
             <div className="flex justify-between">
               <span className="font-mono text-[10px] text-text-muted">SEGURIDAD</span>

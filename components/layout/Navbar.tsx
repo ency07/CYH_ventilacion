@@ -12,8 +12,12 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Inicio", path: "/" },
-    { name: "Servicios", path: "/#servicios" },
-    { name: "Proyectos", path: "/#proyectos" },
+    { name: "Catálogo", path: "/catalogo" },
+    { name: "Servicios", path: "/servicios" },
+    { name: "Proyectos", path: "/proyectos" },
+    { name: "Empresa", path: "/empresa" },
+    { name: "Contacto", path: "/contacto" },
+    { name: "CRM", path: "/crm" },
   ];
 
   return (
@@ -43,7 +47,7 @@ export default function Navbar() {
                 {isActive && (
                   <motion.span
                     layoutId="activeNavBorder"
-                    className="absolute bottom-0 left-0 w-full h-[2px] bg-accent-cyan shadow-[0_0_8px_rgba(0,212,255,0.4)]"
+                    className="absolute bottom-0 left-0 w-full h-[2px] bg-accent-cyan opacity-80"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -54,22 +58,12 @@ export default function Navbar() {
 
         {/* Desktop Utility / Call to Action */}
         <div className="hidden md:flex items-center gap-6">
-          <div className="flex items-center gap-2 border border-border-subtle bg-bg-secondary/40 px-3 py-1.5 rounded-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-            </span>
-            <span className="font-mono text-[10px] text-text-secondary uppercase tracking-widest flex items-center gap-1.5">
-              SISTEMA: ACTIVO
-            </span>
-          </div>
-
           <Link
             href="/cotizador"
-            className="px-4 py-2 bg-accent-cyan hover:bg-accent-cyan/90 text-background font-semibold text-xs tracking-wider uppercase rounded-sm transition-all shadow-[0_4px_12px_rgba(0,212,255,0.15)] hover:shadow-[0_4px_20px_rgba(0,212,255,0.25)] flex items-center gap-2"
+            className="px-5 py-2.5 bg-bg-secondary hover:bg-bg-tertiary border border-border-medium hover:border-accent-cyan/50 text-text-primary font-semibold text-xs tracking-wide uppercase rounded-sm transition-all flex items-center gap-2"
           >
             COTIZADOR TÉCNICO
-            <ArrowRight className="h-3 w-3" />
+            <ArrowRight className="h-4 w-4 text-accent-cyan" />
           </Link>
         </div>
 
@@ -110,23 +104,13 @@ export default function Navbar() {
             </div>
 
             <div className="flex flex-col gap-4 mt-2">
-              <div className="flex items-center gap-2 px-3 py-2 border border-border-subtle bg-bg-secondary/40 rounded-sm w-fit">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-                </span>
-                <span className="font-mono text-[10px] text-text-secondary uppercase tracking-widest">
-                  SISTEMA: ACTIVO
-                </span>
-              </div>
-
               <Link
                 href="/cotizador"
                 onClick={() => setIsOpen(false)}
-                className="w-full text-center px-4 py-3 bg-accent-cyan text-background font-semibold text-xs tracking-wider uppercase rounded-sm transition-all flex items-center justify-center gap-2"
+                className="w-full text-center px-4 py-3 bg-bg-secondary border border-border-medium hover:border-accent-cyan/50 text-text-primary font-semibold text-xs tracking-wide uppercase rounded-sm transition-all flex items-center justify-center gap-2"
               >
                 COTIZADOR TÉCNICO
-                <ArrowRight className="h-3 w-3" />
+                <ArrowRight className="h-4 w-4 text-accent-cyan" />
               </Link>
             </div>
           </motion.div>

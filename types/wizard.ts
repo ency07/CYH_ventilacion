@@ -77,4 +77,5 @@ export interface WizardState {
   symptoms: SymptomInputs;
   symptomsResult: SymptomResult | null;
   leadData: LeadInputs | null;
+  leadId: string | null;
 }

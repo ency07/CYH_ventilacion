@@ -1,7 +1,7 @@
 import { Inter, Bebas_Neue, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import ConditionalFooter from '@/components/layout/ConditionalFooter';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,11 +30,19 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'CYH VENTILACIÓN INDUSTRIAL | Ingeniería de Flujo de Aire',
-  description: 'Sistemas de ventilación de alto rendimiento para entornos industriales críticos. Ingeniería, fabricación, mantenimiento y diagnóstico en LATAM.',
-  keywords: 'ventilacion industrial, extractores industriales, ingenieria de flujo, mineria, data centers, CYH OS',
-  authors: [{ name: 'CYH Ingeniería' }],
+  title: 'CYH Ventilación Industrial | Extractores y HVAC Industrial Colombia',
+  description: 'Diseño, fabricación y mantenimiento de sistemas de ventilación industrial en Barranquilla y toda la Costa Caribe. Extractores, HVAC y balanceo dinámico de alta capacidad.',
+  keywords: 'ventilacion industrial Barranquilla, extractores industriales Colombia, HVAC industrial Caribe, mantenimiento industrial Barranquilla, balanceo dinamico Colombia, RETIE, NTC 2050',
+  authors: [{ name: 'CYH Ingeniería B2B' }],
   robots: 'index, follow',
+  openGraph: {
+    title: 'CYH Ventilación Industrial | Sistemas de Flujo de Aire Crítico',
+    description: 'Soluciones estructurales de ventilación forzada, balanceo dinámico y HVAC industrial en Colombia.',
+    url: 'https://cyh-ingenieria.com',
+    siteName: 'CYH Ingeniería',
+    locale: 'es_CO',
+    type: 'website',
+  }
 };
 
 export default function RootLayout({
@@ -47,11 +55,46 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${bebasNeue.variable} ${jetbrainsMono.variable} font-sans bg-background text-text-primary antialiased min-h-screen flex flex-col justify-between`}
       >
+        {/* Schema.org IndustrialBusiness JSON-LD microdata */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "IndustrialBusiness",
+              "name": "CYH Ventilación Industrial",
+              "image": "https://cyh-ingenieria.com/logo.png",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Vía 40 # 73-290, Zona Industrial",
+                "addressLocality": "Barranquilla",
+                "addressRegion": "Atlántico",
+                "postalCode": "080001",
+                "addressCountry": "CO"
+              },
+              "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 10.9639,
+                "longitude": -74.7964
+              },
+              "url": "https://cyh-ingenieria.com",
+              "telephone": "+576053094567",
+              "priceRange": "$$$",
+              "knowsAbout": [
+                "Ventilación Industrial",
+                "Extractores Industriales",
+                "HVAC Industrial",
+                "Balanceo Dinámico",
+                "Mantenimiento Predictivo"
+              ]
+            })
+          }}
+        />
         <Navbar />
         <main className="flex-grow">
           {children}
         </main>
-        <Footer />
+        <ConditionalFooter />
       </body>
     </html>
   );

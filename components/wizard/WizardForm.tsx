@@ -35,9 +35,9 @@ const HexagonPip = ({
         <svg 
           className={`absolute inset-0 w-full h-full transition-colors duration-300 ${
             active 
-              ? "text-accent-cyan drop-shadow-[0_0_8px_rgba(0,212,255,0.4)]" 
+              ? "text-slate-800" 
               : completed 
-                ? "text-accent-cyan/60" 
+                ? "text-slate-500" 
                 : "text-border-subtle hover:text-border-medium"
           }`} 
           viewBox="0 0 100 100" 
@@ -45,7 +45,7 @@ const HexagonPip = ({
           stroke="currentColor" 
           strokeWidth="6"
         >
-          <polygon points="50,5 93.3,30 93.3,80 50,95 6.7,80 6.7,30" fill="rgba(11, 17, 32, 0.75)" />
+          <polygon points="50,5 93.3,30 93.3,80 50,95 6.7,80 6.7,30" fill="rgba(245, 247, 250, 0.9)" />
         </svg>
 
         <span className={`font-mono text-xs font-semibold relative z-10 ${
@@ -57,7 +57,7 @@ const HexagonPip = ({
       </div>
 
       <span className={`font-mono text-[9px] tracking-widest font-semibold uppercase ${
-        active ? "text-accent-cyan" : "text-text-secondary"
+        active ? "text-slate-800" : "text-text-secondary"
       }`}>
         {label}
       </span>
@@ -124,9 +124,7 @@ export default function WizardForm() {
   const currentStepNum = getStepNumber();
 
   // Stepper descriptions based on chosen path
-  const secondStepLabel = service === "mantenimiento" || service === "reparacion" 
-    ? "DIAGNÓSTICO" 
-    : "PRE-CÁLCULO";
+  const secondStepLabel = "ANÁLISIS TÉCNICO";
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-12 animate-fadeIn">
@@ -139,7 +137,7 @@ export default function WizardForm() {
         
         {/* Dynamic active connector line */}
         <div 
-          className="absolute top-6 left-8 h-[2px] bg-accent-cyan shadow-[0_0_8px_rgba(0,212,255,0.4)] z-0 transition-all duration-500" 
+          className="absolute top-6 left-8 h-[2px] bg-slate-800 z-0 transition-all duration-500" 
           style={{ 
             width: currentStepNum === 1 
               ? "0%" 
@@ -170,7 +168,7 @@ export default function WizardForm() {
         {/* Step 3 */}
         <HexagonPip 
           stepNum="03" 
-          label="VALIDACIÓN" 
+          label="VIABILIDAD" 
           active={currentStepNum === 3} 
           completed={currentStepNum > 3} 
         />
@@ -178,7 +176,7 @@ export default function WizardForm() {
         {/* Step 4 */}
         <HexagonPip 
           stepNum="04" 
-          label="REPORTE TÉCNICO" 
+          label="REPORTE DE INGENIERÍA" 
           active={currentStepNum === 4} 
           completed={false} 
         />
@@ -186,10 +184,10 @@ export default function WizardForm() {
       </div>
 
       {/* Dynamic Step Content Wrapper with clean page transitions */}
-      <div className="glass-panel p-8 md:p-12 rounded-sm border border-border-subtle bg-bg-secondary/40 min-h-[480px] flex flex-col justify-between relative overflow-hidden">
+      <div className="glass-panel p-8 md:p-12 rounded-sm border border-border-medium bg-bg-secondary/20 min-h-[480px] flex flex-col justify-between relative overflow-hidden">
         
-        {/* Fine grid design inside form panels */}
-        <div className="absolute inset-0 z-0 industrial-grid opacity-5 pointer-events-none" />
+        {/* Subtle background without heavy grid */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-bg-primary/10 to-transparent pointer-events-none" />
 
         <div className="relative z-10 flex-grow">
           <AnimatePresence mode="wait">
@@ -213,16 +211,13 @@ export default function WizardForm() {
         {/* Dynamic bottom status bar */}
         <div className="relative z-10 mt-12 pt-6 border-t border-border-subtle/50 flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-cyan opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-cyan"></span>
-            </span>
-            <span className="font-mono text-[9px] text-text-secondary tracking-widest uppercase">
-              ESTADO DEL SISTEMA: {step === "summary" ? "INFORME VALIDADO" : "CONFIGURACIÓN ACTIVA"}
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-text-muted"></span>
+            <span className="font-sans text-[10px] text-text-secondary font-medium tracking-wide uppercase">
+              {step === "summary" ? "Diagnóstico Preliminar Completado" : "Evaluación Técnica en Curso"}
             </span>
           </div>
-          <div className="font-mono text-[9px] text-text-muted tracking-widest uppercase">
-            CYH OS • PLATAFORMA DE INGENIERÍA CORPORATIVA
+          <div className="font-sans text-[10px] text-text-muted font-medium tracking-wide uppercase">
+            ESTUDIO DE VIABILIDAD INDUSTRIAL
           </div>
         </div>
 

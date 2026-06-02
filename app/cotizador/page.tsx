@@ -25,23 +25,23 @@ export default function CotizadorPage() {
       <div className="relative z-10 max-w-7xl mx-auto w-full px-6 md:px-12 space-y-12">
         
         {/* Centered Top Banner */}
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <span className="font-mono text-xs text-accent-cyan tracking-[0.25em] uppercase font-semibold">
-            CONFIGURADOR TÉCNICO MULTI-VECTOR V.04
+        <div className="text-center space-y-6 max-w-3xl mx-auto pt-8">
+          <span className="font-sans text-xs text-text-secondary tracking-widest uppercase font-semibold">
+            Configurador Técnico Multi-Vector
           </span>
-          <h1 className="font-display text-4xl md:text-6xl tracking-wide text-text-primary uppercase leading-tight">
-            ESTACIÓN DIGITAL DE PRE-INGENIERÍA
+          <h1 className="font-display text-4xl md:text-5xl tracking-wide text-text-primary leading-tight">
+            Plataforma de Diagnóstico y Preingeniería Industrial
           </h1>
-          <p className="text-sm md:text-base text-text-secondary leading-relaxed max-w-2xl mx-auto">
-            Dimensione los requerimientos de flujo de aire o diagnostique síntomas operativos. Los resultados se procesan de forma inmediata utilizando estándares de renovación volumétrica.
+          <p className="text-sm md:text-base text-text-muted leading-relaxed max-w-2xl mx-auto font-normal">
+            Sistema experto de preingeniería y diagnóstico técnico para movimiento de aire y ventilación industrial.
           </p>
         </div>
 
         {/* Wizard Form Wrapper with Suspense Boundary for dynamic query support */}
         <Suspense fallback={
           <div className="w-full max-w-5xl mx-auto space-y-12">
-            <div className="glass-panel p-8 md:p-12 rounded-sm border border-border-subtle bg-bg-secondary/40 min-h-[480px] flex items-center justify-center relative overflow-hidden">
-              <div className="w-8 h-8 rounded-full border-2 border-border-subtle border-t-accent-cyan animate-spin" />
+            <div className="glass-panel p-10 md:p-16 rounded-sm bg-bg-secondary min-h-[480px] flex items-center justify-center relative overflow-hidden">
+              <div className="w-6 h-6 rounded-full border-2 border-border-subtle border-t-text-secondary animate-spin" />
             </div>
           </div>
         }>

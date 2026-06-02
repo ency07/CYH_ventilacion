@@ -65,7 +65,7 @@ export default function ServicesSection() {
           {services.map((service, index) => (
             <Link 
               key={service.title}
-              href={`/cotizador?servicio=${service.id}`}
+              href={`/servicios#${service.id}`}
               className="flex w-full group/card"
             >
               <motion.div

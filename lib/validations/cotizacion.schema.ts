@@ -59,10 +59,38 @@ export const LeadFormSchema = z.object({
     .string({ required_error: "El teléfono corporativo es obligatorio." })
     .min(6, "El número de teléfono debe contener al menos 6 dígitos.")
     .max(30, "El número de teléfono es demasiado largo.")
-    .regex(/^[\d\s+\-()]+$/, "El formato del teléfono no es válido (solo números, espacios o caracteres + - () )."),
+    .refine((val) => {
+      const clean = val.replace(/\s+/g, "").replace(/[+\-()]/g, "");
+      const isCell = /^(\+?57)?3\d{9}$/.test(clean);
+      const isFixed = /^(\+?57)?60[1-8]\d{7}$/.test(clean);
+      return isCell || isFixed;
+    }, {
+      message: "El número ingresado no corresponde a una línea válida en Colombia.",
+    })
+    .transform((val) => {
+      let clean = val.replace(/\s+/g, "").replace(/[()\-]/g, "");
+      if (!clean.startsWith("+")) {
+        if (clean.startsWith("57")) {
+          clean = "+" + clean;
+        } else {
+          clean = "+57" + clean;
+        }
+      }
+      return clean;
+    }),
   email: z
     .string({ required_error: "El correo electrónico es obligatorio." })
-    .email("Utilice un correo electrónico válido para recibir el diagnóstico técnico y seguimiento de ingeniería."),
+    .email("El correo ingresado no parece válido. Verifica que esté escrito correctamente.")
+    .refine((email) => {
+      const domain = email.split("@")[1]?.toLowerCase() || "";
+      const blacklisted = [
+        "mailinator.com", "guerrillamail.com", "tempmail.com", "yopmail.com", "10minutemail.com",
+        "yopmail.fr", "yopmail.net", "cool.fr.nf", "jetable.org", "dispostable.com"
+      ];
+      return !blacklisted.some(d => domain === d || domain.includes("tempmail"));
+    }, {
+      message: "Por favor utiliza un correo empresarial o personal real para recibir el reporte PDF.",
+    }),
   ciudad: z
     .string({ required_error: "La ciudad/región es obligatoria." })
     .min(2, "Especifique una ciudad o región válida.")

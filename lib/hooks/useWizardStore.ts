@@ -8,6 +8,7 @@ interface WizardStore extends WizardState {
   setFlowInputs: (inputs: FlowInputs) => void;
   setSymptoms: (symptoms: SymptomInputs) => void;
   setLeadData: (leadData: LeadInputs) => void;
+  setLeadId: (leadId: string | null) => void;
   resetWizard: () => void;
 }
 
@@ -44,6 +45,7 @@ export const useWizardStore = create<WizardStore>((set) => ({
   symptoms: initialSymptoms,
   symptomsResult: null,
   leadData: null,
+  leadId: null,
 
   setStep: (step) => set({ step }),
   
@@ -68,6 +70,7 @@ export const useWizardStore = create<WizardStore>((set) => ({
   }),
 
   setLeadData: (leadData) => set({ leadData }),
+  setLeadId: (leadId) => set({ leadId }),
 
   resetWizard: () => set({
     step: "service",
@@ -77,5 +80,6 @@ export const useWizardStore = create<WizardStore>((set) => ({
     symptoms: initialSymptoms,
     symptomsResult: null,
     leadData: null,
+    leadId: null,
   }),
 }));
