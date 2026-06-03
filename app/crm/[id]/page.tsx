@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getLeadByIdAction } from "@/lib/server-actions/leads";
-import { BriefcaseBusiness, Mail, Phone, MapPin, Calendar, CheckCircle2, Circle, Clock, FileText, ArrowLeft, Building2 } from "lucide-react";
+import { BriefcaseBusiness, Mail, Phone, MapPin, Calendar, CheckCircle2, Circle, Clock, FileText, ArrowLeft, Building2, UploadCloud, Download, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function Lead360Page() {
@@ -208,6 +208,44 @@ export default function Lead360Page() {
             </div>
           </section>
         </div>
+
+        {/* Repositorio Documental */}
+        <section className="bg-bg-primary border border-border-subtle rounded-md p-5 shadow-sm flex flex-col mt-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-accent-cyan" />
+              <h3 className="font-bold text-sm uppercase tracking-wide">Repositorio Documental B2B</h3>
+            </div>
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-bg-secondary border border-border-subtle text-xs font-bold uppercase tracking-wider rounded text-text-secondary hover:text-text-primary hover:border-accent-cyan transition-colors">
+              <UploadCloud className="w-4 h-4" /> Subir Archivo
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* Mocked Files */}
+            <div className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors">
+              <div className="p-2 bg-red-500/10 rounded">
+                <FileText className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-xs font-bold text-text-primary truncate">Cotizacion_Argos_v2.pdf</p>
+                <p className="text-[10px] text-text-muted mt-0.5">2.4 MB • Hace 2 días</p>
+              </div>
+              <button className="text-text-muted hover:text-accent-cyan transition-colors"><Download className="w-4 h-4" /></button>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors">
+              <div className="p-2 bg-blue-500/10 rounded">
+                <ImageIcon className="w-5 h-5 text-blue-500" />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-xs font-bold text-text-primary truncate">Plano_Ventilacion_Nave_A.png</p>
+                <p className="text-[10px] text-text-muted mt-0.5">5.1 MB • Hace 5 días</p>
+              </div>
+              <button className="text-text-muted hover:text-accent-cyan transition-colors"><Download className="w-4 h-4" /></button>
+            </div>
+          </div>
+        </section>
       </main>
 
     </div>

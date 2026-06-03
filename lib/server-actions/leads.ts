@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { leads } from "@/lib/db/schema";
+import { leads, crmCompanies, crmContacts } from "@/lib/db/schema";
 import { LeadInsertSchema } from "@/lib/validations/crm.schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -75,9 +75,50 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       city: validated.city,
     });
 
+    
+    // B2B Logic: Upsert Company
+    let companyId = null;
+    if (validated.companyName) {
+      const existingCompany = await db.query.crmCompanies.findFirst({
+        where: eq(crmCompanies.name, validated.companyName)
+      });
+      if (existingCompany) {
+        companyId = existingCompany.id;
+      } else {
+        const [newComp] = await db.insert(crmCompanies).values({
+          name: validated.companyName,
+          city: validated.city,
+        }).returning();
+        companyId = newComp.id;
+      }
+    }
+
+    // B2B Logic: Upsert Contact
+    let contactId = null;
+    if (validated.fullName && companyId) {
+      const existingContact = await db.query.crmContacts.findFirst({
+        where: eq(crmContacts.email, validated.email)
+      });
+      if (existingContact) {
+        contactId = existingContact.id;
+      } else {
+        const [newCont] = await db.insert(crmContacts).values({
+          companyId,
+          fullName: validated.fullName,
+          cargo: validated.cargo ?? null,
+          email: validated.email,
+          phone: validated.phone,
+        }).returning();
+        contactId = newCont.id;
+      }
+    }
+
     const [newLead] = await db.insert(leads).values({
       fullName: validated.fullName,
       companyName: validated.companyName,
+      companyId: companyId,
+      contactId: contactId,
+
       email: validated.email,
       phone: validated.phone,
       cargo: validated.cargo ?? null,

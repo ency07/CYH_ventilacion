@@ -18,6 +18,8 @@ export const leads = pgTable("leads", {
   source: varchar("source", { length: 50 }).default("wizard").notNull(),
   estimatedBudgetMin: integer("estimated_budget_min"),
   estimatedBudgetMax: integer("estimated_budget_max"),
+  companyId: uuid("company_id").references(() => crmCompanies.id, { onDelete: "set null" }),
+  contactId: uuid("contact_id").references(() => crmContacts.id, { onDelete: "set null" }),
   complexityScore: integer("complexity_score"),
   severityScore: integer("severity_score"),
   notes: text("notes"),
@@ -118,6 +120,26 @@ export const crmActivityLogsRelations = relations(crmActivityLogs, ({ one }) => 
 export const leadVerificationsRelations = relations(leadVerifications, ({ one }) => ({
   lead: one(leads, {
     fields: [leadVerifications.leadId],
+    references: [leads.id],
+  }),
+}));
+
+export const crmCompaniesRelations = relations(crmCompanies, ({ many }) => ({
+  contacts: many(crmContacts),
+  leads: many(leads),
+}));
+
+export const crmContactsRelations = relations(crmContacts, ({ one, many }) => ({
+  company: one(crmCompanies, {
+    fields: [crmContacts.companyId],
+    references: [crmCompanies.id],
+  }),
+  leads: many(leads),
+}));
+
+export const crmDocumentsRelations = relations(crmDocuments, ({ one }) => ({
+  lead: one(leads, {
+    fields: [crmDocuments.leadId],
     references: [leads.id],
   }),
 }));
