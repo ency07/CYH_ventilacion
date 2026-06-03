@@ -32,6 +32,7 @@ interface ProductSpec {
   aplicacion: string;
   normas: string;
   eficiencia: "IE2" | "IE3" | "IE4" | "N/A";
+  image: string;
   curvaPoints: string; // SVG path points
 }
 
@@ -52,6 +53,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "AX-800",
     name: "Ventilador Axial AX-800 Premium",
+    image: "https://images.unsplash.com/photo-1535813547-99c456a41d4a?auto=format&fit=crop&q=80&w=500&h=500",
     category: "axiales",
     rpm: "1,450 RPM",
     caudal: "18,500 m³/h",
@@ -68,6 +70,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "AX-1200",
     name: "Ventilador Axial AX-1200 Heavy Duty",
+    image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=500&h=500",
     category: "axiales",
     rpm: "980 RPM",
     caudal: "38,000 m³/h",
@@ -84,6 +87,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "CN-400",
     name: "Ventilador Centrífugo CN-400 Curva Atrás",
+    image: "https://images.unsplash.com/photo-1581092335397-9583eb92d232?auto=format&fit=crop&q=80&w=500&h=500",
     category: "centrifugos",
     rpm: "1,750 RPM",
     caudal: "12,000 m³/h",
@@ -100,6 +104,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "CN-630",
     name: "Ventilador Centrífugo CN-630 Curva Adelante",
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=500&h=500",
     category: "centrifugos",
     rpm: "1,150 RPM",
     caudal: "25,000 m³/h",
@@ -116,6 +121,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "EXT-500",
     name: "Extractor Helicoidal Mural EXT-500",
+    image: "https://images.unsplash.com/photo-1522069818816-e41c463cb9bb?auto=format&fit=crop&q=80&w=500&h=500",
     category: "extractores",
     rpm: "1,420 RPM",
     caudal: "8,500 m³/h",
@@ -132,6 +138,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "EXT-900",
     name: "Extractor Industrial de Tejado EXT-900",
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=500&h=500",
     category: "extractores",
     rpm: "920 RPM",
     caudal: "14,000 m³/h",
@@ -148,6 +155,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "HVAC-PKG-20",
     name: "Unidad Manejadora HVAC Industrial PKG-20",
+    image: "https://images.unsplash.com/photo-1600132806370-bf17e65e942f?auto=format&fit=crop&q=80&w=500&h=500",
     category: "hvac",
     rpm: "2,900 RPM (Variador PLC)",
     caudal: "15,000 m³/h",
@@ -164,6 +172,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "CP-8",
     name: "Colector de Polvo Tipo Baghouse CP-8",
+    image: "https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?auto=format&fit=crop&q=80&w=500&h=500",
     category: "colectores",
     rpm: "3,450 RPM (Turbina de Limpieza)",
     caudal: "9,500 m³/h",
@@ -180,6 +189,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "DCT-GALV",
     name: "Ductería Rectangular de Alta Presión DCT-GALV",
+    image: "https://images.unsplash.com/photo-1504917595217-d4f50260eb32?auto=format&fit=crop&q=80&w=500&h=500",
     category: "ducteria",
     rpm: "N/A",
     caudal: "Hasta 50,000 m³/h (Sugerido)",
@@ -196,6 +206,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "MTR-IE4-20",
     name: "Motor Trifásico Super Premium IE4-20",
+    image: "https://images.unsplash.com/photo-1632731557002-99577c3eecf8?auto=format&fit=crop&q=80&w=500&h=500",
     category: "motores",
     rpm: "1,800 RPM",
     caudal: "N/A",
@@ -212,6 +223,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "T-PLC-SCADA",
     name: "Tablero Eléctrico SCADA T-PLC-440",
+    image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=500&h=500",
     category: "tableros",
     rpm: "N/A",
     caudal: "N/A",
@@ -228,6 +240,7 @@ const PRODUCTS: ProductSpec[] = [
   {
     id: "SYS-MON-V40",
     name: "Sistema de Extracción Portuaria SYS-MON",
+    image: "https://images.unsplash.com/photo-1518625624795-3652f19ea3ab?auto=format&fit=crop&q=80&w=500&h=500",
     category: "sistemas",
     rpm: "1,450 RPM",
     caudal: "45,000 m³/h",
@@ -326,11 +339,22 @@ export default function CatalogoPage() {
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.4 }}
                   key={product.id}
-                  className="glass-panel p-6 border border-border-subtle bg-bg-secondary/10 hover:border-accent-cyan/30 transition-all duration-300 rounded-sm relative overflow-hidden grid grid-cols-1 lg:grid-cols-5 gap-8"
+                  className="glass-panel p-6 border border-border-subtle bg-bg-secondary/10 hover:border-accent-cyan/30 transition-all duration-300 rounded-sm relative overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
                 >
                   
-                  {/* Left Column: Product header, Curva & badging */}
-                  <div className="lg:col-span-2 space-y-6 flex flex-col justify-between">
+                  
+                  {/* Left Column: Image */}
+                  <div className="lg:col-span-3 flex justify-center items-center h-full">
+                    <div className="w-full aspect-square rounded-sm overflow-hidden border border-border-subtle bg-bg-primary p-2">
+                      <div 
+                        className="w-full h-full bg-cover bg-center bg-no-repeat transition-transform duration-500 hover:scale-105 rounded-sm"
+                        style={{ backgroundImage: `url(${product.image})` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Center Column: Product header, Curva & badging */}
+                  <div className="lg:col-span-4 space-y-6 flex flex-col justify-between">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[9px] text-accent-cyan tracking-wider font-semibold border border-accent-cyan/20 bg-accent-cyan-soft px-2 py-0.5 rounded-sm">
@@ -359,7 +383,7 @@ export default function CatalogoPage() {
                           </span>
                           <span>EFICIENCIA MÁXIMA</span>
                         </div>
-                        <div className="h-20 w-full relative flex items-end">
+                        <div className="h-16 w-full relative flex items-end">
                           <svg className="w-full h-full text-accent-cyan/40" viewBox="0 0 100 100" preserveAspectRatio="none">
                             {/* Grid Lines */}
                             <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2" className="text-border-subtle" />
@@ -394,7 +418,7 @@ export default function CatalogoPage() {
                   </div>
 
                   {/* Right Column: Spec Tables and dynamic Actions */}
-                  <div className="lg:col-span-3 flex flex-col justify-between gap-6">
+                  <div className="lg:col-span-5 flex flex-col justify-between gap-6">
                     
                     {/* Specification Table - Scrollable */}
                     <div className="overflow-x-auto border border-border-subtle bg-bg-primary/60 rounded-sm">
