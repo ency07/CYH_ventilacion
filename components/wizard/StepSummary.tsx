@@ -42,8 +42,11 @@ export default function StepSummary() {
 
   useEffect(() => {
     if (leadId) {
-      // Trigger background PDF generation & automatic email dispatch immediately on mount!
-      generateB2BPdf(true);
+      // Deferir la ejecución pesada de jsPDF para permitir que React pinte la pantalla primero (evita congelamiento de UI al entrar)
+      const timer = setTimeout(() => {
+        generateB2BPdf(true);
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [leadId]);
 

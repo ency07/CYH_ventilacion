@@ -1,4 +1,4 @@
-import { pgTable, uuid, timestamp, varchar, integer, text, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, varchar, integer, text, jsonb, boolean, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const leads = pgTable("leads", {
@@ -24,6 +24,11 @@ export const leads = pgTable("leads", {
   leadScore: integer("lead_score").default(0).notNull(),
   isVerified: boolean("is_verified").default(false).notNull(),
   riskLevel: varchar("risk_level", { length: 50 }).default("COLD").notNull(), // HOT | WARM | COLD | SPAM
+}, (table) => {
+  return {
+    statusIdx: index("status_idx").on(table.status),
+    createdAtIdx: index("created_at_idx").on(table.createdAt),
+  };
 });
 
 export const diagnosticReports = pgTable("diagnostic_reports", {
@@ -55,6 +60,11 @@ export const crmPipeline = pgTable("crm_pipeline", {
   nextTask: varchar("next_task", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    stageIdx: index("stage_idx").on(table.stage),
+    assignedToIdx: index("assigned_to_idx").on(table.assignedTo),
+  };
 });
 
 export const crmActivityLogs = pgTable("crm_activity_logs", {

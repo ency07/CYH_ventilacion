@@ -57,63 +57,46 @@ export async function sendDiagnosticEmailAction(leadId: string, pdfBase64?: stri
       subject: "Estimación Preliminar — CYH Ingeniería",
       attachments: attachments,
       html: `
-        <div style="font-family: sans-serif; background-color: #f8fafc; padding: 32px; color: #0f172a; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 4px;">
-          <div style="border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px; text-align: left;">
-            <h1 style="font-size: 24px; margin: 0; color: #0f172a; font-weight: bold; letter-spacing: 0.05em;">CYH VENTILACIÓN INDUSTRIAL</h1>
-            <span style="font-size: 10px; color: #64748b; font-family: monospace;">NODO CARIBE (BARRANQUILLA, COLOMBIA)</span>
-          </div>
-
-          <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+        <div style="font-family: Arial, sans-serif; background-color: #ffffff; padding: 40px; color: #1e293b; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+          <p style="font-size: 14px; margin-bottom: 20px;">
             Estimado(a) <strong>${lead.fullName}</strong>,
           </p>
 
-          <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-            Hemos procesado exitosamente el análisis técnico inicial de su proyecto. Se ha procesado su <strong>Estimación preliminar y diagnóstico referencial</strong> para la planta de <strong>${lead.companyName}</strong> en la ciudad de <strong>${lead.city}</strong>.
+          <p style="font-size: 14px; margin-bottom: 20px;">
+            Nuestro equipo de evaluación técnica ha procesado exitosamente la información suministrada respecto al entorno operativo de su planta en <strong>${lead.city}</strong>.
           </p>
 
-          <div style="background-color: #f1f5f9; border-left: 4px solid #0284c7; padding: 16px; margin: 24px 0; border-radius: 2px;">
-            <h3 style="font-size: 12px; margin: 0 0 8px 0; text-transform: uppercase; color: #0f172a; font-family: monospace;">Detalles de Preingeniería</h3>
-            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 4px 0; color: #64748b;">Servicio Requerido:</td>
-                <td style="padding: 4px 0; font-weight: bold; text-align: right; text-transform: uppercase;">${lead.serviceType}</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 0; color: #64748b;">Rango Presupuesto Máx:</td>
-                <td style="padding: 4px 0; font-weight: bold; text-align: right; color: #0284c7;">${formattedBudgetMax}</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 0; color: #64748b;">Complejidad Técnica:</td>
-                <td style="padding: 4px 0; font-weight: bold; text-align: right;">${lead.complexityScore}%</td>
-              </tr>
-            </table>
-          </div>
-
-          <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 24px;">
-            Adjunto a este correo electrónico encontrará el archivo PDF con su estimación: <strong>Preingenieria-Estimada-CYH.pdf</strong>.
+          <p style="font-size: 14px; margin-bottom: 20px;">
+            Hemos consolidado un primer diagnóstico referencial para abordar sus requerimientos de <strong>${lead.serviceType}</strong>. Con base en nuestro marco metodológico y las normativas vigentes, el análisis preliminar ha arrojado configuraciones viables que mejorarán significativamente su operación.
           </p>
 
-          <p style="font-size: 14px; line-height: 1.6; color: #d97706; font-weight: bold; margin-bottom: 24px; padding: 12px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 2px;">
-            Este documento tiene carácter exclusivamente referencial y debe ser validado por nuestro equipo técnico antes de cualquier ejecución o compra.
+          <p style="font-size: 14px; margin-bottom: 24px;">
+            <strong>Adjunto a esta comunicación encontrará el Reporte de Viabilidad Técnica y Preingeniería (PDF)</strong>, el cual detalla:
           </p>
 
-          <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 24px;">
-            Puede visualizar la copia de respaldo o avanzar con la validación de la preingeniería haciendo clic en el siguiente enlace:
+          <ul style="font-size: 14px; margin-bottom: 24px; color: #334155;">
+            <li style="margin-bottom: 8px;">El cálculo preliminar de caudal de aire y volumetría.</li>
+            <li style="margin-bottom: 8px;">Clasificación de criticidad de su entorno de trabajo.</li>
+            <li style="margin-bottom: 8px;">Limitaciones normativas requeridas (RETIE / NTC 2050).</li>
+            <li style="margin-bottom: 8px;">Aproximación de inversión referencial del ecosistema propuesto.</li>
+          </ul>
+
+          <p style="font-size: 14px; margin-bottom: 32px;">
+            Tenga en cuenta que este documento es un punto de partida técnico. La configuración definitiva demanda un levantamiento físico de datos.
           </p>
 
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${pdfUrl}" target="_blank" style="background-color: #0f172a; color: #ffffff; padding: 14px 28px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 4px; letter-spacing: 0.05em; text-transform: uppercase;">
-              Solicitar revisión con especialista
+          <div style="margin-bottom: 40px;">
+            <a href="${pdfUrl}" target="_blank" style="background-color: #0f172a; color: #ffffff; padding: 14px 28px; font-size: 13px; font-weight: bold; text-decoration: none; display: inline-block; letter-spacing: 0.05em; text-transform: uppercase;">
+              AGENDAR REVISIÓN TÉCNICA DE 15 MINUTOS
             </a>
           </div>
 
-          <div style="text-align: center; margin: 24px 0; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-            <p style="font-size: 13px; color: #334155; margin-bottom: 12px;">¿Desea agendar una visita técnica o recibir asesoría inmediata por WhatsApp?</p>
-            <a href="${whatsappUrl}" target="_blank" style="background-color: #25d366; color: #ffffff; padding: 12px 24px; font-size: 13px; font-weight: bold; text-decoration: none; border-radius: 4px; letter-spacing: 0.05em; text-transform: uppercase; display: inline-block;">
-              Contactar por WhatsApp
-            </a>
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 24px;">
+            <p style="font-size: 14px; margin: 0; color: #475569;"><em>Atentamente,</em></p>
+            <p style="font-size: 14px; margin: 4px 0 0 0; font-weight: bold; color: #0f172a;">Dirección de Proyectos y Preingeniería</p>
+            <p style="font-size: 14px; margin: 0; color: #475569;">CYH Ventilación Industrial</p>
+            <p style="font-size: 12px; margin: 4px 0 0 0; color: #64748b;"><em>Especialistas en control de contaminantes y transferencia de calor</em></p>
           </div>
-
           <p style="font-size: 11px; line-height: 1.5; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 32px;">
             * Cumplimiento obligatorio bajo reglamentación técnica <strong>RETIE</strong> y código eléctrico colombiano <strong>NTC 2050</strong>. Para cotizaciones comerciales definitivas y visitas técnicas, comuníquese a proyectos@cyhventilacion.com o vía celular al +57 300 123 4567.
           </p>

@@ -81,7 +81,6 @@ export default function StepLead() {
     try {
       // Estado 1: Analizando variables y especificaciones técnicas
       setLoadingStep("Analizando variables y especificaciones técnicas...");
-      await new Promise(r => setTimeout(r, 600));
  
       const prices = calculateDynamicPricing(service, flowResult, symptomsResult, data.urgencia);
       const complexity = symptomsResult?.complexityScore || (flowResult?.estimatedFlow ? Math.min(100, Math.round(flowResult.estimatedFlow / 4200 * 100)) : 15);
@@ -89,7 +88,6 @@ export default function StepLead() {
  
       // Estado 2: Procesando viabilidad técnica e impacto normativo
       setLoadingStep("Procesando viabilidad técnica e impacto normativo...");
-      await new Promise(r => setTimeout(r, 600));
  
       // Create lead directly as verified (isVerified: true) since OTP is removed!
       const leadResult = await createLeadAction({
@@ -125,7 +123,6 @@ export default function StepLead() {
  
       // Estado 3: Estructurando reporte de preingeniería PDF
       setLoadingStep("Estructurando reporte de preingeniería PDF...");
-      await new Promise(r => setTimeout(r, 600));
  
       await createDiagnosticAction({
         leadId,
@@ -157,12 +154,10 @@ export default function StepLead() {
  
       // Estado 4: Enrutando copia de respaldo al correo
       setLoadingStep("Enrutando copia de respaldo al correo...");
-      await new Promise(r => setTimeout(r, 600));
  
       // Estado 5: Preingeniería Procesada
       setLoadingStep("Preingeniería Procesada");
       setIsSuccess(true);
-      await new Promise(r => setTimeout(r, 500));
  
       // Set store data and advance directly to Summary step!
       setLeadData(data);

@@ -39,7 +39,13 @@ export default function CrmDashboardPage() {
 
   // FASE 5.2: Búsqueda y Filtros
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [filterAssignee, setFilterAssignee] = useState("all");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchData();
@@ -193,54 +199,38 @@ export default function CrmDashboardPage() {
         </div>
       </div>
 
-      {/* 6 ADVANCED KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm">
-          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-            <DollarSign className="w-3.5 h-3.5" />
-            <h3 className="text-[10px] font-bold uppercase tracking-wider">Valor Ponderado</h3>
-          </div>
-          <p className="text-lg font-bold text-slate-900">${(weightedPipelineValue / 1000000).toFixed(1)}M</p>
-        </div>
-
-        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm">
-          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-            <FolderKanban className="w-3.5 h-3.5" />
-            <h3 className="text-[10px] font-bold uppercase tracking-wider">Oportunidades Mes</h3>
-          </div>
-          <p className="text-lg font-bold text-slate-900">{leadsThisMonth}</p>
-        </div>
-
-        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm">
-          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-            <FileText className="w-3.5 h-3.5" />
-            <h3 className="text-[10px] font-bold uppercase tracking-wider">Propuestas</h3>
-          </div>
-          <p className="text-lg font-bold text-slate-900">{proposalsSent}</p>
-        </div>
-
-        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm">
-          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-            <Target className="w-3.5 h-3.5" />
-            <h3 className="text-[10px] font-bold uppercase tracking-wider">Negociando</h3>
-          </div>
-          <p className="text-lg font-bold text-blue-600">{activeNegotiations}</p>
-        </div>
-
-        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm">
-          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <h3 className="text-[10px] font-bold uppercase tracking-wider">Proy. Ganados</h3>
-          </div>
-          <p className="text-lg font-bold text-emerald-600">{wonLeads.length}</p>
-        </div>
-
-        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm">
+      {/* 4 ADVANCED KPIs Requeridos */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm border-l-4 border-l-amber-500">
           <div className="flex items-center gap-1.5 text-slate-500 mb-1">
             <Clock className="w-3.5 h-3.5" />
-            <h3 className="text-[10px] font-bold uppercase tracking-wider">Tiempo Promedio</h3>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider">Leads sin contacto</h3>
           </div>
-          <p className="text-lg font-bold text-slate-900">{avgDaysToClose} <span className="text-xs font-normal text-slate-500">días</span></p>
+          <p className="text-lg font-bold text-slate-900">{leads.filter(l => l.status === "nuevo").length}</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm border-l-4 border-l-red-500">
+          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+            <Target className="w-3.5 h-3.5" />
+            <h3 className="text-[10px] font-bold uppercase tracking-wider">Tareas Vencidas</h3>
+          </div>
+          <p className="text-lg font-bold text-slate-900">{leads.filter(l => l.status !== "ganado" && l.status !== "perdido" && new Date(l.updatedAt).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000).length}</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm border-l-4 border-l-blue-500">
+          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+            <FolderKanban className="w-3.5 h-3.5" />
+            <h3 className="text-[10px] font-bold uppercase tracking-wider">Reuniones Próximas</h3>
+          </div>
+          <p className="text-lg font-bold text-slate-900">{leads.filter(l => l.status === "reunion").length}</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 p-3 rounded-md shadow-sm border-l-4 border-l-emerald-500">
+          <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+            <DollarSign className="w-3.5 h-3.5" />
+            <h3 className="text-[10px] font-bold uppercase tracking-wider">Forecast Comercial</h3>
+          </div>
+          <p className="text-lg font-bold text-slate-900">${(weightedPipelineValue / 1000000).toFixed(1)}M</p>
         </div>
       </div>
 
@@ -251,8 +241,8 @@ export default function CrmDashboardPage() {
             // FASE 5.2: Apply Search and Filter
             let stageLeads = leads.filter(l => l.status === stage.id);
             
-            if (searchTerm) {
-              const lower = searchTerm.toLowerCase();
+            if (debouncedSearchTerm) {
+              const lower = debouncedSearchTerm.toLowerCase();
               stageLeads = stageLeads.filter(l => 
                 l.companyName?.toLowerCase().includes(lower) || 
                 l.fullName?.toLowerCase().includes(lower) ||

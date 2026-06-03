@@ -134,8 +134,24 @@ export async function getActivityLogsByLeadIdAction(leadId: string): Promise<Act
 export async function getAllLeadsWithCrmDataAction(): Promise<ActionResult<any[]>> {
   try {
     const allLeads = await db.select({
-      lead: leads,
-      pipeline: crmPipeline
+      lead: {
+        id: leads.id,
+        fullName: leads.fullName,
+        companyName: leads.companyName,
+        city: leads.city,
+        serviceType: leads.serviceType,
+        status: leads.status,
+        estimatedBudgetMax: leads.estimatedBudgetMax,
+        riskLevel: leads.riskLevel,
+        createdAt: leads.createdAt,
+        updatedAt: leads.updatedAt
+      },
+      pipeline: {
+        id: crmPipeline.id,
+        assignedTo: crmPipeline.assignedTo,
+        stage: crmPipeline.stage,
+        probability: crmPipeline.probability
+      }
     })
     .from(leads)
     .leftJoin(crmPipeline, eq(leads.id, crmPipeline.leadId))
@@ -186,7 +202,14 @@ export async function updateCommercialDataAction(
 
 export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
   try {
-    const allLeads = await db.select().from(leads);
+    const allLeads = await db.select({
+      id: leads.id,
+      status: leads.status,
+      urgencyLevel: leads.urgencyLevel,
+      estimatedBudgetMax: leads.estimatedBudgetMax,
+      severityScore: leads.severityScore,
+      serviceType: leads.serviceType
+    }).from(leads);
     
     const totalLeads = allLeads.length;
     
