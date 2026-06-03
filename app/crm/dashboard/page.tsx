@@ -1,13 +1,35 @@
 import React from "react";
 import { db } from "@/lib/db";
 import { leads } from "@/lib/db/schema";
-import { DollarSign, LineChart, Target, AlertTriangle, TrendingUp, Users, CheckCircle2, XCircle } from "lucide-react";
+import { DollarSign, LineChart, Target, AlertTriangle, TrendingUp, Users, CheckCircle2, XCircle, ShieldAlert } from "lucide-react";
 import { eq, count } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
+// Formateador de Moneda Colombiana (COP)
+const formatCOP = (value: number) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
 export default async function DashboardGerencialPage() {
   const allLeads = await db.select().from(leads);
+
+  // MOCK USER: En producción, esto vendrá de Supabase Auth
+  const currentUser = {
+    name: "Carlos",
+    role: "admin", // admin, vendedor, tecnico
+  };
+
+  // Determinar Saludo según la Hora (Servidor o local)
+  const hour = new Date().getHours();
+  let greeting = "Buenas noches";
+  if (hour >= 5 && hour < 12) greeting = "Buenos días";
+  else if (hour >= 12 && hour < 19) greeting = "Buenas tardes";
 
   // KPIs Básicos
   const totalLeads = allLeads.length;
@@ -46,12 +68,26 @@ export default async function DashboardGerencialPage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-5rem)] bg-bg-secondary p-8 font-sans">
-      <div className="mb-8">
-        <h1 className="text-2xl font-display font-bold text-text-primary uppercase tracking-wide">Dashboard Gerencial</h1>
-        <p className="text-sm text-text-muted mt-1">Métricas en tiempo real del pipeline comercial.</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-text-primary uppercase tracking-wide">
+            {greeting}, {currentUser.name}
+          </h1>
+          <p className="text-sm text-text-muted mt-1">
+            Métricas en tiempo real. Rol actual: <span className="text-accent-cyan font-bold uppercase">{currentUser.role}</span>
+          </p>
+        </div>
       </div>
 
-      {/* Top KPIs */}
+      {currentUser.role === 'tecnico' ? (
+        <div className="bg-bg-primary p-12 rounded-md border border-border-subtle flex flex-col items-center justify-center text-center">
+          <ShieldAlert className="w-16 h-16 text-amber-500 mb-4" />
+          <h2 className="text-xl font-bold text-text-primary uppercase">Acceso Restringido</h2>
+          <p className="text-text-muted mt-2 max-w-md">Como técnico, tu rol está enfocado en la ejecución y diagnóstico. No tienes permisos para visualizar el flujo financiero ni el pipeline comercial general.</p>
+        </div>
+      ) : (
+        <>
+          {/* Top KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-bg-primary p-6 rounded-md border border-border-subtle shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-4">
@@ -76,7 +112,9 @@ export default async function DashboardGerencialPage() {
             <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Pipeline Total</span>
             <LineChart className="w-5 h-5 text-blue-500" />
           </div>
-          <div className="text-3xl font-display font-bold text-blue-500">${(pipelineTotal / 1000000).toFixed(1)}M</div>
+          <div className="text-2xl lg:text-3xl font-display font-bold text-blue-500 truncate" title={formatCOP(pipelineTotal)}>
+            {formatCOP(pipelineTotal)}
+          </div>
           <span className="text-xs text-text-secondary mt-2">Valor bruto abierto</span>
         </div>
 
@@ -85,7 +123,9 @@ export default async function DashboardGerencialPage() {
             <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Forecast Probable</span>
             <DollarSign className="w-5 h-5 text-accent-cyan" />
           </div>
-          <div className="text-3xl font-display font-bold text-text-primary">${(pipelineProbable / 1000000).toFixed(1)}M</div>
+          <div className="text-2xl lg:text-3xl font-display font-bold text-text-primary truncate" title={formatCOP(pipelineProbable)}>
+            {formatCOP(pipelineProbable)}
+          </div>
           <span className="text-xs text-text-secondary mt-2">Ponderado por probabilidad</span>
         </div>
       </div>
@@ -140,6 +180,8 @@ export default async function DashboardGerencialPage() {
           </div>
         </div>
 
+        </div>
+
         {/* Breakdown de Leads */}
         <div className="bg-bg-primary p-6 rounded-md border border-border-subtle shadow-sm flex flex-col">
           <h2 className="text-sm font-bold text-text-primary uppercase tracking-wide flex items-center gap-2 mb-6">
@@ -165,6 +207,8 @@ export default async function DashboardGerencialPage() {
         </div>
 
       </div>
+      </>
+      )}
     </div>
   );
 }
