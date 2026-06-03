@@ -161,7 +161,7 @@ export default function ProyectosPage() {
                 </div>
 
                 {/* Problem vs Solution Split */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs leading-relaxed">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base leading-relaxed">
                   <div className="space-y-1.5 border-l border-border-subtle/80 pl-3">
                     <h4 className="font-mono text-[9px] text-text-muted uppercase tracking-widest font-bold">
                       [+] PROBLEMA TÉCNICO
@@ -184,25 +184,25 @@ export default function ProyectosPage() {
                 <div className="pt-6 border-t border-border-subtle/50 grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-[9px] text-text-secondary">
                   <div className="space-y-1">
                     <span className="text-text-muted uppercase block">Caudal Operativo</span>
-                    <span className="text-accent-cyan font-bold text-xs block flex items-center gap-1.5">
+                    <span className="text-accent-cyan font-bold text-base block flex items-center gap-1.5">
                       <Gauge className="h-3.5 w-3.5" /> {proy.caudal}
                     </span>
                   </div>
                   <div className="space-y-1">
                     <span className="text-text-muted uppercase block">Presión de Trabajo</span>
-                    <span className="text-text-primary font-bold text-xs block">
+                    <span className="text-text-primary font-bold text-base block">
                       {proy.presion}
                     </span>
                   </div>
                   <div className="space-y-1">
                     <span className="text-text-muted uppercase block">Ahorro Energético</span>
-                    <span className="text-success font-bold text-xs block flex items-center gap-1">
+                    <span className="text-success font-bold text-base block flex items-center gap-1">
                       <TrendingUp className="h-3.5 w-3.5" /> {proy.ahorro}
                     </span>
                   </div>
                   <div className="space-y-1">
                     <span className="text-text-muted uppercase block">Tiempo Ejecución</span>
-                    <span className="text-text-primary font-bold text-xs block flex items-center gap-1">
+                    <span className="text-text-primary font-bold text-base block flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" /> {proy.tiempo}
                     </span>
                   </div>
@@ -219,7 +219,7 @@ export default function ProyectosPage() {
           <h3 className="font-display text-2xl tracking-wide uppercase text-text-primary">
             ¿Busca un comisionamiento similar para su planta?
           </h3>
-          <p className="text-xs text-text-secondary leading-relaxed max-w-xl mx-auto">
+          <p className="text-base text-text-secondary leading-relaxed max-w-xl mx-auto">
             Agende un análisis de preingeniería asistido en sitio por nuestro equipo residente en Barranquilla para evaluar pérdidas de caudal y desalineaciones mecánicas.
           </p>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">

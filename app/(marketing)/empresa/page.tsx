@@ -99,7 +99,7 @@ export default function EmpresaPage() {
           <div className="flex border-b border-border-subtle pb-3 gap-4 overflow-x-auto">
             <button
               onClick={() => setActiveTab("capacidades")}
-              className={`font-mono text-xs uppercase tracking-widest pb-2 px-1 transition-all whitespace-nowrap ${
+              className={`font-mono text-base uppercase tracking-widest pb-2 px-1 transition-all whitespace-nowrap ${
                 activeTab === "capacidades"
                   ? "text-accent-cyan border-b-2 border-accent-cyan font-bold"
                   : "text-text-muted hover:text-text-primary"
@@ -110,7 +110,7 @@ export default function EmpresaPage() {
             
             <button
               onClick={() => setActiveTab("certificaciones")}
-              className={`font-mono text-xs uppercase tracking-widest pb-2 px-1 transition-all whitespace-nowrap ${
+              className={`font-mono text-base uppercase tracking-widest pb-2 px-1 transition-all whitespace-nowrap ${
                 activeTab === "certificaciones"
                   ? "text-accent-cyan border-b-2 border-accent-cyan font-bold"
                   : "text-text-muted hover:text-text-primary"
@@ -121,7 +121,7 @@ export default function EmpresaPage() {
             
             <button
               onClick={() => setActiveTab("hseq")}
-              className={`font-mono text-xs uppercase tracking-widest pb-2 px-1 transition-all whitespace-nowrap ${
+              className={`font-mono text-base uppercase tracking-widest pb-2 px-1 transition-all whitespace-nowrap ${
                 activeTab === "hseq"
                   ? "text-accent-cyan border-b-2 border-accent-cyan font-bold"
                   : "text-text-muted hover:text-text-primary"
@@ -139,7 +139,7 @@ export default function EmpresaPage() {
                   <h4 className="font-display text-xl tracking-wide uppercase text-text-primary">
                     Taller Mecánico en Vía 40, Barranquilla
                   </h4>
-                  <p className="text-xs text-text-secondary leading-relaxed">
+                  <p className="text-base text-text-secondary leading-relaxed">
                     Contamos con una planta industrial propia de 2,400 m² equipada con maquinaria de precisión CNC pesada para el corte y rolado de lámina de acero hasta calibre 3/8”, balanceadoras dinámicas de banco calibradas bajo normas ISO, y laboratorios de pruebas aerodinámicas con túnel de viento instrumentado.
                   </p>
                   <div className="flex items-center gap-2 font-mono text-[10px] text-accent-cyan uppercase">
@@ -167,7 +167,7 @@ export default function EmpresaPage() {
                   <h4 className="font-display text-xl tracking-wide uppercase text-text-primary">
                     Garantía de Calidad y Cumplimiento Normativo
                   </h4>
-                  <p className="text-xs text-text-secondary leading-relaxed">
+                  <p className="text-base text-text-secondary leading-relaxed">
                     Nuestros procesos operativos y de ingeniería están completamente auditados y certificados por organismos reguladores nacionales, garantizando que cada impulsor fabricado cumpla estrictamente con la reglamentación eléctrica y de seguridad nacional.
                   </p>
                 </div>
@@ -202,7 +202,7 @@ export default function EmpresaPage() {
                   <h4 className="font-display text-xl tracking-wide uppercase text-text-primary">
                     Cultura de Cero Accidentes HSEQ
                   </h4>
-                  <p className="text-xs text-text-secondary leading-relaxed">
+                  <p className="text-base text-text-secondary leading-relaxed">
                     En CYH Ingeniería priorizamos la vida humana sobre cualquier factor productivo. Toda intervención en sitio de nuestro personal de campo cuenta con protocolos estrictos de bloqueo de energías (LOTO), análisis de trabajo seguro (ATS) y el debido cumplimiento de las resoluciones de seguridad vigentes en Colombia.
                   </p>
                 </div>
@@ -229,7 +229,7 @@ export default function EmpresaPage() {
           <div className="space-y-2 text-center max-w-xl mx-auto">
             <span className="font-mono text-[10px] text-accent-cyan tracking-widest uppercase font-bold">HISTORIA COHERENTE</span>
             <h3 className="font-display text-3xl tracking-wide uppercase">Trayectoria del Grupo</h3>
-            <p className="text-xs text-text-secondary leading-relaxed">
+            <p className="text-base text-text-secondary leading-relaxed">
               Consistencia absoluta y madurez B2B a lo largo de una década de ingeniería de flujo y mantenimiento predictivo en Colombia.
             </p>
           </div>
@@ -249,7 +249,7 @@ export default function EmpresaPage() {
                   <h4 className="font-display text-xl uppercase tracking-wider text-text-primary">
                     {item.title}
                   </h4>
-                  <p className="text-xs text-text-secondary leading-relaxed max-w-xl">
+                  <p className="text-base text-text-secondary leading-relaxed max-w-xl">
                     {item.desc}
                   </p>
                 </div>
@@ -263,7 +263,7 @@ export default function EmpresaPage() {
           <h3 className="font-display text-2xl tracking-wide uppercase text-text-primary">
             ¿Requiere consultar nuestra capacidad instalada?
           </h3>
-          <p className="text-xs text-text-secondary leading-relaxed max-w-xl mx-auto">
+          <p className="text-base text-text-secondary leading-relaxed max-w-xl mx-auto">
             Descargue nuestro dossier corporativo digital o agende una videoconferencia técnica con un ingeniero especialista de proyectos residiendo en Barranquilla.
           </p>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">

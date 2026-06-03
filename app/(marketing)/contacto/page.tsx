@@ -96,7 +96,7 @@ export default function ContactoPage() {
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                   placeholder="Ej. Ing. Juan Gómez"
-                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
                 />
               </div>
 
@@ -111,7 +111,7 @@ export default function ContactoPage() {
                   value={formData.empresa}
                   onChange={(e) => setFormData({ ...formData, empresa: e.target.value })}
                   placeholder="Ej. Cementos del Norte"
-                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
                 />
               </div>
 
@@ -126,7 +126,7 @@ export default function ContactoPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="Ej. j.gomez@empresa.com"
-                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
                 />
               </div>
 
@@ -141,7 +141,7 @@ export default function ContactoPage() {
                   value={formData.telefono}
                   onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
                   placeholder="Ej. +57 300 987 6543"
-                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
                 />
               </div>
 
@@ -153,7 +153,7 @@ export default function ContactoPage() {
                 <select
                   value={formData.urgencia}
                   onChange={(e) => setFormData({ ...formData, urgencia: e.target.value })}
-                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all"
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all"
                 >
                   <option value="baja">Planificación Futura (Baja)</option>
                   <option value="media">Mantenimiento Programado Trimestral (Media)</option>
@@ -172,7 +172,7 @@ export default function ContactoPage() {
                   value={formData.mensaje}
                   onChange={(e) => setFormData({ ...formData, mensaje: e.target.value })}
                   placeholder="Describa el diámetro, caudal estimado, vibración excesiva o requerimiento de balanceo..."
-                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted resize-none"
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted resize-none"
                 />
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function ContactoPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-semibold text-xs tracking-wider uppercase rounded-sm transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(0,212,255,0.15)] disabled:opacity-50"
+              className="w-full py-3.5 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-semibold text-base tracking-wider uppercase rounded-sm transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(0,212,255,0.15)] disabled:opacity-50"
             >
               {isSubmitting ? (
                 "TRANSMITIENDO DATOS..."

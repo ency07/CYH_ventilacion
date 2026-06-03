@@ -276,7 +276,7 @@ export default function CatalogoPage() {
         <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border border-border-subtle bg-bg-secondary/20 p-4 rounded-sm">
           <div className="flex items-center gap-3 w-full lg:w-auto">
             <SlidersHorizontal className="h-4.5 w-4.5 text-accent-cyan flex-shrink-0" />
-            <span className="font-mono text-xs text-text-secondary uppercase tracking-widest hidden sm:inline">FILTRAR:</span>
+            <span className="font-mono text-base text-text-secondary uppercase tracking-widest hidden sm:inline">FILTRAR:</span>
             {/* Horizontal scrolling tags for categories */}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border-subtle max-w-full lg:max-w-xl">
               {CATEGORIES.map((cat) => (
@@ -302,9 +302,9 @@ export default function CatalogoPage() {
               placeholder="Buscar por equipo, aspas, material..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bg-tertiary border border-border-subtle rounded-sm py-2 px-3 pl-8 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
+              className="w-full bg-bg-tertiary border border-border-subtle rounded-sm py-2 px-3 pl-8 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
             />
-            <span className="absolute left-2.5 top-2.5 text-text-muted text-xs">🔍</span>
+            <span className="absolute left-2.5 top-2.5 text-text-muted text-base">🔍</span>
           </div>
         </div>
 
@@ -339,7 +339,7 @@ export default function CatalogoPage() {
                       <h3 className="font-display text-2xl md:text-3xl tracking-wide uppercase">
                         {product.name}
                       </h3>
-                      <p className="text-xs text-text-secondary leading-relaxed">
+                      <p className="text-base text-text-secondary leading-relaxed">
                         {product.aplicacion}
                       </p>
                     </div>
@@ -469,7 +469,7 @@ export default function CatalogoPage() {
               <div className="border border-dashed border-border-subtle bg-bg-secondary/10 p-12 text-center rounded-sm space-y-3 font-mono">
                 <div className="text-text-muted text-3xl">⚠️</div>
                 <h4 className="text-sm font-semibold uppercase text-text-primary">No se encontraron resultados</h4>
-                <p className="text-xs text-text-secondary max-w-sm mx-auto leading-relaxed">
+                <p className="text-base text-text-secondary max-w-sm mx-auto leading-relaxed">
                   No registramos especificaciones que coincidan con la búsqueda "{searchQuery}" o la categoría seleccionada. Intente con otros parámetros.
                 </p>
               </div>
@@ -485,7 +485,7 @@ export default function CatalogoPage() {
             <h3 className="font-display text-2xl tracking-wide uppercase text-text-primary">
               ¿Requiere una especificación especial?
             </h3>
-            <p className="text-xs text-text-secondary leading-relaxed">
+            <p className="text-base text-text-secondary leading-relaxed">
               Nuestros ingenieros de diseño en Barranquilla calculan diámetros, curvas aerodinámicas y aleaciones a medida para comisionamientos portuarios y pesados.
             </p>
           </div>
@@ -493,14 +493,14 @@ export default function CatalogoPage() {
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link 
               href="/contacto"
-              className="px-5 py-3 border border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-xs tracking-wider uppercase rounded-sm transition-colors flex items-center gap-2"
+              className="px-5 py-3 border border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-base tracking-wider uppercase rounded-sm transition-colors flex items-center gap-2"
             >
               <PhoneCall className="h-4 w-4" /> Solicitar Visita Técnica
             </Link>
             
             <Link 
               href="/cotizador"
-              className="px-6 py-3 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-semibold text-xs tracking-wider uppercase rounded-sm transition-all flex items-center gap-2"
+              className="px-6 py-3 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-semibold text-base tracking-wider uppercase rounded-sm transition-all flex items-center gap-2"
             >
               Iniciar Dimensionamiento Digital <ArrowRight className="h-4 w-4" />
             </Link>

@@ -322,7 +322,7 @@ export default function ServiciosPage() {
                 </p>
 
                 {/* Grid Technical Specifications */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs leading-relaxed">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-base leading-relaxed">
                   
                   {/* Scope */}
                   <div className="space-y-2">

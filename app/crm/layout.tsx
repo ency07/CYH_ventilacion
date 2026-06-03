@@ -23,7 +23,7 @@ export default function CrmLayout({
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen text-slate-900 flex flex-col justify-between">
+    <div className="bg-bg-primary min-h-screen text-text-primary flex flex-col justify-between">
       <div className="flex-grow pt-24">
         {children}
       </div>
