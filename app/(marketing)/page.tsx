@@ -1,8 +1,10 @@
 import React from "react";
+import dynamic from "next/dynamic";
 import HeroSection from "@/components/marketing/HeroSection";
-import ServicesSection from "@/components/marketing/ServicesSection";
-import ProjectsSection from "@/components/marketing/ProjectsSection";
-import CTASection from "@/components/marketing/CTASection";
+
+const ServicesSection = dynamic(() => import("@/components/marketing/ServicesSection"));
+const ProjectsSection = dynamic(() => import("@/components/marketing/ProjectsSection"));
+const CTASection = dynamic(() => import("@/components/marketing/CTASection"));
 
 export default function MarketingPage() {
   return (
