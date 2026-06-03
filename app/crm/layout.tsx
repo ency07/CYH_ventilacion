@@ -47,7 +47,7 @@ export default function CrmLayout({
       {/* Sidebar */}
       <aside className={`fixed md:sticky top-20 left-0 z-50 h-[calc(100vh-5rem)] bg-bg-secondary border-r border-border-subtle transition-all duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-16'}`}>
         <div className={`flex items-center border-b border-border-subtle h-16 ${sidebarOpen ? 'px-6 justify-between' : 'justify-center'}`}>
-          <div className={`flex items-center gap-2 overflow-hidden ${!sidebarOpen && 'hidden'}`}>
+          <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${!sidebarOpen ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
             <ShieldCheck className="h-6 w-6 text-accent-cyan flex-shrink-0" />
             <span className="font-mono text-sm font-bold tracking-widest text-text-primary uppercase whitespace-nowrap">CYH ADMIN</span>
           </div>
@@ -82,7 +82,7 @@ export default function CrmLayout({
                 title={!sidebarOpen ? item.name : undefined}
               >
                 <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-accent-cyan" : "text-text-muted"}`} />
-                <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden hidden md:block'}`}>{item.name}</span>
+                <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto ml-3' : 'opacity-0 w-0 overflow-hidden'}`}>{item.name}</span>
               </Link>
             );
           })}
@@ -97,7 +97,7 @@ export default function CrmLayout({
             title={!sidebarOpen ? "Cerrar Sesión" : undefined}
           >
             <LogOut className="h-5 w-5 flex-shrink-0" /> 
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden hidden md:block'}`}>Cerrar Sesión</span>
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto ml-3' : 'opacity-0 w-0 overflow-hidden'}`}>Cerrar Sesión</span>
           </button>
         </div>
       </aside>

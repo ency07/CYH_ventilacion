@@ -130,6 +130,15 @@ export const leadVerifications = pgTable("lead_verifications", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const crmUsers = pgTable("crm_users", {
+  id: uuid("id").primaryKey(), // maps to auth.users id
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  fullName: varchar("full_name", { length: 255 }),
+  role: varchar("role", { length: 50 }).default("vendedor").notNull(), // admin | vendedor | tecnico
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Configure Drizzle relations
 export const leadsRelations = relations(leads, ({ one, many }) => ({
   diagnosticReports: many(diagnosticReports),
