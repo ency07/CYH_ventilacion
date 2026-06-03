@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Factory, ShoppingCart, ShieldAlert, Wrench, ArrowRight } from "lucide-react";
+import { ArrowRight, Factory, ShoppingCart, ShieldCheck, Wrench } from "lucide-react";
 import Link from "next/link";
 
 export default function ServicesSection() {
@@ -10,99 +10,88 @@ export default function ServicesSection() {
     {
       id: "fabricacion",
       icon: <Factory className="h-8 w-8 text-accent-cyan" />,
-      title: "FABRICACIÓN",
-      description: "Desarrollo a medida de unidades centrífugas, axiales y helicoidales. Forjadas con aleaciones aeroespaciales resistentes a la corrosión para entornos abrasivos.",
-      linkText: "ESPECIFICACIONES DE DISEÑO",
-      ref: "ISO 16890 COMPLIANT"
+      title: "Fabricacion de equipos",
+      description:
+        "Diseno y construccion de extractores, ventiladores y sistemas de aire para condiciones reales de planta.",
+      linkText: "Ver fabricacion",
     },
     {
       id: "venta",
       icon: <ShoppingCart className="h-8 w-8 text-accent-cyan" />,
-      title: "DISTRIBUCIÓN",
-      description: "Suministro directo de motores premium de alta eficiencia, aspas y componentes certificados. Stock permanente con garantías extendidas de fabricante.",
-      linkText: "CONSULTAR CATÁLOGO",
-      ref: "OEM CERTIFIED PARTS"
+      title: "Suministro industrial",
+      description:
+        "Seleccion de equipos, motores, repuestos y componentes adecuados para caudal, presion y ambiente de trabajo.",
+      linkText: "Ver catalogo",
     },
     {
       id: "mantenimiento",
-      icon: <ShieldAlert className="h-8 w-8 text-accent-cyan" />,
-      title: "MONITOREO",
-      description: "Programas avanzados de mantenimiento basados en telemetría de vibración, temperatura y flujo. Prevención proactiva de fallas catastróficas.",
-      linkText: "PLANES PREVENTIVOS",
-      ref: "TELEMETRÍA PREDICTIVA"
+      icon: <ShieldCheck className="h-8 w-8 text-accent-cyan" />,
+      title: "Mantenimiento preventivo",
+      description:
+        "Inspeccion, balanceo, revision mecanica y seguimiento para reducir paradas no programadas.",
+      linkText: "Ver mantenimiento",
     },
     {
       id: "reparacion",
       icon: <Wrench className="h-8 w-8 text-accent-cyan" />,
-      title: "ASISTENCIA",
-      description: "Servicio de reparación crítica y comisionamiento en sitio disponible 24/7. Equipos de ingeniería certificados para intervenciones en entornos de alto riesgo.",
-      linkText: "ASISTENCIA CRÍTICA",
-      ref: "SOPORTE 24/7 DE CAMPO"
-    }
+      title: "Reparacion en campo",
+      description:
+        "Atencion tecnica para fallas, vibraciones, danos estructurales, motores y equipos detenidos.",
+      linkText: "Ver soporte",
+    },
   ];
 
   return (
     <section id="servicios" className="py-24 bg-bg-primary relative z-10 border-t border-border-subtle">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        
-        {/* Header Title Grid */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
-          <div className="space-y-4">
-            <span className="font-mono text-xs text-accent-cyan tracking-[0.2em] uppercase font-semibold">
-              CAPACIDADES DE INGENIERÍA
+        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-12 mb-14 items-end">
+          <div className="space-y-5">
+            <span className="text-base text-accent-cyan font-semibold">
+              Servicios principales
             </span>
-            <h2 className="font-display text-4xl md:text-6xl tracking-wide text-text-primary uppercase">
-              Soluciones Técnicas Integrales
+            <h2 className="font-sans text-4xl md:text-5xl font-bold text-text-primary leading-tight">
+              Soluciones para todo el ciclo de vida de su sistema de ventilacion.
             </h2>
           </div>
-          <p className="text-text-secondary text-sm md:text-base max-w-md leading-relaxed">
-            Nuestros servicios abarcan el ciclo de vida completo de la infraestructura de ventilación industrial, garantizando máxima continuidad operativa y eficiencia de consumo.
+          <p className="text-lg md:text-xl text-text-secondary leading-relaxed">
+            Acompanamos desde el diagnostico inicial hasta la instalacion,
+            mantenimiento y reparacion. La idea es simple: que su planta respire
+            bien y siga operando con confianza.
           </p>
         </div>
 
-        {/* Dynamic Service Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service, index) => (
-            <Link 
-              key={service.title}
-              href={`/servicios#${service.id}`}
-              className="flex w-full group/card"
-            >
+            <Link key={service.title} href={`/servicios#${service.id}`} className="flex w-full group/card">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="glass-panel p-8 rounded-sm border border-border-subtle bg-bg-secondary/20 hover:border-accent-cyan/30 hover:bg-bg-secondary/40 flex flex-col justify-between min-h-[360px] w-full transition-all duration-300 animate-fadeIn cursor-pointer"
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                className="p-7 md:p-8 rounded-md border border-border-subtle bg-bg-secondary hover:border-border-medium flex flex-col justify-between min-h-[330px] w-full transition-all duration-300 shadow-sm hover:shadow-md"
               >
                 <div className="space-y-6">
-                  <div className="p-3 bg-bg-secondary/60 w-fit border border-border-subtle rounded-sm group-hover/card:border-accent-cyan/30 group-hover/card:bg-bg-secondary transition-all">
+                  <div className="p-3 bg-bg-primary w-fit border border-border-subtle rounded-md">
                     {service.icon}
                   </div>
                   <div className="space-y-3">
-                    <h3 className="font-display text-2xl tracking-wide text-text-primary uppercase group-hover/card:text-accent-cyan transition-colors">
+                    <h3 className="font-sans text-2xl font-bold text-text-primary group-hover/card:text-accent-cyan transition-colors">
                       {service.title}
                     </h3>
-                    <p className="text-sm text-text-secondary leading-relaxed">
+                    <p className="text-base text-text-secondary leading-relaxed">
                       {service.description}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-8 pt-4 border-t border-border-subtle/50 space-y-3">
-                  <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-accent-cyan group-hover/card:gap-3 transition-all">
-                    {service.linkText}
-                    <ArrowRight className="h-3 w-3" />
-                  </span>
-                  <div className="font-mono text-[9px] text-text-muted tracking-widest uppercase">
-                    Ref: {service.ref}
-                  </div>
-                </div>
+                <span className="mt-8 inline-flex items-center gap-2 text-base font-semibold text-accent-cyan group-hover/card:gap-3 transition-all">
+                  {service.linkText}
+                  <ArrowRight className="h-4 w-4" />
+                </span>
               </motion.div>
             </Link>
           ))}
         </div>
-
       </div>
     </section>
   );

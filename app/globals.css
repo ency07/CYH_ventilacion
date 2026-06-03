@@ -6,41 +6,44 @@
   :root {
     --background: #FFFFFF;
     --bg-primary: #FFFFFF;
-    --bg-secondary: #F8FAFC;
-    --bg-tertiary: #FFFFFF;
+    --bg-secondary: #F3F4F6;
+    --bg-tertiary: #E5E7EB;
     
-    --accent-cyan: #334155;
-    --accent-cyan-soft: rgba(51, 65, 85, 0.08);
+    /* Azul petróleo / Technical Teal */
+    --accent-cyan: #0F766E;
+    --accent-cyan-soft: rgba(15, 118, 110, 0.08);
     
-    --text-primary: #111827;
-    --text-secondary: #475569;
-    --text-muted: #64748B;
+    /* Gris grafito */
+    --text-primary: #1F2937;
+    --text-secondary: #4B5563;
+    --text-muted: #9CA3AF;
     
-    --border-subtle: #E2E8F0;
-    --border-medium: #CBD5E1;
-    --border-active: #94A3B8;
+    /* Acero */
+    --border-subtle: #E5E7EB;
+    --border-medium: #D1D5DB;
+    --border-active: #9CA3AF;
     
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --danger: #ef4444;
+    --success: #16A34A;
+    --warning: #EA580C; /* Naranja técnico */
+    --danger: #DC2626;
   }
 
   .dark {
-    --background: #0B1120;
-    --bg-primary: #0B1120;
-    --bg-secondary: #111827;
-    --bg-tertiary: #0B1120;
+    --background: #111827;
+    --bg-primary: #111827;
+    --bg-secondary: #1F2937;
+    --bg-tertiary: #374151;
     
-    --accent-cyan: #64748B;
-    --accent-cyan-soft: rgba(100, 116, 139, 0.15);
+    --accent-cyan: #14B8A6;
+    --accent-cyan-soft: rgba(20, 184, 166, 0.15);
     
-    --text-primary: #F8FAFC;
-    --text-secondary: #CBD5E1;
-    --text-muted: #94A3B8;
+    --text-primary: #F9FAFB;
+    --text-secondary: #D1D5DB;
+    --text-muted: #9CA3AF;
     
-    --border-subtle: #1E293B;
-    --border-medium: #334155;
-    --border-active: #475569;
+    --border-subtle: #374151;
+    --border-medium: #4B5563;
+    --border-active: #6B7280;
   }
 }
 

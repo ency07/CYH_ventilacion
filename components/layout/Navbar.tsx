@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowRight, Sun, Moon, BriefcaseBusiness } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, BriefcaseBusiness, Menu, Moon, Sun, X } from "lucide-react";
 import { useTheme } from "next-themes";
 
 function ThemeToggle() {
@@ -16,14 +16,14 @@ function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <div className="w-8 h-8" />;
+    return <div className="w-9 h-9" />;
   }
 
   return (
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
-      aria-label="Toggle Theme"
+      className="p-2 rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+      aria-label="Cambiar tema"
     >
       {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </button>
@@ -36,7 +36,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Inicio", path: "/" },
-    { name: "Catálogo", path: "/catalogo" },
+    { name: "Catalogo", path: "/catalogo" },
     { name: "Servicios", path: "/servicios" },
     { name: "Proyectos", path: "/proyectos" },
     { name: "Empresa", path: "/empresa" },
@@ -45,25 +45,22 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border-subtle h-16 transition-colors duration-300">
+    <header className="fixed top-0 left-0 w-full z-50 bg-background/88 backdrop-blur-xl border-b border-border-subtle h-16 transition-colors duration-300">
       <div className="flex justify-between items-center w-full px-6 md:px-12 h-full max-w-7xl mx-auto">
-        
-        {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <span className="font-display text-2xl tracking-wider text-text-primary group-hover:text-accent-cyan transition-colors">
-            CYH <span className="font-sans text-xs tracking-[0.25em] font-semibold text-text-secondary ml-1">INGENIERÍA</span>
+          <span className="font-sans text-2xl font-bold tracking-tight text-text-primary group-hover:text-accent-cyan transition-colors">
+            CYH <span className="text-sm font-semibold text-text-secondary ml-1">Ingenieria</span>
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex gap-8 items-center">
+        <nav className="hidden md:flex gap-7 items-center">
           {navLinks.map((link) => {
             const isActive = pathname === link.path;
             return (
               <Link
                 key={link.name}
                 href={link.path}
-                className={`text-sm font-medium tracking-wide transition-colors relative py-1 flex items-center ${
+                className={`text-base font-medium transition-colors relative py-1 flex items-center ${
                   isActive ? "text-accent-cyan font-semibold" : "text-text-secondary hover:text-text-primary"
                 }`}
               >
@@ -81,33 +78,29 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Desktop Utility / Call to Action */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
           <Link
             href="/cotizador"
-            className="px-5 py-2.5 bg-bg-secondary hover:bg-bg-tertiary border border-border-medium hover:border-accent-cyan/50 text-text-primary font-semibold text-xs tracking-wide uppercase rounded-sm transition-all flex items-center gap-2"
+            className="px-5 py-2.5 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-semibold text-sm rounded-md transition-all flex items-center gap-2"
           >
-            COTIZADOR TÉCNICO
-            <ArrowRight className="h-4 w-4 text-accent-cyan" />
+            Diagnostico
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center gap-4">
           <ThemeToggle />
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="text-text-secondary hover:text-text-primary p-2 focus:outline-none"
-            aria-label="Toggle navigation menu"
+            aria-label="Abrir menu"
           >
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
-
       </div>
 
-      {/* Mobile Dropdown Panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -115,7 +108,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-16 left-0 w-full bg-background/95 backdrop-blur-2xl border-b border-border-subtle md:hidden flex flex-col p-6 gap-6 z-40"
+            className="absolute top-16 left-0 w-full bg-background/96 backdrop-blur-2xl border-b border-border-subtle md:hidden flex flex-col p-6 gap-6 z-40"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
@@ -123,7 +116,7 @@ export default function Navbar() {
                   key={link.name}
                   href={link.path}
                   onClick={() => setIsOpen(false)}
-                  className={`text-base font-medium py-2 border-b border-border-subtle/30 flex items-center ${
+                  className={`text-lg font-medium py-2 border-b border-border-subtle/60 flex items-center ${
                     pathname === link.path ? "text-accent-cyan" : "text-text-secondary"
                   }`}
                 >
@@ -133,16 +126,14 @@ export default function Navbar() {
               ))}
             </div>
 
-            <div className="flex flex-col gap-4 mt-2">
-              <Link
-                href="/cotizador"
-                onClick={() => setIsOpen(false)}
-                className="w-full text-center px-4 py-3 bg-bg-secondary border border-border-medium hover:border-accent-cyan/50 text-text-primary font-semibold text-xs tracking-wide uppercase rounded-sm transition-all flex items-center justify-center gap-2"
-              >
-                COTIZADOR TÉCNICO
-                <ArrowRight className="h-4 w-4 text-accent-cyan" />
-              </Link>
-            </div>
+            <Link
+              href="/cotizador"
+              onClick={() => setIsOpen(false)}
+              className="w-full text-center px-4 py-3 bg-accent-cyan text-white dark:text-background font-semibold text-base rounded-md transition-all flex items-center justify-center gap-2"
+            >
+              Diagnostico
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
