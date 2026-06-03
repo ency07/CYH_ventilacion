@@ -294,13 +294,31 @@ export default function CrmDashboardPage() {
 
                 {/* Cards Container */}
                 <div className="p-2 flex-1 overflow-y-auto space-y-2 max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-border-subtle">
-                  {stageLeads.map((lead) => (
+                  {stageLeads.map((lead) => {
+                    const daysInactive = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+                    const isAlert = stage.id !== 'ganado' && stage.id !== 'perdido';
+                    let alertClass = "border-border-subtle";
+                    if (isAlert) {
+                      if (daysInactive >= 14) alertClass = "border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]";
+                      else if (daysInactive >= 7) alertClass = "border-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.3)]";
+                      else if (daysInactive >= 3) alertClass = "border-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.3)]";
+                    }
+
+                    return (
                     <div
                       key={lead.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, lead.id)}
-                      className="bg-bg-primary border border-border-subtle p-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-border-medium cursor-grab active:cursor-grabbing transition-all group flex flex-col gap-2"
+                      className={`bg-bg-primary border ${alertClass} p-3 rounded-md shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium cursor-grab active:cursor-grabbing transition-all group flex flex-col gap-2 relative`}
                     >
+                      {/* Inactivity Badge */}
+                      {isAlert && daysInactive >= 3 && (
+                        <div className={`absolute -top-2 -right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white ${
+                          daysInactive >= 14 ? "bg-red-500" : daysInactive >= 7 ? "bg-orange-500" : "bg-amber-500"
+                        }`}>
+                          {daysInactive}d sin cont.
+                        </div>
+                      )}
                       <div className="flex justify-between items-start gap-1">
                         <div className="flex items-start gap-1.5 overflow-hidden">
                           <div className="mt-0.5 p-1 bg-bg-secondary border border-border-subtle rounded-md flex-shrink-0">
@@ -362,7 +380,8 @@ export default function CrmDashboardPage() {
                         </Link>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
 
                   {stageLeads.length === 0 && (
                     <div className="h-20 border-2 border-dashed border-border-subtle rounded-md flex items-center justify-center text-xs font-medium text-text-muted bg-bg-primary/50">
