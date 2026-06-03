@@ -273,38 +273,41 @@ export default function CatalogoPage() {
         </div>
 
         {/* Filter and Search HUD Row */}
-        <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border border-border-subtle bg-bg-secondary/20 p-4 rounded-sm">
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <SlidersHorizontal className="h-4.5 w-4.5 text-accent-cyan flex-shrink-0" />
-            <span className="font-mono text-base text-text-secondary uppercase tracking-widest hidden sm:inline">FILTRAR:</span>
-            {/* Horizontal scrolling tags for categories */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border-subtle max-w-full lg:max-w-xl">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-sm font-mono text-[10px] uppercase tracking-wider transition-all whitespace-nowrap ${
-                    activeCategory === cat.id
-                      ? "bg-accent-cyan text-background font-semibold shadow-[0_0_8px_rgba(0,212,255,0.3)]"
-                      : "bg-bg-tertiary border border-border-subtle text-text-secondary hover:text-text-primary hover:border-border-medium"
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between border border-border-subtle bg-bg-secondary/20 p-4 rounded-sm">
+          
+          {/* Category Dropdown */}
+          <div className="relative w-full lg:w-1/2 flex items-center gap-3">
+            <div className="flex items-center gap-2 text-text-muted shrink-0">
+              <SlidersHorizontal className="h-4.5 w-4.5 text-accent-cyan" />
+              <span className="font-mono text-xs uppercase tracking-widest font-bold hidden sm:inline">Categoría:</span>
+            </div>
+            
+            <div className="relative w-full">
+              <select
+                value={activeCategory}
+                onChange={(e) => setActiveCategory(e.target.value)}
+                className="w-full appearance-none bg-bg-tertiary border border-border-subtle rounded-sm py-2.5 pl-4 pr-10 text-sm font-semibold text-text-primary focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan/50 focus:outline-none transition-all cursor-pointer hover:border-border-medium"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-text-muted">
+                <ChevronRight className="h-4 w-4 rotate-90" />
+              </div>
             </div>
           </div>
 
           {/* Search input */}
-          <div className="relative w-full lg:w-72">
+          <div className="relative w-full lg:w-1/2">
             <input
               type="text"
-              placeholder="Buscar por equipo, aspas, material..."
+              placeholder="Buscar por equipo, aplicación, material..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bg-tertiary border border-border-subtle rounded-sm py-2 px-3 pl-8 text-base text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted"
+              className="w-full bg-bg-tertiary border border-border-subtle rounded-sm py-2.5 px-4 pl-10 text-sm font-semibold text-text-primary focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan/50 focus:outline-none transition-all placeholder:text-text-muted hover:border-border-medium"
             />
-            <span className="absolute left-2.5 top-2.5 text-text-muted text-base">🔍</span>
+            <span className="absolute left-3 top-2.5 text-text-muted text-base">🔍</span>
           </div>
         </div>
 
