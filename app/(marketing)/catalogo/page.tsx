@@ -13,7 +13,8 @@ import {
   ChevronRight,
   TrendingUp,
   Activity,
-  Info
+  Info,
+  Search
 } from "lucide-react";
 import Link from "next/link";
 
@@ -307,7 +308,9 @@ export default function CatalogoPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-bg-tertiary border border-border-subtle rounded-sm py-2.5 px-4 pl-10 text-sm font-semibold text-text-primary focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan/50 focus:outline-none transition-all placeholder:text-text-muted hover:border-border-medium"
             />
-            <span className="absolute left-3 top-2.5 text-text-muted text-base">🔍</span>
+            <span className="absolute left-3 top-3 text-text-muted">
+              <Search className="h-4.5 w-4.5" />
+            </span>
           </div>
         </div>
 
