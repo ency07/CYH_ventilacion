@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Activity, ShieldCheck, Database, Server, LogOut, LayoutDashboard, Settings, FileText, FolderKanban, Menu, X, Users } from "lucide-react";
+import { Activity, ShieldCheck, Database, Server, LogOut, LayoutDashboard, Settings, FileText, FolderKanban, Menu, X, Users, PanelLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -13,7 +13,7 @@ export default function CrmLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -45,7 +45,7 @@ export default function CrmLayout({
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed md:sticky top-20 left-0 z-50 w-64 h-[calc(100vh-5rem)] bg-bg-secondary border-r border-border-subtle transform transition-transform duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`fixed md:sticky top-20 left-0 z-50 h-[calc(100vh-5rem)] bg-bg-secondary border-r border-border-subtle transition-all duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-0 overflow-hidden opacity-0'}`}>
         <div className="p-6 border-b border-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-accent-cyan" />
@@ -88,8 +88,16 @@ export default function CrmLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col w-full md:w-[calc(100%-16rem)] relative">
+      <main className={`flex-1 flex flex-col w-full relative transition-all duration-300 ${sidebarOpen ? 'md:w-[calc(100%-16rem)]' : 'md:w-full'}`}>
+        
+        <div className="hidden md:flex p-4 border-b border-border-subtle bg-bg-secondary items-center">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-md bg-bg-tertiary border border-border-subtle text-text-secondary hover:text-text-primary hover:border-border-medium transition-all shadow-sm">
+            <PanelLeft className="h-5 w-5" />
+          </button>
+          <span className="ml-3 font-mono text-sm font-bold tracking-widest text-text-primary uppercase">Pipeline Ejecutivo</span>
+        </div>
         <div className="md:hidden p-4 border-b border-border-subtle bg-bg-secondary flex items-center">
+
           <button onClick={() => setSidebarOpen(true)} className="p-1 text-text-secondary hover:text-text-primary">
             <Menu className="h-6 w-6" />
           </button>

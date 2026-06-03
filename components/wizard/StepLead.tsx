@@ -95,7 +95,7 @@ export default function StepLead() {
         companyName: data.empresa,
         email: data.email,
         phone: data.telefono,
-        position: data.cargo || "Otro",
+        cargo: data.cargo || "Otro",
         city: data.ciudad,
         serviceType: service || "fabricacion",
         environmentType: flowInputs.environment || "warehouse",

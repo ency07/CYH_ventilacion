@@ -14,7 +14,7 @@ function calculateLeadScore(lead: {
   email: string;
   phone: string;
   estimatedBudgetMax: number | null;
-  position: string | null;
+  cargo: string | null;
   city: string;
 }): { score: number; risk: "HOT" | "WARM" | "LOW" | "SPAM" } {
   let score = 0;
@@ -35,7 +35,7 @@ function calculateLeadScore(lead: {
   if (budget > 50000000) score += 20;
 
   // 4. Cargo gerencial (+15): director, gerente, jefe, supervisor, manager, lead
-  const pos = (lead.position || "").toLowerCase();
+  const pos = (lead.cargo || "").toLowerCase();
   const executiveKeywords = ["gerente", "director", "jefe", "supervisor", "manager", "lead", "coordinador"];
   const isExecutive = executiveKeywords.some(kw => pos.includes(kw));
   if (isExecutive) score += 15;
@@ -71,7 +71,7 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       email: validated.email,
       phone: validated.phone,
       estimatedBudgetMax: validated.estimatedBudgetMax ?? null,
-      position: validated.position ?? null,
+      cargo: validated.cargo ?? null,
       city: validated.city,
     });
 
@@ -80,7 +80,7 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       companyName: validated.companyName,
       email: validated.email,
       phone: validated.phone,
-      position: validated.position ?? null,
+      cargo: validated.cargo ?? null,
       city: validated.city,
       serviceType: validated.serviceType,
       environmentType: validated.environmentType,

@@ -9,7 +9,7 @@ export const leads = pgTable("leads", {
   companyName: varchar("company_name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 50 }).notNull(),
-  position: varchar("position", { length: 100 }),
+  cargo: varchar("cargo", { length: 100 }),
   city: varchar("city", { length: 100 }).notNull(),
   serviceType: varchar("service_type", { length: 50 }).notNull(), // fabricacion | venta | mantenimiento | reparacion
   environmentType: varchar("environment_type", { length: 100 }).notNull(),

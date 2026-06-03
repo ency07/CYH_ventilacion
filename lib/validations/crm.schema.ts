@@ -5,7 +5,7 @@ export const LeadInsertSchema = z.object({
   companyName: z.string().min(2, "La razón social debe tener al menos 2 caracteres."),
   email: z.string().email("El correo electrónico es inválido."),
   phone: z.string().min(6, "El teléfono debe tener al menos 6 caracteres."),
-  position: z.string().optional().nullable(),
+  cargo: z.string().optional().nullable(),
   city: z.string().min(2, "La ciudad es obligatoria."),
   serviceType: z.enum(["fabricacion", "venta", "mantenimiento", "reparacion"]),
   environmentType: z.string().min(1, "El ambiente operativo es obligatorio."),
