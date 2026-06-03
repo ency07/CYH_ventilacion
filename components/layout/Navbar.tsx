@@ -41,7 +41,7 @@ export default function Navbar() {
     { name: "Proyectos", path: "/proyectos" },
     { name: "Empresa", path: "/empresa" },
     { name: "Contacto", path: "/contacto" },
-    { name: "CRM", path: "/crm", icon: <BriefcaseBusiness className="w-4 h-4 mr-1" /> },
+    { name: "CRM", path: "/crm", icon: <BriefcaseBusiness className="w-5 h-5" />, iconOnly: true },
   ];
 
   return (
@@ -65,7 +65,7 @@ export default function Navbar() {
                 }`}
               >
                 {link.icon}
-                {link.name}
+                {!link.iconOnly && link.name}
                 {isActive && (
                   <motion.span
                     layoutId="activeNavBorder"
@@ -121,7 +121,7 @@ export default function Navbar() {
                   }`}
                 >
                   {link.icon}
-                  {link.name}
+                  {!link.iconOnly && link.name}
                 </Link>
               ))}
             </div>
