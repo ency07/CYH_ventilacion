@@ -257,57 +257,18 @@ export default function CatalogoPage() {
 
   return (
     <div className="bg-bg-primary min-h-screen text-text-primary pt-24 pb-16 relative">
-      {/* Structural grid background */}
-      <div className="absolute inset-0 z-0 industrial-grid opacity-20 pointer-events-none" />
-
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 space-y-12">
         
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 font-mono text-[10px] text-text-muted uppercase tracking-widest">
-          <Link href="/" className="hover:text-accent-cyan transition-colors">INICIO</Link>
-          <ChevronRight className="h-3 w-3 text-text-muted" />
-          <span className="text-accent-cyan">CATÁLOGO TÉCNICO B2B</span>
-        </div>
-
-        {/* Hero Section */}
-        <div className="border border-border-subtle bg-bg-secondary/40 p-8 md:p-12 rounded-sm relative overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-accent-cyan to-indigo-500" />
-          
-          <div className="max-w-3xl space-y-4">
-            <div className="flex items-center gap-2 border border-accent-cyan/20 bg-accent-cyan-soft px-3 py-1 rounded-sm w-fit">
-              <ShieldCheck className="h-4.5 w-4.5 text-accent-cyan" />
-              <span className="font-mono text-[9px] text-accent-cyan tracking-widest font-semibold uppercase">
-                BIBLIOTECA DE ESPECIFICACIONES DE INGENIERÍA
-              </span>
-            </div>
-            <h1 className="font-display text-4xl md:text-6xl tracking-wide uppercase leading-tight">
-              Catálogo de Equipos y <span className="text-accent-cyan">Sistemas de Flujo</span>
+        {/* Hero Header */}
+        <div className="pt-8 pb-4">
+          <div className="max-w-4xl space-y-6">
+            <h1 className="font-display text-5xl md:text-7xl tracking-wide uppercase leading-tight">
+              Catálogo de Equipos y <br />
+              <span className="text-accent-cyan">Sistemas de Flujo</span>
             </h1>
-            <p className="text-text-secondary text-sm md:text-base leading-relaxed">
+            <p className="text-xl md:text-2xl text-text-secondary leading-relaxed font-medium">
               Consulte y descargue fichas técnicas, curvas de operación y cumplimientos normativos para ventiladores industriales, motores y automatización de la infraestructura crítica de la Costa Caribe.
             </p>
-          </div>
-
-          {/* HUD Indicators in Hero */}
-          <div className="mt-8 pt-8 border-t border-border-subtle/50 grid grid-cols-2 md:grid-cols-4 gap-6 font-mono text-[10px]">
-            <div className="space-y-1">
-              <span className="text-text-muted uppercase block">NORMA CONEXIÓN:</span>
-              <span className="text-text-primary font-bold block flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 bg-success rounded-full"></span> NTC 2050 / RETIE
-              </span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-text-muted uppercase block">CERTIFICACIONES:</span>
-              <span className="text-text-primary font-bold block">AMCA, ISO 9001, IEC</span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-text-muted uppercase block">MOTORES PREMIUM:</span>
-              <span className="text-text-primary font-bold block text-accent-cyan">EFICIENCIA IE3 / IE4</span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-text-muted uppercase block">SOPORTE EN SITIO:</span>
-              <span className="text-text-primary font-bold block uppercase text-success">BARRANQUILLA / CARIBE</span>
-            </div>
           </div>
         </div>
 
