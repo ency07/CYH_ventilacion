@@ -23,12 +23,12 @@ import Link from "next/link";
 const STAGES = [
   { id: "nuevo", name: "Nuevo Lead", bg: "bg-bg-secondary", border: "border-border-subtle", text: "text-text-secondary", prob: 10 },
   { id: "contacto", name: "Contacto Inicial", bg: "bg-bg-secondary", border: "border-border-subtle", text: "text-text-secondary", prob: 20 },
-  { id: "reunion", name: "Reunión Agendada", bg: "bg-bg-secondary", border: "border-border-subtle", text: "text-text-secondary", prob: 30 },
-  { id: "diagnostico", name: "Diagnóstico", bg: "bg-bg-secondary", border: "border-border-subtle", text: "text-text-secondary", prob: 40 },
-  { id: "propuesta_prep", name: "Prop. en Prep.", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", prob: 50 },
-  { id: "propuesta_entregada", name: "Prop. Entregada", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", prob: 60 },
+  { id: "diagnostico", name: "Diagnóstico Realizado", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", prob: 40 },
+  { id: "reunion", name: "Reunión Técnica", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", prob: 50 },
+  { id: "propuesta_entregada", name: "Propuesta Enviada", bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", prob: 70 },
   { id: "negociacion", name: "Negociación", bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", prob: 80 },
-  { id: "ganado", name: "Proy. Ganado", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", prob: 100 },
+  { id: "ganado", name: "Ganado", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", prob: 100 },
+  { id: "perdido", name: "Perdido", bg: "bg-red-50", border: "border-red-200", text: "text-red-700", prob: 0 },
 ];
 
 export default function CrmDashboardPage() {
