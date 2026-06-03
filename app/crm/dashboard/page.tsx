@@ -180,8 +180,6 @@ export default async function DashboardGerencialPage() {
           </div>
         </div>
 
-        </div>
-
         {/* Breakdown de Leads */}
         <div className="bg-bg-primary p-6 rounded-md border border-border-subtle shadow-sm flex flex-col">
           <h2 className="text-sm font-bold text-text-primary uppercase tracking-wide flex items-center gap-2 mb-6">

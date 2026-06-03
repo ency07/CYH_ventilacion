@@ -144,17 +144,17 @@ export default function Lead360Page() {
                 <div className="text-xs text-text-muted text-center pt-10">No hay tareas programadas.</div>
               ) : (
                 sortedTasks.map((task: any) => (
-                  <div key={task.id} className={\`flex items-start gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group transition-colors \${task.status === 'completado' ? 'opacity-60' : 'hover:border-accent-cyan/50 cursor-pointer'}\`}>
+                  <div key={task.id} className={`flex items-start gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group transition-colors ${task.status === 'completado' ? 'opacity-60' : 'hover:border-accent-cyan/50 cursor-pointer'}`}>
                     {task.status === 'completado' ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
                     ) : (
                       <Circle className="w-4 h-4 text-text-muted mt-0.5 group-hover:text-accent-cyan" />
                     )}
                     <div className="flex-1">
-                      <h4 className={\`text-xs font-bold \${task.status === 'completado' ? 'text-text-secondary line-through' : 'text-text-primary'}\`}>{task.taskType}</h4>
+                      <h4 className={`text-xs font-bold ${task.status === 'completado' ? 'text-text-secondary line-through' : 'text-text-primary'}`}>{task.taskType}</h4>
                       {task.notes && <p className="text-[10px] text-text-secondary mt-1">{task.notes}</p>}
                       <div className="flex items-center gap-3 mt-2 text-[10px] font-semibold">
-                        <span className={\`flex items-center gap-1 \${task.status === 'completado' ? 'text-text-muted' : 'text-accent-cyan'}\`}><Clock className="w-3 h-3"/> {new Date(task.dueDate).toLocaleString()}</span>
+                        <span className={`flex items-center gap-1 ${task.status === 'completado' ? 'text-text-muted' : 'text-accent-cyan'}`}><Clock className="w-3 h-3"/> {new Date(task.dueDate).toLocaleString()}</span>
                         <span className="text-text-muted">Resp: {task.assignedTo}</span>
                       </div>
                     </div>
