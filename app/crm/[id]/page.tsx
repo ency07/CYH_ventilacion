@@ -40,6 +40,17 @@ export default function Lead360Page() {
     </div>
   );
 
+  const tasks = lead.crmTasks || [];
+  const activities = lead.crmActivityLogs || [];
+  // Sort activities newest first
+  const sortedActivities = [...activities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Sort tasks pending first, then by date
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.status === 'pendiente' && b.status === 'completado') return -1;
+    if (a.status === 'completado' && b.status === 'pendiente') return 1;
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  });
+
   return (
     <div className="flex flex-col lg:flex-row h-full min-h-[calc(100vh-5rem)] bg-bg-secondary font-sans">
       
@@ -121,7 +132,7 @@ export default function Lead360Page() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Gestor de Tareas (Mock) */}
+          {/* Gestor de Tareas */}
           <section className="bg-bg-primary border border-border-subtle rounded-md p-5 shadow-sm flex flex-col h-[500px]">
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle2 className="w-5 h-5 text-accent-cyan" />
@@ -129,33 +140,31 @@ export default function Lead360Page() {
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border-subtle">
-              {/* Tarea 1 */}
-              <div className="flex items-start gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors cursor-pointer">
-                <Circle className="w-4 h-4 text-text-muted mt-0.5 group-hover:text-accent-cyan" />
-                <div className="flex-1">
-                  <h4 className="text-xs font-bold text-text-primary">Llamar cliente para validar viabilidad</h4>
-                  <p className="text-[10px] text-text-secondary mt-1">Preguntar por el estado del presupuesto 2026.</p>
-                  <div className="flex items-center gap-3 mt-2 text-[10px] font-semibold">
-                    <span className="text-red-500 flex items-center gap-1"><Clock className="w-3 h-3"/> Hoy 4:00 PM</span>
-                    <span className="text-text-muted">Resp: Admin</span>
+              {sortedTasks.length === 0 ? (
+                <div className="text-xs text-text-muted text-center pt-10">No hay tareas programadas.</div>
+              ) : (
+                sortedTasks.map((task: any) => (
+                  <div key={task.id} className={\`flex items-start gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group transition-colors \${task.status === 'completado' ? 'opacity-60' : 'hover:border-accent-cyan/50 cursor-pointer'}\`}>
+                    {task.status === 'completado' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-text-muted mt-0.5 group-hover:text-accent-cyan" />
+                    )}
+                    <div className="flex-1">
+                      <h4 className={\`text-xs font-bold \${task.status === 'completado' ? 'text-text-secondary line-through' : 'text-text-primary'}\`}>{task.taskType}</h4>
+                      {task.notes && <p className="text-[10px] text-text-secondary mt-1">{task.notes}</p>}
+                      <div className="flex items-center gap-3 mt-2 text-[10px] font-semibold">
+                        <span className={\`flex items-center gap-1 \${task.status === 'completado' ? 'text-text-muted' : 'text-accent-cyan'}\`}><Clock className="w-3 h-3"/> {new Date(task.dueDate).toLocaleString()}</span>
+                        <span className="text-text-muted">Resp: {task.assignedTo}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              
-              {/* Tarea 2 */}
-              <div className="flex items-start gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md opacity-60">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="text-xs font-bold text-text-secondary line-through">Enviar cotización técnica PDF</h4>
-                  <div className="flex items-center gap-3 mt-2 text-[10px] font-semibold">
-                    <span className="text-text-muted">Hace 2 días</span>
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </section>
 
-          {/* Timeline Comercial (Mock) */}
+          {/* Timeline Comercial */}
           <section className="bg-bg-primary border border-border-subtle rounded-md p-5 shadow-sm flex flex-col h-[500px]">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-text-muted" />
@@ -165,28 +174,37 @@ export default function Lead360Page() {
             <div className="flex-1 overflow-y-auto pr-2 relative scrollbar-thin scrollbar-thumb-border-subtle pl-2">
               <div className="absolute left-[13px] top-2 bottom-0 w-px bg-border-subtle"></div>
               
-              <div className="relative pl-6 pb-6">
-                <div className="absolute left-[-3px] top-1 w-2.5 h-2.5 rounded-full bg-accent-cyan border-2 border-bg-primary ring-2 ring-accent-cyan/20"></div>
-                <h4 className="text-xs font-bold text-text-primary">Llamada Realizada</h4>
-                <p className="text-[10px] text-text-muted mb-1">Hoy 10:30 AM</p>
-                <p className="text-[11px] text-text-secondary">El cliente indica que el proyecto de extracción está aprobado por gerencia técnica.</p>
-              </div>
-
-              <div className="relative pl-6 pb-6">
-                <div className="absolute left-[-3px] top-1 w-2.5 h-2.5 rounded-full bg-border-medium border-2 border-bg-primary"></div>
-                <h4 className="text-xs font-bold text-text-primary">Cotización PDF Generada</h4>
-                <p className="text-[10px] text-text-muted mb-1">Hace 2 días - 11:15 AM</p>
-                <div className="mt-2 flex items-center gap-2 p-2 bg-bg-secondary border border-border-subtle rounded-md w-fit">
-                  <FileText className="w-4 h-4 text-blue-500" />
-                  <span className="text-[10px] font-medium">CYH_COT_8992.pdf</span>
+              {sortedActivities.length === 0 ? (
+                <div className="relative pl-6 pb-6 pt-2">
+                  <div className="absolute left-[-3px] top-3 w-2.5 h-2.5 rounded-full bg-border-medium border-2 border-bg-primary"></div>
+                  <h4 className="text-xs font-bold text-text-primary">Lead Creado</h4>
+                  <p className="text-[10px] text-text-muted mb-1">{new Date(lead.createdAt).toLocaleString()}</p>
                 </div>
-              </div>
-              
-              <div className="relative pl-6">
-                <div className="absolute left-[-3px] top-1 w-2.5 h-2.5 rounded-full bg-border-medium border-2 border-bg-primary"></div>
-                <h4 className="text-xs font-bold text-text-primary">Lead Creado (Cotizador Web)</h4>
-                <p className="text-[10px] text-text-muted mb-1">{new Date(lead.createdAt).toLocaleString()}</p>
-              </div>
+              ) : (
+                sortedActivities.map((act: any, idx: number) => (
+                  <div key={act.id} className="relative pl-6 pb-6">
+                    <div className={\`absolute left-[-3px] top-1 w-2.5 h-2.5 rounded-full border-2 border-bg-primary \${idx === 0 ? 'bg-accent-cyan ring-2 ring-accent-cyan/20' : 'bg-border-medium'}\`}></div>
+                    <h4 className="text-xs font-bold text-text-primary capitalize">{act.activityType.replace(/_/g, ' ')}</h4>
+                    <p className="text-[10px] text-text-muted mb-1">{new Date(act.createdAt).toLocaleString()}</p>
+                    <p className="text-[11px] text-text-secondary">{act.description}</p>
+                    {act.activityType === 'report_generated' && (
+                      <div className="mt-2 flex items-center gap-2 p-2 bg-bg-secondary border border-border-subtle rounded-md w-fit">
+                        <FileText className="w-4 h-4 text-blue-500" />
+                        <span className="text-[10px] font-medium">Diagnostico.pdf</span>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+
+              {/* Ensure "Lead Creado" is always at the bottom if activities exist */}
+              {sortedActivities.length > 0 && (
+                <div className="relative pl-6">
+                  <div className="absolute left-[-3px] top-1 w-2.5 h-2.5 rounded-full bg-border-medium border-2 border-bg-primary"></div>
+                  <h4 className="text-xs font-bold text-text-primary">Lead Creado</h4>
+                  <p className="text-[10px] text-text-muted mb-1">{new Date(lead.createdAt).toLocaleString()}</p>
+                </div>
+              )}
             </div>
           </section>
         </div>

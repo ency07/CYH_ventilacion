@@ -116,7 +116,14 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
 
 export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> {
   try {
-    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    const lead = await db.query.leads.findFirst({
+      where: eq(leads.id, id),
+      with: {
+        crmTasks: true,
+        crmActivityLogs: true,
+      }
+    });
+    
     if (!lead) {
       return { success: false, error: "Lead no encontrado." };
     }
