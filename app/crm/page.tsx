@@ -275,43 +275,43 @@ export default function CrmDashboardPage() {
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
-                className={`w-[340px] flex-shrink-0 bg-bg-tertiary border rounded-md flex flex-col transition-all ${
+                className={`w-[260px] 2xl:w-[280px] flex-shrink-0 bg-bg-tertiary border rounded-md flex flex-col transition-all ${
                   isDraggedOver ? "border-accent-cyan/50 bg-accent-cyan/5" : "border-border-subtle"
                 }`}
               >
                 {/* Column Header */}
-                <div className={`p-4 border-b ${stage.border} ${stage.bg} rounded-t-md flex flex-col gap-1`}>
+                <div className={`p-3 border-b ${stage.border} ${stage.bg} rounded-t-md flex flex-col gap-0.5`}>
                   <div className="flex justify-between items-center">
-                    <h3 className={`text-sm font-bold ${stage.text} tracking-wide uppercase`}>{stage.name}</h3>
+                    <h3 className={`text-xs font-bold ${stage.text} tracking-wide uppercase truncate pr-2`}>{stage.name}</h3>
                     <span className="text-xs font-semibold px-2 py-1 bg-bg-primary rounded-md border border-border-subtle text-text-secondary flex-shrink-0 shadow-sm">
                       {stageLeads.length}
                     </span>
                   </div>
-                  <p className="text-xs font-medium text-text-muted">
+                  <p className="text-[10px] font-medium text-text-muted">
                     ${(colValue / 1000000).toFixed(1)}M USD
                   </p>
                 </div>
 
                 {/* Cards Container */}
-                <div className="p-3 flex-1 overflow-y-auto space-y-3 max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-border-subtle">
+                <div className="p-2 flex-1 overflow-y-auto space-y-2 max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-border-subtle">
                   {stageLeads.map((lead) => (
                     <div
                       key={lead.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, lead.id)}
-                      className="bg-bg-primary border border-border-subtle p-4 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-border-medium cursor-grab active:cursor-grabbing transition-all group flex flex-col gap-3"
+                      className="bg-bg-primary border border-border-subtle p-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-border-medium cursor-grab active:cursor-grabbing transition-all group flex flex-col gap-2"
                     >
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex items-start gap-2 overflow-hidden">
-                          <div className="mt-0.5 p-1.5 bg-bg-secondary border border-border-subtle rounded-md flex-shrink-0">
-                            <BriefcaseBusiness className="w-4 h-4 text-text-muted" />
+                      <div className="flex justify-between items-start gap-1">
+                        <div className="flex items-start gap-1.5 overflow-hidden">
+                          <div className="mt-0.5 p-1 bg-bg-secondary border border-border-subtle rounded-md flex-shrink-0">
+                            <BriefcaseBusiness className="w-3.5 h-3.5 text-text-muted" />
                           </div>
-                          <span className="text-sm font-bold text-text-primary tracking-wide leading-tight line-clamp-2" title={lead.companyName}>
+                          <span className="text-xs font-bold text-text-primary tracking-wide leading-tight line-clamp-2" title={lead.companyName}>
                             {lead.companyName}
                           </span>
                         </div>
                         
-                        <span className={`text-[10px] px-2 py-1 rounded-sm font-bold tracking-wider uppercase whitespace-nowrap border ${
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-bold tracking-wider uppercase whitespace-nowrap border ${
                           lead.riskLevel === "HOT" ? "bg-red-50 text-red-700 border-red-200" :
                           lead.riskLevel === "WARM" ? "bg-amber-50 text-amber-700 border-amber-200" :
                           lead.riskLevel === "SPAM" ? "bg-bg-tertiary text-text-muted border-border-subtle" :
@@ -333,30 +333,30 @@ export default function CrmDashboardPage() {
                         </p>
                       </div>
 
-                      <div className="bg-bg-secondary rounded-md px-3 py-2 space-y-1 border border-border-subtle/50">
-                        <p className="text-xs text-text-secondary flex justify-between">
+                      <div className="bg-bg-secondary rounded-md px-2 py-1.5 space-y-0.5 border border-border-subtle/50">
+                        <p className="text-[10px] text-text-secondary flex justify-between">
                           <span className="text-text-muted">Servicio:</span>
-                          <span className="capitalize font-medium truncate max-w-[120px]">{lead.serviceType}</span>
+                          <span className="capitalize font-medium truncate max-w-[100px]">{lead.serviceType}</span>
                         </p>
-                        <p className="text-xs text-text-secondary flex justify-between">
+                        <p className="text-[10px] text-text-secondary flex justify-between">
                           <span className="text-text-muted">Valor:</span>
                           <span className="font-bold text-text-primary">${((lead.estimatedBudgetMax || 0) / 1000000).toFixed(1)}M</span>
                         </p>
-                        <p className="text-xs text-text-secondary flex justify-between">
+                        <p className="text-[10px] text-text-secondary flex justify-between">
                           <span className="text-text-muted">Asesor:</span>
-                          <span className={`truncate max-w-[120px] ${!lead.assignedTo ? "text-text-muted italic" : "font-medium text-text-secondary"}`}>
+                          <span className={`truncate max-w-[100px] ${!lead.assignedTo ? "text-text-muted italic" : "font-medium text-text-secondary"}`}>
                             {lead.assignedTo || "Sin asignar"}
                           </span>
                         </p>
                       </div>
 
-                      <div className="flex justify-between items-center pt-2 border-t border-border-subtle">
-                        <span className="text-[10px] text-text-muted font-mono">
+                      <div className="flex justify-between items-center pt-1.5 border-t border-border-subtle">
+                        <span className="text-[9px] text-text-muted font-mono">
                           {new Date(lead.createdAt).toLocaleDateString()}
                         </span>
                         <Link 
                           href={`/crm/${lead.id}`}
-                          className="text-xs font-bold text-accent-cyan hover:text-accent-cyan/80 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-[10px] font-bold text-accent-cyan hover:text-accent-cyan/80 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           ABRIR <ArrowRight className="w-3 h-3" />
                         </Link>
