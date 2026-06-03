@@ -46,11 +46,18 @@ export default function CrmLayout({
 
       {/* Sidebar */}
       <aside className={`fixed md:sticky top-20 left-0 z-50 h-[calc(100vh-5rem)] bg-bg-secondary border-r border-border-subtle transition-all duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-16'}`}>
-        <div className={`p-6 border-b border-border-subtle flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center p-4'}`}>
-          <div className="flex items-center gap-2 overflow-hidden">
+        <div className={`flex items-center border-b border-border-subtle h-16 ${sidebarOpen ? 'px-6 justify-between' : 'justify-center'}`}>
+          <div className={`flex items-center gap-2 overflow-hidden ${!sidebarOpen && 'hidden'}`}>
             <ShieldCheck className="h-6 w-6 text-accent-cyan flex-shrink-0" />
-            <span className={`font-mono text-sm font-bold tracking-widest text-text-primary uppercase transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden hidden md:block'}`}>CYH ADMIN</span>
+            <span className="font-mono text-sm font-bold tracking-widest text-text-primary uppercase whitespace-nowrap">CYH ADMIN</span>
           </div>
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)} 
+            className="p-1.5 rounded-md text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all flex-shrink-0 hidden md:block"
+            title={sidebarOpen ? "Colapsar menú" : "Expandir menú"}
+          >
+            <PanelLeft className="h-5 w-5" />
+          </button>
           <button className="md:hidden text-text-muted hover:text-text-primary flex-shrink-0" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
           </button>
@@ -65,31 +72,31 @@ export default function CrmLayout({
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 py-2.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                  sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                className={`flex items-center rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                  sidebarOpen ? 'gap-3 px-3 py-2.5 mx-0' : 'w-10 h-10 justify-center mx-auto'
                 } ${
                   isActive 
                     ? "bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20" 
-                    : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
+                    : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary border border-transparent"
                 }`}
                 title={!sidebarOpen ? item.name : undefined}
               >
-                <Icon className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? "text-accent-cyan" : "text-text-muted"}`} />
+                <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-accent-cyan" : "text-text-muted"}`} />
                 <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden hidden md:block'}`}>{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-border-subtle overflow-hidden">
+        <div className="p-4 border-t border-border-subtle overflow-hidden flex justify-center">
           <button 
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 py-2 rounded-md text-sm font-medium text-text-muted hover:bg-red-500/10 hover:text-red-500 transition-colors whitespace-nowrap ${
-              sidebarOpen ? 'px-3' : 'px-0 justify-center'
+            className={`flex items-center rounded-md text-sm font-medium text-text-muted hover:bg-red-500/10 hover:text-red-500 transition-colors whitespace-nowrap ${
+              sidebarOpen ? 'w-full gap-3 px-3 py-2' : 'w-10 h-10 justify-center'
             }`}
             title={!sidebarOpen ? "Cerrar Sesión" : undefined}
           >
-            <LogOut className="h-4.5 w-4.5 flex-shrink-0" /> 
+            <LogOut className="h-5 w-5 flex-shrink-0" /> 
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden hidden md:block'}`}>Cerrar Sesión</span>
           </button>
         </div>
@@ -98,11 +105,8 @@ export default function CrmLayout({
       {/* Main Content Area */}
       <main className={`flex-1 flex flex-col w-full relative transition-all duration-300 ${sidebarOpen ? 'md:w-[calc(100%-16rem)]' : 'md:w-[calc(100%-4rem)]'}`}>
         
-        <div className="hidden md:flex p-4 border-b border-border-subtle bg-bg-secondary items-center">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-md bg-bg-tertiary border border-border-subtle text-text-secondary hover:text-text-primary hover:border-border-medium transition-all shadow-sm">
-            <PanelLeft className="h-5 w-5" />
-          </button>
-          <span className="ml-3 font-mono text-sm font-bold tracking-widest text-text-primary uppercase">Pipeline Ejecutivo</span>
+        <div className="hidden md:flex p-4 border-b border-border-subtle bg-bg-secondary items-center h-16">
+          <span className="font-mono text-sm font-bold tracking-widest text-text-primary uppercase">Pipeline Ejecutivo</span>
         </div>
         <div className="md:hidden p-4 border-b border-border-subtle bg-bg-secondary flex items-center">
 
