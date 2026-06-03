@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   ShieldCheck, 
   ArrowRight, 
@@ -238,6 +238,28 @@ const SERVICES_DATA: ServiceDetail[] = [
 ];
 
 export default function ServiciosPage() {
+  const [activeSection, setActiveSection] = useState<string>("");
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: "-20% 0px -60% 0px" }
+    );
+
+    SERVICES_DATA.forEach((srv) => {
+      const el = document.getElementById(srv.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="bg-bg-primary min-h-screen text-text-primary pt-24 pb-16 relative">
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 space-y-12">
@@ -259,7 +281,7 @@ export default function ServiciosPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 items-start">
           
           {/* Left Anchor Navigation Panel */}
-          <div className="lg:sticky lg:top-24 space-y-4 font-mono text-[10px] uppercase tracking-widest lg:col-span-1">
+          <div className="lg:sticky lg:top-24 space-y-4 font-mono text-sm uppercase tracking-widest lg:col-span-1">
             <div className="border border-border-subtle bg-bg-secondary/30 p-4 rounded-sm">
               <span className="text-text-muted block mb-3 border-b border-border-subtle pb-1.5 font-bold">MENÚ DE CAPACIDADES:</span>
               <ul className="space-y-2 text-text-secondary font-semibold">
@@ -267,10 +289,14 @@ export default function ServiciosPage() {
                   <li key={srv.id}>
                     <a 
                       href={`#${srv.id}`} 
-                      className="hover:text-accent-cyan flex items-center justify-between group transition-colors"
+                      className={`flex items-center justify-between group transition-colors px-3 py-2 rounded-sm ${
+                        activeSection === srv.id 
+                          ? "bg-accent-cyan/10 text-accent-cyan font-bold border-l-2 border-accent-cyan" 
+                          : "hover:text-accent-cyan hover:bg-bg-secondary border-l-2 border-transparent"
+                      }`}
                     >
                       <span>{srv.id.replace("_", " ")}</span>
-                      <ChevronRight className="h-3 w-3 text-text-muted group-hover:text-accent-cyan group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight className={`h-4 w-4 transition-all ${activeSection === srv.id ? "text-accent-cyan translate-x-0.5" : "text-text-muted group-hover:text-accent-cyan group-hover:translate-x-0.5"}`} />
                     </a>
                   </li>
                 ))}
@@ -278,13 +304,13 @@ export default function ServiciosPage() {
             </div>
 
             <div className="border border-border-subtle bg-bg-secondary/30 p-4 rounded-sm space-y-4 text-center">
-              <span className="text-accent-cyan block font-bold">ASISTENCIA CARIBE</span>
-              <p className="text-[9px] text-text-secondary normal-case leading-relaxed">
+              <span className="text-accent-cyan block font-bold text-sm">ASISTENCIA CARIBE</span>
+              <p className="text-sm text-text-secondary normal-case leading-relaxed">
                 Ingenieros residentes en Barranquilla con disponibilidad inmediata de campo para puertos, cementeras y data centers.
               </p>
               <Link 
                 href="/cotizador"
-                className="w-full inline-block py-2 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-bold tracking-wider uppercase rounded-sm transition-all"
+                className="w-full inline-block py-2 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-bold tracking-wider uppercase rounded-sm transition-all text-sm"
               >
                 COTIZAR REQUERIMIENTO
               </Link>
@@ -308,7 +334,7 @@ export default function ServiciosPage() {
                     {service.icon}
                   </div>
                   <div className="space-y-1">
-                    <span className="font-mono text-[9px] text-text-muted tracking-widest font-bold block">
+                    <span className="font-mono text-xs text-text-muted tracking-widest font-bold block">
                       {service.subtitle}
                     </span>
                     <h2 className="font-display text-2xl md:text-3xl tracking-wide uppercase text-text-primary">
@@ -326,7 +352,7 @@ export default function ServiciosPage() {
                   
                   {/* Scope */}
                   <div className="space-y-2">
-                    <h4 className="font-mono text-[10px] text-accent-cyan tracking-widest uppercase font-bold flex items-center gap-1.5">
+                    <h4 className="font-mono text-sm text-accent-cyan tracking-widest uppercase font-bold flex items-center gap-1.5">
                       <span className="h-1 w-1 bg-accent-cyan rounded-full"></span> Alcance Técnico
                     </h4>
                     <ul className="space-y-1.5 list-disc pl-4 text-text-secondary">
@@ -338,7 +364,7 @@ export default function ServiciosPage() {
 
                   {/* Proceso */}
                   <div className="space-y-2">
-                    <h4 className="font-mono text-[10px] text-accent-cyan tracking-widest uppercase font-bold flex items-center gap-1.5">
+                    <h4 className="font-mono text-sm text-accent-cyan tracking-widest uppercase font-bold flex items-center gap-1.5">
                       <span className="h-1 w-1 bg-accent-cyan rounded-full"></span> Proceso de Ingeniería
                     </h4>
                     <ul className="space-y-1.5 text-text-secondary">
@@ -351,7 +377,7 @@ export default function ServiciosPage() {
                 </div>
 
                 {/* Foot Technical Metadata block */}
-                <div className="pt-6 border-t border-border-subtle/50 grid grid-cols-1 md:grid-cols-3 gap-6 font-mono text-[9px] text-text-secondary">
+                <div className="pt-6 border-t border-border-subtle/50 grid grid-cols-1 md:grid-cols-3 gap-6 font-mono text-sm text-text-secondary">
                   <div className="space-y-1 border-r border-border-subtle/30 pr-4">
                     <span className="text-text-muted uppercase block">INDUSTRIAS OBJETIVO:</span>
                     <span className="text-text-primary font-bold block">{service.industrias[0]}</span>
@@ -368,13 +394,13 @@ export default function ServiciosPage() {
 
                 {/* Engineering Deliverables Block */}
                 <div className="bg-bg-primary/40 border border-border-subtle/50 p-4 rounded-sm space-y-2">
-                  <h4 className="font-mono text-[9px] text-text-primary uppercase tracking-wider font-bold">
+                  <h4 className="font-mono text-sm text-text-primary uppercase tracking-wider font-bold">
                     Entregables de Ingeniería del Servicio:
                   </h4>
-                  <ul className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-[9px] text-text-secondary">
+                  <ul className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-sm text-text-secondary mt-3">
                     {service.entregables.map((ent, idx) => (
-                      <li key={idx} className="flex items-center gap-1.5">
-                        <span className="text-success">[✓]</span> {ent}
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-success mt-0.5">[✓]</span> <span>{ent}</span>
                       </li>
                     ))}
                   </ul>
@@ -384,9 +410,9 @@ export default function ServiciosPage() {
                 <div className="flex justify-end pt-2">
                   <Link 
                     href={`/cotizador?servicio=${service.id === 'balanceo' || service.id === 'alineacion' || service.id === 'predictivo' ? 'mantenimiento' : service.id === 'automatizacion' ? 'venta' : service.id}`}
-                    className="px-5 py-2.5 bg-bg-tertiary hover:bg-bg-secondary border border-border-subtle hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-[10px] font-bold tracking-wider uppercase rounded-sm transition-all flex items-center gap-1.5"
+                    className="px-5 py-2.5 bg-bg-tertiary hover:bg-bg-secondary border border-border-subtle hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-sm font-bold tracking-wider uppercase rounded-sm transition-all flex items-center gap-1.5"
                   >
-                    Cotizar este Servicio <ArrowRight className="h-3.5 w-3.5" />
+                    Cotizar este Servicio <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
 
