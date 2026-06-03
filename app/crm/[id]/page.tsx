@@ -183,7 +183,7 @@ export default function Lead360Page() {
               ) : (
                 sortedActivities.map((act: any, idx: number) => (
                   <div key={act.id} className="relative pl-6 pb-6">
-                    <div className={\`absolute left-[-3px] top-1 w-2.5 h-2.5 rounded-full border-2 border-bg-primary \${idx === 0 ? 'bg-accent-cyan ring-2 ring-accent-cyan/20' : 'bg-border-medium'}\`}></div>
+                    <div className={`absolute left-[-3px] top-1 w-2.5 h-2.5 rounded-full border-2 border-bg-primary ${idx === 0 ? 'bg-accent-cyan ring-2 ring-accent-cyan/20' : 'bg-border-medium'}`}></div>
                     <h4 className="text-xs font-bold text-text-primary capitalize">{act.activityType.replace(/_/g, ' ')}</h4>
                     <p className="text-[10px] text-text-muted mb-1">{new Date(act.createdAt).toLocaleString()}</p>
                     <p className="text-[11px] text-text-secondary">{act.description}</p>
