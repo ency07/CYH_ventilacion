@@ -262,7 +262,7 @@ export default function CatalogoPage() {
         {/* Hero Header */}
         <div className="pt-8 pb-4">
           <div className="max-w-4xl space-y-6">
-            <h1 className="font-display text-5xl md:text-7xl tracking-wide uppercase leading-tight">
+            <h1 className="font-display text-5xl md:text-7xl tracking-wide  leading-tight">
               Catálogo de Equipos y <br />
               <span className="text-accent-cyan">Sistemas de Flujo</span>
             </h1>
@@ -336,7 +336,7 @@ export default function CatalogoPage() {
                           </span>
                         )}
                       </div>
-                      <h3 className="font-display text-2xl md:text-3xl tracking-wide uppercase">
+                      <h3 className="font-sans font-bold text-2xl md:text-3xl  ">
                         {product.name}
                       </h3>
                       <p className="text-base text-text-secondary leading-relaxed">
@@ -468,7 +468,7 @@ export default function CatalogoPage() {
             ) : (
               <div className="border border-dashed border-border-subtle bg-bg-secondary/10 p-12 text-center rounded-sm space-y-3 font-mono">
                 <div className="text-text-muted text-3xl">⚠️</div>
-                <h4 className="text-sm font-semibold uppercase text-text-primary">No se encontraron resultados</h4>
+                <h4 className="text-sm font-semibold text-text-primary">No se encontraron resultados</h4>
                 <p className="text-base text-text-secondary max-w-sm mx-auto leading-relaxed">
                   No registramos especificaciones que coincidan con la búsqueda "{searchQuery}" o la categoría seleccionada. Intente con otros parámetros.
                 </p>
@@ -482,7 +482,7 @@ export default function CatalogoPage() {
           <div className="absolute top-0 right-0 w-24 h-24 bg-accent-cyan/5 rounded-full blur-xl pointer-events-none" />
           
           <div className="space-y-2 max-w-xl mx-auto">
-            <h3 className="font-display text-2xl tracking-wide uppercase text-text-primary">
+            <h3 className="font-sans font-bold text-2xl  text-text-primary">
               ¿Requiere una especificación especial?
             </h3>
             <p className="text-base text-text-secondary leading-relaxed">

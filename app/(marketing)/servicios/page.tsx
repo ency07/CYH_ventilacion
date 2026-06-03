@@ -267,7 +267,7 @@ export default function ServiciosPage() {
         {/* Hero Header */}
         <div className="pt-8 pb-4">
           <div className="max-w-4xl space-y-6">
-            <h1 className="font-display text-5xl md:text-7xl tracking-wide uppercase leading-tight">
+            <h1 className="font-display text-5xl md:text-7xl tracking-wide  leading-tight">
               Ingeniería y Servicios <br className="hidden md:inline" />
               de <span className="text-accent-cyan">Flujo de Aire</span>
             </h1>
@@ -291,7 +291,7 @@ export default function ServiciosPage() {
                       href={`#${srv.id}`} 
                       className={`flex items-center justify-between group transition-colors px-2 py-1.5 rounded-sm ${
                         activeSection === srv.id 
-                          ? "bg-accent-cyan/10 text-accent-cyan font-bold border-l-2 border-accent-cyan" 
+                          ? "bg-bg-secondary/50 text-accent-cyan font-bold border-l-2 border-accent-cyan" 
                           : "hover:text-accent-cyan hover:bg-bg-secondary border-l-2 border-transparent"
                       }`}
                     >
@@ -337,7 +337,7 @@ export default function ServiciosPage() {
                     <span className="font-mono text-xs text-text-muted tracking-widest font-bold block">
                       {service.subtitle}
                     </span>
-                    <h2 className="font-display text-2xl md:text-3xl tracking-wide uppercase text-text-primary">
+                    <h2 className="font-sans font-bold text-2xl md:text-3xl   text-text-primary">
                       {service.title}
                     </h2>
                   </div>
@@ -352,7 +352,7 @@ export default function ServiciosPage() {
                   
                   {/* Scope */}
                   <div className="space-y-2">
-                    <h4 className="font-mono text-sm text-accent-cyan tracking-widest uppercase font-bold flex items-center gap-1.5">
+                    <h4 className="font-mono text-sm text-accent-cyan st  font-bold flex items-center gap-1.5">
                       <span className="h-1 w-1 bg-accent-cyan rounded-full"></span> Alcance Técnico
                     </h4>
                     <ul className="space-y-1.5 list-disc pl-4 text-text-secondary">
@@ -364,7 +364,7 @@ export default function ServiciosPage() {
 
                   {/* Proceso */}
                   <div className="space-y-2">
-                    <h4 className="font-mono text-sm text-accent-cyan tracking-widest uppercase font-bold flex items-center gap-1.5">
+                    <h4 className="font-mono text-sm text-accent-cyan st  font-bold flex items-center gap-1.5">
                       <span className="h-1 w-1 bg-accent-cyan rounded-full"></span> Proceso de Ingeniería
                     </h4>
                     <ul className="space-y-1.5 text-text-secondary">
@@ -394,7 +394,7 @@ export default function ServiciosPage() {
 
                 {/* Engineering Deliverables Block */}
                 <div className="bg-bg-primary/40 border border-border-subtle/50 p-4 rounded-sm space-y-2">
-                  <h4 className="font-mono text-sm text-text-primary uppercase tracking-wider font-bold">
+                  <h4 className="font-mono text-sm text-text-primary  r font-bold">
                     Entregables de Ingeniería del Servicio:
                   </h4>
                   <ul className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-sm text-text-secondary mt-3">
@@ -410,7 +410,7 @@ export default function ServiciosPage() {
                 <div className="flex justify-end pt-2">
                   <Link 
                     href={`/cotizador?servicio=${service.id === 'balanceo' || service.id === 'alineacion' || service.id === 'predictivo' ? 'mantenimiento' : service.id === 'automatizacion' ? 'venta' : service.id}`}
-                    className="px-5 py-2.5 bg-bg-tertiary hover:bg-bg-secondary border border-border-subtle hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-sm font-bold tracking-wider uppercase rounded-sm transition-all flex items-center gap-1.5"
+                    className="px-6 py-2.5 bg-bg-tertiary hover:bg-bg-secondary border border-border-subtle hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-sm font-bold tracking-wider uppercase rounded-sm transition-all flex items-center gap-1.5"
                   >
                     Cotizar este Servicio <ArrowRight className="h-4 w-4" />
                   </Link>

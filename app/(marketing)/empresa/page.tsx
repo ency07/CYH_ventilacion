@@ -55,7 +55,7 @@ export default function EmpresaPage() {
         {/* Hero Header */}
         <div className="pt-8 pb-4">
           <div className="max-w-4xl space-y-6">
-            <h1 className="font-display text-5xl md:text-7xl tracking-wide uppercase leading-tight">
+            <h1 className="font-display text-5xl md:text-7xl tracking-wide  leading-tight">
               Ingeniería de Flujo con <br />
               <span className="text-accent-cyan">Confiabilidad Absoluta</span>
             </h1>
@@ -72,7 +72,7 @@ export default function EmpresaPage() {
           <div className="border border-border-subtle bg-bg-secondary/10 p-8 rounded-sm space-y-4">
             <div className="flex items-center gap-2.5 text-accent-cyan">
               <Target className="h-6 w-6" />
-              <h3 className="font-display text-2xl tracking-wider uppercase">Nuestra Misión B2B</h3>
+              <h3 className="font-sans font-bold text-2xl r ">Nuestra Misión B2B</h3>
             </div>
             <p className="text-sm text-text-secondary leading-relaxed">
               Asegurar la continuidad operativa de la gran industria del Caribe y el continente latinoamericano a través del suministro, fabricación y diagnóstico predictivo de unidades de flujo de aire de alta capacidad, optimizando el consumo energético y garantizando la total seguridad laboral y ambiental en entornos críticos.
@@ -83,7 +83,7 @@ export default function EmpresaPage() {
           <div className="border border-border-subtle bg-bg-secondary/10 p-8 rounded-sm space-y-4">
             <div className="flex items-center gap-2.5 text-accent-cyan">
               <Award className="h-6 w-6" />
-              <h3 className="font-display text-2xl tracking-wider uppercase">Visión de Ingeniería</h3>
+              <h3 className="font-sans font-bold text-2xl r ">Visión de Ingeniería</h3>
             </div>
             <p className="text-sm text-text-secondary leading-relaxed">
               Consolidarnos para el 2030 como el principal fabricante y comisionador tecnológico de sistemas de ventilación forzada e inyección en el norte de Sudamérica y Centroamérica, liderando la transición hacia la ventilación inteligente basada en telemetría de vibración computacional en la nube.
@@ -136,7 +136,7 @@ export default function EmpresaPage() {
             {activeTab === "capacidades" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
                 <div className="space-y-4">
-                  <h4 className="font-display text-xl tracking-wide uppercase text-text-primary">
+                  <h4 className="font-sans font-bold text-xl  text-text-primary">
                     Taller Mecánico en Vía 40, Barranquilla
                   </h4>
                   <p className="text-base text-text-secondary leading-relaxed">
@@ -164,7 +164,7 @@ export default function EmpresaPage() {
             {activeTab === "certificaciones" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
                 <div className="space-y-4">
-                  <h4 className="font-display text-xl tracking-wide uppercase text-text-primary">
+                  <h4 className="font-sans font-bold text-xl  text-text-primary">
                     Garantía de Calidad y Cumplimiento Normativo
                   </h4>
                   <p className="text-base text-text-secondary leading-relaxed">
@@ -199,7 +199,7 @@ export default function EmpresaPage() {
             {activeTab === "hseq" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
                 <div className="space-y-4">
-                  <h4 className="font-display text-xl tracking-wide uppercase text-text-primary">
+                  <h4 className="font-sans font-bold text-xl  text-text-primary">
                     Cultura de Cero Accidentes HSEQ
                   </h4>
                   <p className="text-base text-text-secondary leading-relaxed">
@@ -228,7 +228,7 @@ export default function EmpresaPage() {
         <div className="space-y-8">
           <div className="space-y-2 text-center max-w-xl mx-auto">
             <span className="font-mono text-[10px] text-accent-cyan tracking-widest uppercase font-bold">HISTORIA COHERENTE</span>
-            <h3 className="font-display text-3xl tracking-wide uppercase">Trayectoria del Grupo</h3>
+            <h3 className="font-sans font-bold text-3xl  ">Trayectoria del Grupo</h3>
             <p className="text-base text-text-secondary leading-relaxed">
               Consistencia absoluta y madurez B2B a lo largo de una década de ingeniería de flujo y mantenimiento predictivo en Colombia.
             </p>
@@ -246,7 +246,7 @@ export default function EmpresaPage() {
                   <span className="font-mono text-sm font-bold text-accent-cyan bg-accent-cyan-soft border border-accent-cyan/20 px-2 py-0.5 rounded-sm">
                     {item.year}
                   </span>
-                  <h4 className="font-display text-xl uppercase tracking-wider text-text-primary">
+                  <h4 className="font-sans font-bold text-xl  r text-text-primary">
                     {item.title}
                   </h4>
                   <p className="text-base text-text-secondary leading-relaxed max-w-xl">
@@ -260,7 +260,7 @@ export default function EmpresaPage() {
 
         {/* Dynamic bottom CTA block */}
         <div className="border border-border-subtle bg-bg-secondary/20 p-8 rounded-sm text-center space-y-4">
-          <h3 className="font-display text-2xl tracking-wide uppercase text-text-primary">
+          <h3 className="font-sans font-bold text-2xl  text-text-primary">
             ¿Requiere consultar nuestra capacidad instalada?
           </h3>
           <p className="text-base text-text-secondary leading-relaxed max-w-xl mx-auto">
@@ -269,7 +269,7 @@ export default function EmpresaPage() {
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <Link 
               href="/contacto"
-              className="px-5 py-2.5 border border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-[10px] tracking-wider uppercase rounded-sm transition-colors"
+              className="px-6 py-2.5 border border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-[10px] tracking-wider uppercase rounded-sm transition-colors"
             >
               Contactar Oficina B2B
             </Link>

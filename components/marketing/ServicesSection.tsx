@@ -68,7 +68,7 @@ export default function ServicesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
-                className="p-7 md:p-8 rounded-md border border-border-subtle bg-bg-secondary hover:border-border-medium flex flex-col justify-between min-h-[330px] w-full transition-all duration-300 shadow-sm hover:shadow-md"
+                className="p-7 md:p-8 rounded-md border border-border-subtle bg-bg-secondary hover:border-border-medium flex flex-col justify-between min-h-[330px] w-full transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-0.5"
               >
                 <div className="space-y-6">
                   <div className="p-3 bg-bg-primary w-fit border border-border-subtle rounded-md">

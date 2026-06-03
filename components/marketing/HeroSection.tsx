@@ -43,7 +43,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-display text-6xl md:text-8xl tracking-wide text-text-primary leading-tight uppercase"
+            className="font-display text-6xl md:text-8xl tracking-wide text-text-primary leading-tight "
           >
             Especialistas en <br />
             <span className="text-accent-cyan">Ventilación Industrial</span>
@@ -68,7 +68,7 @@ export default function HeroSection() {
           >
             <Link
               href="/cotizador"
-              className="px-10 py-5 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-bold text-base tracking-wider uppercase rounded-md transition-all flex items-center justify-center gap-3 group"
+              className="px-8 py-3.5 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-bold text-base tracking-wider uppercase rounded-md transition-all flex items-center justify-center gap-3 group"
             >
               Solicitar Diagnóstico
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -76,7 +76,7 @@ export default function HeroSection() {
             
             <Link
               href="/contacto"
-              className="px-10 py-5 border-2 border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-bold text-base tracking-wider uppercase rounded-md transition-all bg-bg-secondary/20 hover:bg-bg-secondary/80 flex items-center justify-center gap-3"
+              className="px-8 py-3.5 border-2 border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-bold text-base tracking-wider uppercase rounded-md transition-all bg-bg-secondary/20 hover:bg-bg-secondary/80 flex items-center justify-center gap-3"
             >
               Hablar con Ingeniería
               <PhoneCall className="h-5 w-5" />

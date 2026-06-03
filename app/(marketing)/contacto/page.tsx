@@ -53,7 +53,7 @@ export default function ContactoPage() {
         {/* Hero Header */}
         <div className="pt-8 pb-4">
           <div className="max-w-4xl space-y-6">
-            <h1 className="font-display text-5xl md:text-7xl tracking-wide uppercase leading-tight">
+            <h1 className="font-display text-5xl md:text-7xl tracking-wide  leading-tight">
               Hable con un <br />
               <span className="text-accent-cyan">Ingeniero Especialista</span>
             </h1>

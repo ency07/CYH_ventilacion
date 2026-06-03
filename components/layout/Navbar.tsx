@@ -45,7 +45,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-background/88 backdrop-blur-xl border-b border-border-subtle h-16 transition-colors duration-300">
+    <header className="fixed top-0 left-0 w-full z-50 bg-background/90 backdrop-blur-2xl border-b border-border-subtle h-16 transition-colors duration-300">
       <div className="flex justify-between items-center w-full px-6 md:px-12 h-full max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-3 group">
           <span className="font-sans text-2xl font-bold tracking-tight text-text-primary group-hover:text-accent-cyan transition-colors">
@@ -82,7 +82,7 @@ export default function Navbar() {
           <ThemeToggle />
           <Link
             href="/cotizador"
-            className="px-5 py-2.5 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-semibold text-sm rounded-md transition-all flex items-center gap-2"
+            className="px-6 py-2.5 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-semibold text-sm rounded-md transition-all flex items-center gap-2"
           >
             Diagnostico
             <ArrowRight className="h-4 w-4" />

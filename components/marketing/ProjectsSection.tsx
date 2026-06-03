@@ -63,7 +63,7 @@ export default function ProjectsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.12 }}
-              className="overflow-hidden rounded-md border border-border-subtle bg-bg-primary shadow-sm hover:shadow-md transition-shadow"
+              className="overflow-hidden rounded-md border border-border-subtle bg-bg-primary shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-shadow"
             >
               <div
                 className="h-64 bg-cover bg-center"

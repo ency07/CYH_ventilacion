@@ -110,7 +110,7 @@ export default function ProyectosPage() {
         {/* Hero Header */}
         <div className="pt-8 pb-4">
           <div className="max-w-4xl space-y-6">
-            <h1 className="font-display text-5xl md:text-7xl tracking-wide uppercase leading-tight">
+            <h1 className="font-display text-5xl md:text-7xl tracking-wide  leading-tight">
               Casos de Éxito y <br className="hidden md:inline" />
               <span className="text-accent-cyan">Proyectos Clave</span>
             </h1>
@@ -133,7 +133,7 @@ export default function ProyectosPage() {
               {/* Photo Mockup (Left Column 4/12) */}
               <div className="lg:col-span-4 relative h-64 lg:h-auto rounded-sm overflow-hidden border border-border-subtle group">
                 <div 
-                  className="absolute inset-0 bg-cover bg-center grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+                  className="absolute inset-0 bg-cover bg-center grayscale group-hover:grayscale-0 group-hover:-translate-y-1 hover:shadow-lg transition-all duration-300 transition-all duration-500"
                   style={{ backgroundImage: `url('${proy.imagenUrl}')` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-bg-primary via-bg-primary/20 to-transparent opacity-80" />
@@ -155,7 +155,7 @@ export default function ProyectosPage() {
                       CUMPLIMIENTO: {proy.normas}
                     </span>
                   </div>
-                  <h3 className="font-display text-2xl md:text-3xl tracking-wide uppercase text-text-primary">
+                  <h3 className="font-sans font-bold text-2xl md:text-3xl  text-text-primary">
                     {proy.title}
                   </h3>
                 </div>
@@ -163,7 +163,7 @@ export default function ProyectosPage() {
                 {/* Problem vs Solution Split */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base leading-relaxed">
                   <div className="space-y-1.5 border-l border-border-subtle/80 pl-3">
-                    <h4 className="font-mono text-[9px] text-text-muted uppercase tracking-widest font-bold">
+                    <h4 className="font-mono text-[9px] text-text-muted  st font-bold">
                       [+] PROBLEMA TÉCNICO
                     </h4>
                     <p className="text-text-secondary">
@@ -171,7 +171,7 @@ export default function ProyectosPage() {
                     </p>
                   </div>
                   <div className="space-y-1.5 border-l border-accent-cyan/50 pl-3">
-                    <h4 className="font-mono text-[9px] text-accent-cyan uppercase tracking-widest font-bold">
+                    <h4 className="font-mono text-[9px] text-accent-cyan  st font-bold">
                       [+] SOLUCIÓN DE INGENIERÍA
                     </h4>
                     <p className="text-text-secondary">
@@ -216,7 +216,7 @@ export default function ProyectosPage() {
 
         {/* Dynamic bottom CTA block */}
         <div className="border border-accent-cyan/20 bg-bg-secondary/40 p-8 rounded-sm text-center relative overflow-hidden space-y-4">
-          <h3 className="font-display text-2xl tracking-wide uppercase text-text-primary">
+          <h3 className="font-sans font-bold text-2xl  text-text-primary">
             ¿Busca un comisionamiento similar para su planta?
           </h3>
           <p className="text-base text-text-secondary leading-relaxed max-w-xl mx-auto">
@@ -225,7 +225,7 @@ export default function ProyectosPage() {
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <Link 
               href="/contacto"
-              className="px-5 py-2.5 border border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-[10px] tracking-wider uppercase rounded-sm transition-colors"
+              className="px-6 py-2.5 border border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-mono text-[10px] tracking-wider uppercase rounded-sm transition-colors"
             >
               Agendar Visita en Sitio
             </Link>
