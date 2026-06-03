@@ -281,36 +281,36 @@ export default function ServiciosPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 items-start">
           
           {/* Left Anchor Navigation Panel */}
-          <div className="lg:sticky lg:top-24 space-y-4 font-mono text-sm uppercase tracking-widest lg:col-span-1">
-            <div className="border border-border-subtle bg-bg-secondary/30 p-4 rounded-sm">
-              <span className="text-text-muted block mb-3 border-b border-border-subtle pb-1.5 font-bold">MENÚ DE CAPACIDADES:</span>
-              <ul className="space-y-2 text-text-secondary font-semibold">
+          <div className="lg:sticky lg:top-24 space-y-4 font-mono text-xs uppercase tracking-widest lg:col-span-1">
+            <div className="border border-border-subtle bg-bg-secondary/30 p-4 rounded-sm flex flex-col max-h-[50vh]">
+              <span className="text-text-muted block mb-3 border-b border-border-subtle pb-1.5 font-bold shrink-0">MENÚ DE CAPACIDADES:</span>
+              <ul className="space-y-1 text-text-secondary font-semibold overflow-y-auto pr-1 custom-scrollbar">
                 {SERVICES_DATA.map((srv) => (
                   <li key={srv.id}>
                     <a 
                       href={`#${srv.id}`} 
-                      className={`flex items-center justify-between group transition-colors px-3 py-2 rounded-sm ${
+                      className={`flex items-center justify-between group transition-colors px-2 py-1.5 rounded-sm ${
                         activeSection === srv.id 
                           ? "bg-accent-cyan/10 text-accent-cyan font-bold border-l-2 border-accent-cyan" 
                           : "hover:text-accent-cyan hover:bg-bg-secondary border-l-2 border-transparent"
                       }`}
                     >
                       <span>{srv.id.replace("_", " ")}</span>
-                      <ChevronRight className={`h-4 w-4 transition-all ${activeSection === srv.id ? "text-accent-cyan translate-x-0.5" : "text-text-muted group-hover:text-accent-cyan group-hover:translate-x-0.5"}`} />
+                      <ChevronRight className={`h-3 w-3 transition-all shrink-0 ml-2 ${activeSection === srv.id ? "text-accent-cyan translate-x-0.5" : "text-text-muted group-hover:text-accent-cyan group-hover:translate-x-0.5"}`} />
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="border border-border-subtle bg-bg-secondary/30 p-4 rounded-sm space-y-4 text-center">
+            <div className="border border-border-subtle bg-bg-secondary/30 p-4 rounded-sm space-y-4 text-center shrink-0">
               <span className="text-accent-cyan block font-bold text-sm">ASISTENCIA CARIBE</span>
-              <p className="text-sm text-text-secondary normal-case leading-relaxed">
+              <p className="text-xs text-text-secondary normal-case leading-relaxed">
                 Ingenieros residentes en Barranquilla con disponibilidad inmediata de campo para puertos, cementeras y data centers.
               </p>
               <Link 
                 href="/cotizador"
-                className="w-full inline-block py-2 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-bold tracking-wider uppercase rounded-sm transition-all text-sm"
+                className="w-full inline-block py-2.5 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-bold tracking-wider uppercase rounded-sm transition-all text-xs"
               >
                 COTIZAR REQUERIMIENTO
               </Link>
