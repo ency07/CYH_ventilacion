@@ -73,7 +73,7 @@ export default function ServicesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="glass-panel p-8 rounded-sm border border-border-subtle bg-bg-secondary/20 hover:border-accent-cyan/30 hover:bg-bg-secondary/40 hover:shadow-[0_4px_24px_rgba(0,212,255,0.06)] flex flex-col justify-between min-h-[360px] w-full transition-all duration-300 animate-fadeIn cursor-pointer"
+                className="glass-panel p-8 rounded-sm border border-border-subtle bg-bg-secondary/20 hover:border-accent-cyan/30 hover:bg-bg-secondary/40 flex flex-col justify-between min-h-[360px] w-full transition-all duration-300 animate-fadeIn cursor-pointer"
               >
                 <div className="space-y-6">
                   <div className="p-3 bg-bg-secondary/60 w-fit border border-border-subtle rounded-sm group-hover/card:border-accent-cyan/30 group-hover/card:bg-bg-secondary transition-all">

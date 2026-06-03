@@ -1,10 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowRight, Activity } from "lucide-react";
+import { Menu, X, ArrowRight, Sun, Moon, BriefcaseBusiness } from "lucide-react";
+import { useTheme } from "next-themes";
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="w-8 h-8" />;
+  }
+
+  return (
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="p-2 rounded-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+      aria-label="Toggle Theme"
+    >
+      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+    </button>
+  );
+}
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -17,11 +41,11 @@ export default function Navbar() {
     { name: "Proyectos", path: "/proyectos" },
     { name: "Empresa", path: "/empresa" },
     { name: "Contacto", path: "/contacto" },
-    { name: "CRM", path: "/crm" },
+    { name: "CRM", path: "/crm", icon: <BriefcaseBusiness className="w-4 h-4 mr-1" /> },
   ];
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-[#050709]/80 backdrop-blur-xl border-b border-border-subtle h-16">
+    <header className="fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border-subtle h-16 transition-colors duration-300">
       <div className="flex justify-between items-center w-full px-6 md:px-12 h-full max-w-7xl mx-auto">
         
         {/* Brand Logo */}
@@ -39,10 +63,11 @@ export default function Navbar() {
               <Link
                 key={link.name}
                 href={link.path}
-                className={`text-sm font-medium tracking-wide transition-colors relative py-1 ${
+                className={`text-sm font-medium tracking-wide transition-colors relative py-1 flex items-center ${
                   isActive ? "text-accent-cyan font-semibold" : "text-text-secondary hover:text-text-primary"
                 }`}
               >
+                {link.icon}
                 {link.name}
                 {isActive && (
                   <motion.span
@@ -58,6 +83,7 @@ export default function Navbar() {
 
         {/* Desktop Utility / Call to Action */}
         <div className="hidden md:flex items-center gap-6">
+          <ThemeToggle />
           <Link
             href="/cotizador"
             className="px-5 py-2.5 bg-bg-secondary hover:bg-bg-tertiary border border-border-medium hover:border-accent-cyan/50 text-text-primary font-semibold text-xs tracking-wide uppercase rounded-sm transition-all flex items-center gap-2"
@@ -68,13 +94,16 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden text-text-secondary hover:text-text-primary p-2 focus:outline-none"
-          aria-label="Toggle navigation menu"
-        >
-          {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        <div className="md:hidden flex items-center gap-4">
+          <ThemeToggle />
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-text-secondary hover:text-text-primary p-2 focus:outline-none"
+            aria-label="Toggle navigation menu"
+          >
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
 
       </div>
 
@@ -86,7 +115,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-16 left-0 w-full bg-[#050709]/95 backdrop-blur-2xl border-b border-border-subtle md:hidden flex flex-col p-6 gap-6 z-40"
+            className="absolute top-16 left-0 w-full bg-background/95 backdrop-blur-2xl border-b border-border-subtle md:hidden flex flex-col p-6 gap-6 z-40"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
@@ -94,10 +123,11 @@ export default function Navbar() {
                   key={link.name}
                   href={link.path}
                   onClick={() => setIsOpen(false)}
-                  className={`text-base font-medium py-2 border-b border-border-subtle/30 ${
+                  className={`text-base font-medium py-2 border-b border-border-subtle/30 flex items-center ${
                     pathname === link.path ? "text-accent-cyan" : "text-text-secondary"
                   }`}
                 >
+                  {link.icon}
                   {link.name}
                 </Link>
               ))}

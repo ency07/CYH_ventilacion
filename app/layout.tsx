@@ -2,6 +2,7 @@ import { Inter, Bebas_Neue, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import ConditionalFooter from '@/components/layout/ConditionalFooter';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,50 +52,52 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="dark scroll-smooth">
+    <html lang="es" suppressHydrationWarning className="scroll-smooth">
       <body
-        className={`${inter.variable} ${bebasNeue.variable} ${jetbrainsMono.variable} font-sans bg-background text-text-primary antialiased min-h-screen flex flex-col justify-between`}
+        className={`${inter.variable} ${bebasNeue.variable} ${jetbrainsMono.variable} font-sans bg-background text-text-primary antialiased min-h-screen flex flex-col justify-between transition-colors duration-300`}
       >
-        {/* Schema.org IndustrialBusiness JSON-LD microdata */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "IndustrialBusiness",
-              "name": "CYH Ventilación Industrial",
-              "image": "https://cyh-ingenieria.com/logo.png",
-              "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "Vía 40 # 73-290, Zona Industrial",
-                "addressLocality": "Barranquilla",
-                "addressRegion": "Atlántico",
-                "postalCode": "080001",
-                "addressCountry": "CO"
-              },
-              "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": 10.9639,
-                "longitude": -74.7964
-              },
-              "url": "https://cyh-ingenieria.com",
-              "telephone": "+576053094567",
-              "priceRange": "$$$",
-              "knowsAbout": [
-                "Ventilación Industrial",
-                "Extractores Industriales",
-                "HVAC Industrial",
-                "Balanceo Dinámico",
-                "Mantenimiento Predictivo"
-              ]
-            })
-          }}
-        />
-        <Navbar />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <ConditionalFooter />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {/* Schema.org IndustrialBusiness JSON-LD microdata */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "IndustrialBusiness",
+                "name": "CYH Ventilación Industrial",
+                "image": "https://cyh-ingenieria.com/logo.png",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "Vía 40 # 73-290, Zona Industrial",
+                  "addressLocality": "Barranquilla",
+                  "addressRegion": "Atlántico",
+                  "postalCode": "080001",
+                  "addressCountry": "CO"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 10.9639,
+                  "longitude": -74.7964
+                },
+                "url": "https://cyh-ingenieria.com",
+                "telephone": "+576053094567",
+                "priceRange": "$$$",
+                "knowsAbout": [
+                  "Ventilación Industrial",
+                  "Extractores Industriales",
+                  "HVAC Industrial",
+                  "Balanceo Dinámico",
+                  "Mantenimiento Predictivo"
+                ]
+              })
+            }}
+          />
+          <Navbar />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <ConditionalFooter />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -46,10 +46,10 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-display text-5xl md:text-8xl tracking-wide text-text-primary leading-none uppercase"
+            className="font-display text-6xl md:text-7xl tracking-wide text-text-primary leading-none uppercase"
           >
-            Sistemas de Ventilación <br />
-            <span className="text-accent-cyan">para Infraestructuras Críticas</span>
+            Ingeniería de Ventilación Industrial <br />
+            <span className="text-accent-cyan">para Operaciones Críticas</span>
           </motion.h1>
 
           {/* Corporate statement describing actual values */}
@@ -59,7 +59,7 @@ export default function HeroSection() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-lg md:text-xl text-text-secondary max-w-2xl leading-relaxed"
           >
-            Desarrollamos soluciones integrales de termodinámica aplicada y flujo de aire forzado diseñadas para operar sin interrupciones bajo condiciones extremas de minería subterránea, plantas metalmecánicas y centros de datos de alta densidad.
+            Diseñamos, fabricamos e implementamos soluciones de ventilación industrial bajo criterios de desempeño, seguridad y cumplimiento normativo.
           </motion.p>
 
           {/* Actions & Navigation Links */}
@@ -71,17 +71,17 @@ export default function HeroSection() {
           >
             <Link
               href="/cotizador"
-              className="px-8 py-4 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-semibold text-sm tracking-wider uppercase rounded-sm transition-all shadow-[0_4px_16px_rgba(0,212,255,0.2)] hover:shadow-[0_4px_24px_rgba(0,212,255,0.35)] flex items-center justify-center gap-3 group"
+              className="px-8 py-4 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-semibold text-sm tracking-wider uppercase rounded-sm transition-all flex items-center justify-center gap-3 group"
             >
-              INICIAR DIAGNÓSTICO TÉCNICO
+              Solicitar Diagnóstico
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             
             <a
-              href="#servicios"
+              href="#proyectos"
               className="px-8 py-4 border border-border-medium hover:border-accent-cyan text-text-primary hover:text-accent-cyan font-semibold text-sm tracking-wider uppercase rounded-sm transition-all bg-bg-secondary/20 hover:bg-bg-secondary/40 flex items-center justify-center gap-3"
             >
-              VER CAPACIDADES
+              Ver Casos de Aplicación
               <Settings className="h-4 w-4" />
             </a>
           </motion.div>

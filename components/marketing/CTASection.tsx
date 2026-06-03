@@ -50,9 +50,9 @@ export default function CTASection() {
           <div className="pt-4">
             <Link
               href="/cotizador"
-              className="px-10 py-4 bg-accent-cyan hover:bg-accent-cyan/95 text-background font-semibold text-sm tracking-wider uppercase rounded-sm transition-all shadow-[0_4px_16px_rgba(0,212,255,0.15)] hover:shadow-[0_4px_24px_rgba(0,212,255,0.3)] inline-flex items-center gap-3 group"
+              className="px-10 py-4 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-semibold text-sm tracking-wider uppercase rounded-sm transition-all inline-flex items-center gap-3 group"
             >
-              ACCEDER AL CONFIGURADOR TÉCNICO
+              SOLICITAR DIAGNÓSTICO
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>

@@ -81,7 +81,7 @@ export default function ProjectsSection() {
                 
                 {/* Header Labels */}
                 <div className="flex justify-between items-start">
-                  <span className="font-mono text-[9px] text-accent-cyan tracking-widest uppercase border border-accent-cyan/30 px-2 py-0.5 rounded-sm bg-accent-cyan-soft">
+                  <span className="font-mono text-sm text-accent-cyan tracking-widest uppercase border border-accent-cyan/30 px-3 py-1 rounded-sm bg-accent-cyan-soft">
                     {project.badge}
                   </span>
                   <div className="p-2 bg-bg-secondary/80 border border-border-subtle rounded-sm">
@@ -92,7 +92,7 @@ export default function ProjectsSection() {
                 {/* Main Descriptions */}
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <span className="font-mono text-[10px] text-text-secondary tracking-widest uppercase">
+                    <span className="font-mono text-sm text-text-secondary tracking-widest uppercase">
                       {project.category}
                     </span>
                     <h3 className="font-display text-3xl tracking-wide text-text-primary uppercase group-hover:text-accent-cyan transition-colors">
@@ -105,8 +105,8 @@ export default function ProjectsSection() {
                   </p>
 
                   <div className="pt-2 flex items-center justify-between border-t border-border-subtle/50">
-                    <span className="font-mono text-[11px] text-text-muted uppercase">CAPACIDAD INSTALADA</span>
-                    <span className="font-mono text-xs font-semibold text-accent-cyan">{project.stat}</span>
+                    <span className="font-mono text-sm text-text-muted uppercase">CAPACIDAD INSTALADA</span>
+                    <span className="font-mono text-sm font-semibold text-accent-cyan">{project.stat}</span>
                   </div>
                 </div>
 
