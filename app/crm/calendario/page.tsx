@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, MapPin, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, MapPin, Clock, Phone } from "lucide-react";
 import Link from "next/link";
 
 export default function CalendarioPage() {
