@@ -12,6 +12,7 @@
     "@hookform/resolvers": "^3.4.2",
     "@supabase/supabase-js": "^2.106.2",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^11.2.10",
     "jspdf": "^2.5.1",

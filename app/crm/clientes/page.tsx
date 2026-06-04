@@ -1,13 +1,16 @@
 import React from "react";
 import { db } from "@/lib/db";
-import { crmCompanies, crmContacts } from "@/lib/db/schema";
 import { Building2, Search, Filter, Phone, Mail, UserCircle, Briefcase, MapPin } from "lucide-react";
-import { eq } from "drizzle-orm";
+import { ilike } from "drizzle-orm";
+import ClientActions from "./ClientActions";
 
 export const dynamic = "force-dynamic";
 
-export default async function B2BCustomersPage() {
+export default async function B2BCustomersPage({ searchParams }: { searchParams: { q?: string } }) {
+  const query = searchParams?.q || "";
+
   const companies = await db.query.crmCompanies.findMany({
+    where: query ? (fields, { ilike }) => ilike(fields.name, `%${query}%`) : undefined,
     with: {
       contacts: true,
       leads: true,
@@ -18,35 +21,20 @@ export default async function B2BCustomersPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] bg-bg-secondary p-8 font-sans">
       
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold text-text-primary uppercase tracking-wide">Directorio B2B</h1>
           <p className="text-sm text-text-muted mt-1">Gestión de empresas cliente y su estructura de contactos.</p>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-            <input 
-              type="text" 
-              placeholder="Buscar empresa..." 
-              className="pl-9 pr-4 py-2 bg-bg-primary border border-border-subtle rounded-md text-sm text-text-primary focus:outline-none focus:border-accent-cyan shadow-sm w-64"
-            />
-          </div>
-          <button className="p-2 border border-border-subtle bg-bg-primary rounded-md text-text-secondary hover:text-text-primary hover:border-accent-cyan transition-colors shadow-sm">
-            <Filter className="w-4 h-4" />
-          </button>
-          <button className="px-4 py-2 bg-text-primary text-bg-primary text-xs font-bold uppercase tracking-wider rounded-md hover:bg-text-secondary transition-colors shadow-md">
-            + Nueva Empresa
-          </button>
-        </div>
+        <ClientActions initialSearch={query} />
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-border-subtle">
         {companies.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-text-muted">
             <Building2 className="w-12 h-12 mb-4 opacity-50" />
-            <p>No hay empresas registradas aún.</p>
+            <p>{query ? `No hay empresas que coincidan con "${query}".` : "No hay empresas registradas aún."}</p>
           </div>
         ) : (
           companies.map(company => (
@@ -88,9 +76,7 @@ export default async function B2BCustomersPage() {
               <div className="xl:w-2/3 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-text-primary uppercase tracking-wide">Contactos Clave ({company.contacts?.length || 0})</h3>
-                  <button className="text-[10px] font-bold uppercase px-2 py-1 bg-bg-secondary border border-border-subtle rounded text-text-secondary hover:text-text-primary transition-colors">
-                    + Añadir Contacto
-                  </button>
+                  <ClientActions companyId={company.id} type="add_contact" />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

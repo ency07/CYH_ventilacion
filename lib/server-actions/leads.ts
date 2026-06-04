@@ -157,6 +157,11 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
 
 export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> {
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return { success: false, error: "Formato de ID inválido." };
+    }
+
     const lead = await db.query.leads.findFirst({
       where: eq(leads.id, id),
       with: {

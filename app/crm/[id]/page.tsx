@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getLeadByIdAction } from "@/lib/server-actions/leads";
 import { BriefcaseBusiness, Mail, Phone, MapPin, Calendar, CheckCircle2, Circle, Clock, FileText, ArrowLeft, Building2, UploadCloud, Download, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
+import LeadActionModals from "./LeadActionModals";
 
 export default function Lead360Page() {
   const { id } = useParams();
@@ -120,15 +121,14 @@ export default function Lead360Page() {
             </div>
           </div>
         </div>
+
+        <LeadActionModals leadId={id as string} assignedTo={lead.crmPipelines?.[0]?.assignedTo} />
       </aside>
 
       {/* Panel Central: Tareas y Timeline */}
       <main className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-display font-bold text-text-primary tracking-wide">Panel de Seguimiento B2B</h2>
-          <button className="px-4 py-2 bg-text-primary text-bg-primary text-xs font-bold uppercase tracking-wider rounded-md hover:bg-text-secondary transition-colors shadow-md">
-            + Nueva Tarea
-          </button>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

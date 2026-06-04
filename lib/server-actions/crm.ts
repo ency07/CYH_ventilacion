@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { leads, crmPipeline, crmActivityLogs } from "@/lib/db/schema";
+import { leads, crmPipeline, crmActivityLogs, crmCompanies, crmContacts, crmTasks } from "@/lib/db/schema";
 import { PipelineInsertSchema, ActivityLogInsertSchema } from "@/lib/validations/crm.schema";
 import { eq, desc, ne, and, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -202,14 +202,29 @@ export async function updateCommercialDataAction(
 
 export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
   try {
-    const allLeads = await db.select({
-      id: leads.id,
-      status: leads.status,
-      urgencyLevel: leads.urgencyLevel,
-      estimatedBudgetMax: leads.estimatedBudgetMax,
-      severityScore: leads.severityScore,
-      serviceType: leads.serviceType
-    }).from(leads);
+    const [allLeads, recentLogs] = await Promise.all([
+      db.select({
+        id: leads.id,
+        status: leads.status,
+        urgencyLevel: leads.urgencyLevel,
+        estimatedBudgetMax: leads.estimatedBudgetMax,
+        severityScore: leads.severityScore,
+        serviceType: leads.serviceType
+      }).from(leads),
+      db.select({
+        id: crmActivityLogs.id,
+        activityType: crmActivityLogs.activityType,
+        description: crmActivityLogs.description,
+        createdAt: crmActivityLogs.createdAt,
+        leadId: crmActivityLogs.leadId,
+        leadName: leads.fullName,
+        leadCompany: leads.companyName
+      })
+      .from(crmActivityLogs)
+      .innerJoin(leads, eq(crmActivityLogs.leadId, leads.id))
+      .orderBy(desc(crmActivityLogs.createdAt))
+      .limit(10)
+    ]);
     
     const totalLeads = allLeads.length;
     
@@ -263,20 +278,7 @@ export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
       revenue: allLeads.filter(l => l.serviceType === srv).reduce((sum, l) => sum + (l.estimatedBudgetMax || 0), 0)
     }));
 
-    // 5. Fetch recent activity logs joined with lead name
-    const recentLogs = await db.select({
-      id: crmActivityLogs.id,
-      activityType: crmActivityLogs.activityType,
-      description: crmActivityLogs.description,
-      createdAt: crmActivityLogs.createdAt,
-      leadId: crmActivityLogs.leadId,
-      leadName: leads.fullName,
-      leadCompany: leads.companyName
-    })
-    .from(crmActivityLogs)
-    .innerJoin(leads, eq(crmActivityLogs.leadId, leads.id))
-    .orderBy(desc(crmActivityLogs.createdAt))
-    .limit(10);
+    // 5. Los activity logs ya fueron extraídos en paralelo al inicio
 
     return {
       success: true,
@@ -295,5 +297,62 @@ export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
   } catch (error: any) {
     console.error("Error computing dashboard metrics:", error);
     return { success: false, error: error.message || "Error al calcular métricas de telemetría." };
+  }
+}
+
+export async function createCompanyAction(data: { name: string; industry?: string; city?: string; website?: string }): Promise<ActionResult<any>> {
+  try {
+    const [newCompany] = await db.insert(crmCompanies).values({
+      name: data.name,
+      industry: data.industry,
+      city: data.city,
+      website: data.website,
+    }).returning();
+    revalidatePath("/crm/clientes");
+    return { success: true, data: newCompany };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createContactAction(data: { companyId: string; fullName: string; cargo?: string; email?: string; phone?: string }): Promise<ActionResult<any>> {
+  try {
+    const [newContact] = await db.insert(crmContacts).values({
+      companyId: data.companyId,
+      fullName: data.fullName,
+      cargo: data.cargo,
+      email: data.email,
+      phone: data.phone,
+    }).returning();
+    revalidatePath("/crm/clientes");
+    return { success: true, data: newContact };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createTaskAction(data: { leadId: string; taskType: string; dueDate: string; assignedTo?: string; notes?: string }): Promise<ActionResult<any>> {
+  try {
+    const [newTask] = await db.insert(crmTasks).values({
+      leadId: data.leadId,
+      taskType: data.taskType,
+      dueDate: new Date(data.dueDate),
+      assignedTo: data.assignedTo,
+      notes: data.notes,
+      status: 'pendiente'
+    }).returning();
+    
+    // Also create an activity log for the new task
+    await db.insert(crmActivityLogs).values({
+      leadId: data.leadId,
+      activityType: 'task_created',
+      description: 'Nueva tarea programada: ' + data.taskType,
+    });
+
+    revalidatePath('/crm');
+    revalidatePath('/crm/' + data.leadId);
+    return { success: true, data: newTask };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 }

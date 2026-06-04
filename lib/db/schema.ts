@@ -86,6 +86,8 @@ export const diagnosticReports = pgTable("diagnostic_reports", {
   recommendations: text("recommendations"),
   currency: varchar("currency", { length: 10 }).default("COP").notNull(),
   generatedPdfUrl: text("generated_pdf_url"),
+  status: varchar("status", { length: 50 }).default("pendiente").notNull(),
+  verdictNotes: text("verdict_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -147,6 +149,8 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   leadVerifications: many(leadVerifications),
   crmTasks: many(crmTasks),
   crmDocuments: many(crmDocuments),
+  crmProposals: many(crmProposals),
+  crmOpportunities: many(crmOpportunities),
   company: one(crmCompanies, { fields: [leads.companyId], references: [crmCompanies.id] }),
   contact: one(crmContacts, { fields: [leads.contactId], references: [crmContacts.id] }),
 }));
@@ -184,3 +188,40 @@ export const crmContactsRelations = relations(crmContacts, ({ one, many }) => ({
 export const crmDocumentsRelations = relations(crmDocuments, ({ one }) => ({
   lead: one(leads, { fields: [crmDocuments.leadId], references: [leads.id] }),
 }));
+
+export const crmProposals = pgTable("crm_proposals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  version: integer("version").default(1).notNull(),
+  totalValue: integer("total_value").notNull(),
+  currency: varchar("currency", { length: 10 }).default("COP").notNull(),
+  status: varchar("status", { length: 50 }).default("borrador").notNull(), // borrador, enviada, aceptada, rechazada
+  pdfUrl: text("pdf_url"),
+  validUntil: timestamp("valid_until"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmProposalsRelations = relations(crmProposals, ({ one }) => ({
+  lead: one(leads, { fields: [crmProposals.leadId], references: [leads.id] }),
+}));
+
+export const crmOpportunities = pgTable("crm_opportunities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  estimatedValue: integer("estimated_value").notNull(),
+  probability: integer("probability").default(50).notNull(), // 0-100
+  weightedValue: integer("weighted_value").notNull(),
+  expectedCloseDate: timestamp("expected_close_date"),
+  stage: varchar("stage", { length: 50 }).notNull(), // analisis, propuesta, negociacion, cerrado_ganado, cerrado_perdido
+  assignedTo: varchar("assigned_to", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmOpportunitiesRelations = relations(crmOpportunities, ({ one }) => ({
+  lead: one(leads, { fields: [crmOpportunities.leadId], references: [leads.id] }),
+}));
+

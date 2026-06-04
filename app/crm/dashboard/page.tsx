@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { leads } from "@/lib/db/schema";
 import { DollarSign, LineChart, Target, AlertTriangle, TrendingUp, Users, CheckCircle2, XCircle, ShieldAlert } from "lucide-react";
 import { eq, count } from "drizzle-orm";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { crmUsers, crmPipeline } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +22,28 @@ export default async function DashboardGerencialPage() {
   const allLeads = await db.select().from(leads);
 
   // MOCK USER: En producción, esto vendrá de Supabase Auth
-  const currentUser = {
-    name: "Carlos",
-    role: "admin", // admin, vendedor, tecnico
-  };
+  const supabase = getSupabaseServer();
+  const { data: authData } = await supabase.auth.getUser();
+  
+  let currentUser = { name: "Usuario", role: "vendedor", email: "" };
+  if (authData?.user) {
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, authData.user.id));
+    if (dbUser) {
+      currentUser = {
+        name: dbUser.fullName || authData.user.email?.split('@')[0] || "Usuario",
+        role: dbUser.role,
+        email: dbUser.email
+      };
+    }
+  }
+
+  let filteredLeads = allLeads;
+  if (currentUser.role === "vendedor") {
+    // Si es asesor comercial, solo ve sus leads (buscando por assignedTo == email)
+    const assignedPipelines = await db.select({ leadId: crmPipeline.leadId }).from(crmPipeline).where(eq(crmPipeline.assignedTo, currentUser.email));
+    const assignedIds = new Set(assignedPipelines.map(p => p.leadId));
+    filteredLeads = allLeads.filter(l => assignedIds.has(l.id));
+  }
 
   // Determinar Saludo según la Hora (Servidor o local)
   const hour = new Date().getHours();
@@ -32,9 +52,9 @@ export default async function DashboardGerencialPage() {
   else if (hour >= 12 && hour < 19) greeting = "Buenas tardes";
 
   // KPIs Básicos
-  const totalLeads = allLeads.length;
-  const ganados = allLeads.filter(l => l.status === 'ganado').length;
-  const perdidos = allLeads.filter(l => l.status === 'perdido').length;
+  const totalLeads = filteredLeads.length;
+  const ganados = filteredLeads.filter(l => l.status === 'ganado').length;
+  const perdidos = filteredLeads.filter(l => l.status === 'perdido').length;
   const abiertos = totalLeads - ganados - perdidos;
   
   const winRate = totalLeads > 0 ? ((ganados / totalLeads) * 100).toFixed(1) : "0.0";
@@ -58,7 +78,7 @@ export default async function DashboardGerencialPage() {
   let pipelineTotal = 0;
   let pipelineProbable = 0;
 
-  allLeads.forEach(lead => {
+  filteredLeads.forEach(lead => {
     if (lead.status !== 'perdido') {
       const valor = lead.estimatedBudgetMax || 0;
       pipelineTotal += valor;
