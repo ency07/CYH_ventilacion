@@ -65,7 +65,7 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
   try {
     const validated = LeadInsertSchema.parse(rawInput);
     
-    console.log("LEAD PAYLOAD:", validated);
+
 
     const { score, risk } = calculateLeadScore({
       email: validated.email,
@@ -167,6 +167,10 @@ export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> 
       with: {
         crmTasks: true,
         crmActivityLogs: true,
+        diagnosticReports: true,
+        crmProposals: true,
+        crmDocuments: true,
+        crmOpportunities: true,
       }
     });
     

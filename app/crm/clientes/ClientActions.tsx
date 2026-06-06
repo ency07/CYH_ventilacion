@@ -7,7 +7,7 @@ import { createCompanyAction, createContactAction } from "@/lib/server-actions/c
 
 interface Props {
   initialSearch?: string;
-  type?: "main_actions" | "add_contact";
+  type?: "main_actions" | "add_contact" | "new_client_button";
   companyId?: string;
 }
 
@@ -107,6 +107,41 @@ export default function ClientActions({ initialSearch = "", type = "main_actions
                 </div>
                 <button disabled={loading} type="submit" className="w-full py-2 bg-accent-cyan text-bg-primary text-xs font-bold uppercase tracking-wider rounded mt-4 hover:opacity-90 transition-opacity">
                   {loading ? "Guardando..." : "Crear Contacto"}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (type === "new_client_button") {
+    return (
+      <>
+        <button onClick={() => setIsModalOpen(true)} className="px-4 py-2 bg-text-primary text-bg-primary text-sm font-medium rounded-md hover:bg-opacity-90 transition-colors shadow-md flex items-center gap-2">
+          <Plus className="w-4 h-4" /> New Client
+        </button>
+
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-bg-primary border border-border-subtle rounded-md w-full max-w-md p-6 shadow-xl relative">
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-text-muted hover:text-text-primary">
+                <X className="w-5 h-5" />
+              </button>
+              <h3 className="text-lg font-bold text-text-primary uppercase tracking-wide mb-4">Nueva Empresa</h3>
+              {error && <p className="text-red-500 text-xs mb-4">{error}</p>}
+              <form onSubmit={handleCreateCompany} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1">Nombre de la Empresa *</label>
+                  <input required value={cName} onChange={e => setCName(e.target.value)} className="w-full bg-bg-secondary border border-border-subtle rounded px-3 py-2 text-sm focus:outline-none focus:border-accent-cyan" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1">Ciudad</label>
+                  <input value={cCity} onChange={e => setCCity(e.target.value)} className="w-full bg-bg-secondary border border-border-subtle rounded px-3 py-2 text-sm focus:outline-none focus:border-accent-cyan" />
+                </div>
+                <button disabled={loading} type="submit" className="w-full py-2 bg-accent-cyan text-bg-primary text-xs font-bold uppercase tracking-wider rounded mt-4 hover:opacity-90 transition-opacity">
+                  {loading ? "Guardando..." : "Registrar Empresa"}
                 </button>
               </form>
             </div>

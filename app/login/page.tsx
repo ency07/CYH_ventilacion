@@ -10,13 +10,10 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function formAction(formData: FormData) {
     setIsLoading(true);
     setError(null);
     setSuccess(null);
-
-    const formData = new FormData(e.currentTarget);
 
     try {
       if (mode === "login") {
@@ -32,6 +29,9 @@ export default function AuthPage() {
         else if (res?.success) setSuccess(res.success);
       }
     } catch (err: any) {
+      if (err?.message === "NEXT_REDIRECT") {
+        throw err;
+      }
       setError(err.message || "Ha ocurrido un error inesperado.");
     } finally {
       setIsLoading(false);
@@ -63,7 +63,7 @@ export default function AuthPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form action={formAction} className="space-y-4">
           
           {mode === "register" && (
             <>

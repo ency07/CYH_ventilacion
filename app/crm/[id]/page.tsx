@@ -222,28 +222,63 @@ export default function Lead360Page() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {/* Mocked Files */}
-            <div className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors">
-              <div className="p-2 bg-red-500/10 rounded">
-                <FileText className="w-5 h-5 text-red-500" />
+            {/* Real Diagnostics */}
+            {(lead.diagnosticReports || []).map((diag: any, index: number) => diag.generatedPdfUrl && (
+              <div key={`diag-${diag.id || index}`} className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors">
+                <div className="p-2 bg-red-500/10 rounded">
+                  <FileText className="w-5 h-5 text-red-500" />
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-xs font-bold text-text-primary truncate">Reporte_Preingenieria_{index + 1}.pdf</p>
+                  <p className="text-[10px] text-text-muted mt-0.5">{diag.airflow ? `${diag.airflow} m³/h` : 'Caudal no especificado'} • {new Date(diag.createdAt).toLocaleDateString()}</p>
+                </div>
+                <a href={diag.generatedPdfUrl} target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-accent-cyan transition-colors">
+                  <Download className="w-4 h-4" />
+                </a>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-xs font-bold text-text-primary truncate">Cotizacion_Argos_v2.pdf</p>
-                <p className="text-[10px] text-text-muted mt-0.5">2.4 MB • Hace 2 días</p>
-              </div>
-              <button className="text-text-muted hover:text-accent-cyan transition-colors"><Download className="w-4 h-4" /></button>
-            </div>
+            ))}
 
-            <div className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors">
-              <div className="p-2 bg-blue-500/10 rounded">
-                <ImageIcon className="w-5 h-5 text-blue-500" />
+            {/* Real Proposals */}
+            {(lead.crmProposals || []).map((prop: any, index: number) => (
+              <div key={`prop-${prop.id || index}`} className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors">
+                <div className="p-2 bg-emerald-500/10 rounded">
+                  <FileText className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-xs font-bold text-text-primary truncate">{prop.title}</p>
+                  <p className="text-[10px] text-text-muted mt-0.5">${(prop.totalValue / 1000000).toFixed(1)}M COP • Status: {prop.status}</p>
+                </div>
+                {prop.pdfUrl && (
+                  <a href={prop.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-accent-cyan transition-colors">
+                    <Download className="w-4 h-4" />
+                  </a>
+                )}
               </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-xs font-bold text-text-primary truncate">Plano_Ventilacion_Nave_A.png</p>
-                <p className="text-[10px] text-text-muted mt-0.5">5.1 MB • Hace 5 días</p>
+            ))}
+
+            {/* Real Documents */}
+            {(lead.crmDocuments || []).map((doc: any, index: number) => (
+              <div key={`doc-${doc.id || index}`} className="flex items-center gap-3 p-3 bg-bg-secondary border border-border-subtle rounded-md group hover:border-accent-cyan/50 transition-colors">
+                <div className={`p-2 rounded ${doc.fileType.includes('image') ? 'bg-blue-500/10' : 'bg-red-500/10'}`}>
+                  {doc.fileType.includes('image') ? (
+                    <ImageIcon className="w-5 h-5 text-blue-500" />
+                  ) : (
+                    <FileText className="w-5 h-5 text-red-500" />
+                  )}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-xs font-bold text-text-primary truncate">{doc.fileName}</p>
+                  <p className="text-[10px] text-text-muted mt-0.5">{new Date(doc.createdAt).toLocaleDateString()}</p>
+                </div>
+                <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-accent-cyan transition-colors">
+                  <Download className="w-4 h-4" />
+                </a>
               </div>
-              <button className="text-text-muted hover:text-accent-cyan transition-colors"><Download className="w-4 h-4" /></button>
-            </div>
+            ))}
+
+            {(!lead.crmDocuments?.length && !lead.crmProposals?.length && !lead.diagnosticReports?.some((d: any) => d.generatedPdfUrl)) && (
+              <div className="col-span-full text-xs text-text-muted text-center py-4">No hay documentos técnicos o propuestas registradas.</div>
+            )}
           </div>
         </section>
       </main>

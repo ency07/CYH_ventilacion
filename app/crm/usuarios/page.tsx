@@ -1,7 +1,7 @@
 import React from "react";
 import { AlertCircle } from "lucide-react";
 
-export default function EquipoPage() {
+export default function UsuariosPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-bg-secondary p-8 font-sans items-center justify-center">
       <div className="bg-bg-primary p-8 rounded-lg shadow-sm border border-border-subtle max-w-md text-center">

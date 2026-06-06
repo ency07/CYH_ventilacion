@@ -13,7 +13,7 @@ export const crmCompanies = pgTable("crm_companies", {
 
 export const crmContacts = pgTable("crm_contacts", {
   id: uuid("id").defaultRandom().primaryKey(),
-  companyId: uuid("company_id").references(() => crmCompanies.id, { onDelete: "cascade" }),
+  companyId: uuid("company_id").references(() => crmCompanies.id, { onDelete: "restrict" }),
   fullName: varchar("full_name", { length: 255 }).notNull(),
   cargo: varchar("cargo", { length: 100 }),
   email: varchar("email", { length: 255 }),
@@ -47,6 +47,13 @@ export const leads = pgTable("leads", {
   leadScore: integer("lead_score").default(0).notNull(),
   isVerified: boolean("is_verified").default(false).notNull(),
   riskLevel: varchar("risk_level", { length: 50 }).default("COLD").notNull(),
+  deletedAt: timestamp("deleted_at"),
+  createdBy: uuid("created_by").references(() => crmUsers.id),
+  updatedBy: uuid("updated_by").references(() => crmUsers.id),
+  closedBy: uuid("closed_by").references(() => crmUsers.id),
+  campaignSource: varchar("campaign_source", { length: 100 }),
+  utmMedium: varchar("utm_medium", { length: 100 }),
+  utmCampaign: varchar("utm_campaign", { length: 100 }),
 }, (table) => {
   return {
     statusIdx: index("status_idx").on(table.status),
@@ -56,7 +63,7 @@ export const leads = pgTable("leads", {
 
 export const crmDocuments = pgTable("crm_documents", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
   fileName: varchar("file_name", { length: 255 }).notNull(),
   fileUrl: text("file_url").notNull(),
   fileType: varchar("file_type", { length: 50 }).notNull(),
@@ -65,7 +72,7 @@ export const crmDocuments = pgTable("crm_documents", {
 
 export const crmTasks = pgTable("crm_tasks", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
   taskType: varchar("task_type", { length: 50 }).notNull(),
   status: varchar("status", { length: 50 }).default("pendiente").notNull(),
   dueDate: timestamp("due_date").notNull(),
@@ -73,11 +80,15 @@ export const crmTasks = pgTable("crm_tasks", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+  priority: varchar("priority", { length: 20 }).default("normal"),
+  completedBy: uuid("completed_by").references(() => crmUsers.id),
+  completedAt: timestamp("completed_at"),
 });
 
 export const diagnosticReports = pgTable("diagnostic_reports", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
   airflow: integer("airflow"),
   dimensions: jsonb("dimensions"),
   technicalObservations: text("technical_observations"),
@@ -89,11 +100,17 @@ export const diagnosticReports = pgTable("diagnostic_reports", {
   status: varchar("status", { length: 50 }).default("pendiente").notNull(),
   verdictNotes: text("verdict_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+  createdBy: uuid("created_by").references(() => crmUsers.id),
+  updatedBy: uuid("updated_by").references(() => crmUsers.id),
+  approvedBy: uuid("approved_by").references(() => crmUsers.id),
+  approvedAt: timestamp("approved_at"),
+  versionNumber: integer("version_number").default(1),
 });
 
 export const crmPipeline = pgTable("crm_pipeline", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
   stage: varchar("stage", { length: 50 }).default("nuevo").notNull(), 
   priority: varchar("priority", { length: 50 }).default("media").notNull(),
   assignedTo: varchar("assigned_to", { length: 255 }),
@@ -115,15 +132,18 @@ export const crmPipeline = pgTable("crm_pipeline", {
 
 export const crmActivityLogs = pgTable("crm_activity_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
   activityType: varchar("activity_type", { length: 50 }).notNull(),
   description: text("description").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: uuid("user_id").references(() => crmUsers.id),
+  durationMinutes: integer("duration_minutes"),
+  outcome: varchar("outcome", { length: 50 }),
 });
 
 export const leadVerifications = pgTable("lead_verifications", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
   otpCode: varchar("otp_code", { length: 6 }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   verifiedAt: timestamp("verified_at"),
@@ -191,7 +211,8 @@ export const crmDocumentsRelations = relations(crmDocuments, ({ one }) => ({
 
 export const crmProposals = pgTable("crm_proposals", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
+  diagnosticId: uuid("diagnostic_id").references(() => diagnosticReports.id, { onDelete: "set null" }),
   title: varchar("title", { length: 255 }).notNull(),
   version: integer("version").default(1).notNull(),
   totalValue: integer("total_value").notNull(),
@@ -201,15 +222,24 @@ export const crmProposals = pgTable("crm_proposals", {
   validUntil: timestamp("valid_until"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+  createdBy: uuid("created_by").references(() => crmUsers.id),
+  approvedBy: uuid("approved_by").references(() => crmUsers.id),
+  approvedAt: timestamp("approved_at"),
+  discountAmount: integer("discount_amount"),
+  discountReason: text("discount_reason"),
 });
 
 export const crmProposalsRelations = relations(crmProposals, ({ one }) => ({
   lead: one(leads, { fields: [crmProposals.leadId], references: [leads.id] }),
+  diagnosticReport: one(diagnosticReports, { fields: [crmProposals.diagnosticId], references: [diagnosticReports.id] }),
 }));
 
 export const crmOpportunities = pgTable("crm_opportunities", {
   id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "cascade" }).notNull(),
+  leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
+  diagnosticId: uuid("diagnostic_id").references(() => diagnosticReports.id, { onDelete: "set null" }),
+  serviceType: varchar("service_type", { length: 50 }),
   title: varchar("title", { length: 255 }).notNull(),
   estimatedValue: integer("estimated_value").notNull(),
   probability: integer("probability").default(50).notNull(), // 0-100
@@ -223,5 +253,7 @@ export const crmOpportunities = pgTable("crm_opportunities", {
 
 export const crmOpportunitiesRelations = relations(crmOpportunities, ({ one }) => ({
   lead: one(leads, { fields: [crmOpportunities.leadId], references: [leads.id] }),
+  diagnosticReport: one(diagnosticReports, { fields: [crmOpportunities.diagnosticId], references: [diagnosticReports.id] }),
 }));
+
 

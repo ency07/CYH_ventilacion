@@ -100,7 +100,7 @@ export default function LeadActionModals({ leadId, assignedTo = "Sin Asignar" }:
                 <label className="text-xs font-bold text-text-muted uppercase tracking-wide">Notas de la actividad</label>
                 <textarea name="description" required rows={3} placeholder="¿Qué se habló con el cliente?" className="p-2 bg-bg-secondary border border-border-subtle rounded-md text-sm text-text-primary focus:border-accent-cyan focus:outline-none"></textarea>
               </div>
-              <button disabled={loading} type="submit" className="mt-2 py-2 bg-accent-cyan text-bg-primary font-bold uppercase text-sm rounded-md hover:bg-[#00D1D1] transition-colors disabled:opacity-50">
+              <button disabled={loading} type="submit" className="mt-2 py-2 bg-accent-cyan text-bg-primary font-bold uppercase text-sm rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50">
                 {loading ? 'Guardando...' : 'Guardar Actividad'}
               </button>
             </form>

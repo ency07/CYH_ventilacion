@@ -7,6 +7,7 @@ import Link from "next/link";
 import { format, isPast, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { revalidatePath } from "next/cache";
+import { getSupabaseServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,10 @@ export default async function ReunionesPage() {
 
   async function completarReunion(formData: FormData) {
     "use server";
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
     const taskId = formData.get("taskId") as string;
     await db.update(crmTasks).set({ status: 'completado', updatedAt: new Date() }).where(eq(crmTasks.id, taskId));
     revalidatePath('/crm/reuniones');

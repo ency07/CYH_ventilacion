@@ -19,7 +19,7 @@ import {
 // Import real Supabase Server Actions & telemetry calculations
 import { createLeadAction } from "@/lib/server-actions/leads";
 import { createDiagnosticAction } from "@/lib/server-actions/diagnostics";
-import { createPipelineEntryAction, createActivityLogAction } from "@/lib/server-actions/crm";
+import { createPipelineEntryAction, createActivityLogAction, createOpportunityAction, createProposalAction } from "@/lib/server-actions/crm";
 import { calculateDynamicPricing } from "@/lib/calculations/flow";
 
 const USER_FRIENDLY_ERRORS: Record<string, string> = {
@@ -124,7 +124,7 @@ export default function StepLead() {
       // Estado 3: Estructurando reporte de preingeniería PDF
       setLoadingStep("Estructurando reporte de preingeniería PDF...");
  
-      await createDiagnosticAction({
+      const diagResult = await createDiagnosticAction({
         leadId,
         airflow: flowResult?.estimatedFlow || null,
         dimensions: {
@@ -138,6 +138,29 @@ export default function StepLead() {
         recommendations: flowResult?.recommendation || symptomsResult?.recommendedAction || "Recomendación técnica preliminar.",
         currency: "COP",
         generatedPdfUrl: null,
+      });
+
+      const diagnosticId = diagResult.success ? diagResult.data.id : null;
+
+      // Create opportunity automatically
+      await createOpportunityAction({
+        leadId,
+        diagnosticId,
+        serviceType: service || "fabricacion",
+        title: `Proyecto ${data.empresa} - ${service ? service.toUpperCase() : 'VENTA'}`,
+        estimatedValue: prices.maxCOP || 5000000,
+        probability: 20,
+        stage: "analisis",
+      });
+
+      // Create proposal automatically
+      await createProposalAction({
+        leadId,
+        diagnosticId,
+        title: `Propuesta Comercial Inicial - ${data.empresa}`,
+        totalValue: prices.maxCOP || 5000000,
+        status: "borrador",
+        pdfUrl: null,
       });
  
       await createPipelineEntryAction({

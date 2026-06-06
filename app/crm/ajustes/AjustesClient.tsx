@@ -137,7 +137,7 @@ export default function AjustesClient({ currentUser, allUsers }: { currentUser: 
               <button 
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-accent-cyan text-bg-primary text-xs font-bold uppercase tracking-wider rounded-md hover:bg-[#00D1D1] transition-colors shadow-md disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent-cyan text-bg-primary text-xs font-bold uppercase tracking-wider rounded-md hover:bg-opacity-90 transition-colors shadow-md disabled:opacity-50"
               >
                 <Save className="w-4 h-4" /> {saving ? "Guardando..." : "Guardar Cambios"}
               </button>

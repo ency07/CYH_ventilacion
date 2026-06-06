@@ -4,6 +4,7 @@ import { diagnosticReports, leads, crmCompanies, crmActivityLogs } from "@/lib/d
 import { eq, desc, ne } from "drizzle-orm";
 import { Wrench, CheckCircle2, XCircle, AlertTriangle, FileText, Search, Clock } from "lucide-react";
 import Link from "next/link";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,10 @@ export default async function RevisionesPage() {
 
   async function emitirVeredicto(formData: FormData) {
     "use server";
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
     const diagId = formData.get("diagId") as string;
     const leadId = formData.get("leadId") as string;
     const status = formData.get("status") as string;
@@ -156,7 +161,7 @@ export default async function RevisionesPage() {
                     <div>
                       <h3 className="font-bold text-text-secondary text-sm uppercase">{companyName}</h3>
                       <p className="text-[10px] text-text-muted flex items-center gap-1 mt-1">
-                        <Clock className="w-3 h-3" /> {new Date(diagnostic.updatedAt || diagnostic.createdAt).toLocaleDateString()}
+                        <Clock className="w-3 h-3" /> {new Date(diagnostic.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-1 rounded border uppercase tracking-wider ${

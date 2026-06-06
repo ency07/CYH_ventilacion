@@ -86,6 +86,18 @@ export default async function DashboardGerencialPage() {
     }
   });
 
+  // Dynamic funnel calculation
+  const stageNuevos = filteredLeads.length;
+  const stageContacto = filteredLeads.filter(l => l.status !== "nuevo").length;
+  const stageReunion = filteredLeads.filter(l => ["reunion", "diagnostico", "propuesta_prep", "propuesta_entregada", "negociacion", "ganado"].includes(l.status)).length;
+  const stagePropuesta = filteredLeads.filter(l => ["propuesta_prep", "propuesta_entregada", "negociacion", "ganado"].includes(l.status)).length;
+  const stageGanado = filteredLeads.filter(l => l.status === "ganado").length;
+
+  const pctContacto = stageNuevos > 0 ? Math.round((stageContacto / stageNuevos) * 100) : 0;
+  const pctReunion = stageNuevos > 0 ? Math.round((stageReunion / stageNuevos) * 100) : 0;
+  const pctPropuesta = stageNuevos > 0 ? Math.round((stagePropuesta / stageNuevos) * 100) : 0;
+  const pctGanado = stageNuevos > 0 ? Math.round((stageGanado / stageNuevos) * 100) : 0;
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-5rem)] bg-bg-secondary p-8 font-sans">
       <div className="mb-8 flex items-center justify-between">
@@ -151,10 +163,10 @@ export default async function DashboardGerencialPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Gráfico de Conversión (Simulado visualmente) */}
+        {/* Gráfico de Conversión Real */}
         <div className="bg-bg-primary p-6 rounded-md border border-border-subtle shadow-sm">
           <h2 className="text-sm font-bold text-text-primary uppercase tracking-wide flex items-center gap-2 mb-6">
-            <TrendingUp className="w-4 h-4 text-text-muted" /> Embudo de Conversión (Etapas)
+            <TrendingUp className="w-4 h-4 text-text-muted" /> Embudo de Conversión (Etapas Reales)
           </h2>
           
           <div className="space-y-4">
@@ -163,39 +175,39 @@ export default async function DashboardGerencialPage() {
               <div className="flex-1 h-3 bg-bg-secondary rounded-full overflow-hidden mx-4">
                 <div className="h-full bg-border-medium w-full"></div>
               </div>
-              <span className="text-xs font-bold text-text-primary w-12 text-right">100%</span>
+              <span className="text-xs font-bold text-text-primary w-12 text-right">100% ({stageNuevos})</span>
             </div>
             
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-text-secondary w-32">2. Contacto</span>
               <div className="flex-1 h-3 bg-bg-secondary rounded-full overflow-hidden mx-4">
-                <div className="h-full bg-blue-400 w-[72%]"></div>
+                <div className="h-full bg-blue-400" style={{ width: `${pctContacto}%` }}></div>
               </div>
-              <span className="text-xs font-bold text-text-primary w-12 text-right">72%</span>
+              <span className="text-xs font-bold text-text-primary w-12 text-right">{pctContacto}% ({stageContacto})</span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-text-secondary w-32">3. Reunión</span>
               <div className="flex-1 h-3 bg-bg-secondary rounded-full overflow-hidden mx-4">
-                <div className="h-full bg-blue-500 w-[48%]"></div>
+                <div className="h-full bg-blue-500" style={{ width: `${pctReunion}%` }}></div>
               </div>
-              <span className="text-xs font-bold text-text-primary w-12 text-right">48%</span>
+              <span className="text-xs font-bold text-text-primary w-12 text-right">{pctReunion}% ({stageReunion})</span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-text-secondary w-32">4. Propuesta</span>
               <div className="flex-1 h-3 bg-bg-secondary rounded-full overflow-hidden mx-4">
-                <div className="h-full bg-accent-cyan w-[34%]"></div>
+                <div className="h-full bg-accent-cyan" style={{ width: `${pctPropuesta}%` }}></div>
               </div>
-              <span className="text-xs font-bold text-text-primary w-12 text-right">34%</span>
+              <span className="text-xs font-bold text-text-primary w-12 text-right">{pctPropuesta}% ({stagePropuesta})</span>
             </div>
             
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-text-secondary w-32">5. Ganados</span>
               <div className="flex-1 h-3 bg-bg-secondary rounded-full overflow-hidden mx-4">
-                <div className="h-full bg-emerald-500 w-[18%]"></div>
+                <div className="h-full bg-emerald-500" style={{ width: `${pctGanado}%` }}></div>
               </div>
-              <span className="text-xs font-bold text-emerald-500 w-12 text-right">18%</span>
+              <span className="text-xs font-bold text-emerald-500 w-12 text-right">{pctGanado}% ({stageGanado})</span>
             </div>
           </div>
         </div>
