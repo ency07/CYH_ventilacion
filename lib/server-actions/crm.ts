@@ -585,3 +585,47 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
   }
 }
 
+export async function updateProposalStatusAction(
+  proposalId: string,
+  newStatus: string
+): Promise<ActionResult<any>> {
+  const supabase = getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "No autenticado" };
+
+  try {
+    const { data: profile } = await supabase
+      .from("crm_users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const userRole = profile?.role || "comercial";
+
+    if (newStatus === "aceptada" && !["admin", "super_admin", "director_comercial"].includes(userRole)) {
+      return { success: false, error: "Permisos insuficientes para aprobar propuestas." };
+    }
+
+    const [updated] = await db
+      .update(crmProposals)
+      .set({ status: newStatus, updatedAt: new Date() })
+      .where(eq(crmProposals.id, proposalId))
+      .returning();
+
+    if (!updated) {
+      return { success: false, error: "Propuesta no encontrada." };
+    }
+
+    revalidatePath("/crm/propuestas");
+    if (updated.leadId) {
+      revalidatePath(`/crm/${updated.leadId}`);
+    }
+
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error in updateProposalStatusAction:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+

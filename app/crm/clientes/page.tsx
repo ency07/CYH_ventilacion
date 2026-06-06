@@ -2,11 +2,26 @@ import React from "react";
 import { db } from "@/lib/db";
 import { Filter, Search, Download, Plus, ChevronDown } from "lucide-react";
 import ClientActions from "./ClientActions";
+import { getSupabaseServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function B2BCustomersPage({ searchParams }: { searchParams: { q?: string } }) {
   const query = searchParams?.q || "";
+
+  const supabase = getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  let userRole = "comercial";
+  if (user) {
+    const { data: profile } = await supabase
+      .from("crm_users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    userRole = profile?.role || "comercial";
+  }
+
+  const isAdmin = ["admin", "super_admin", "director_comercial"].includes(userRole);
 
   const companies = await db.query.crmCompanies.findMany({
     where: query ? (fields, { ilike }) => ilike(fields.name, `%${query}%`) : undefined,
@@ -38,9 +53,11 @@ export default async function B2BCustomersPage({ searchParams }: { searchParams:
         </div>
         
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-bg-primary border border-border-subtle rounded-md text-sm font-medium text-text-primary hover:bg-bg-secondary transition-colors shadow-sm">
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          {isAdmin && (
+            <button className="flex items-center gap-2 px-4 py-2 bg-bg-primary border border-border-subtle rounded-md text-sm font-medium text-text-primary hover:bg-bg-secondary transition-colors shadow-sm">
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+          )}
           {/* Aquí utilizamos el ClientActions para el modal de Nueva Empresa */}
           <ClientActions initialSearch={query} type="new_client_button" />
         </div>

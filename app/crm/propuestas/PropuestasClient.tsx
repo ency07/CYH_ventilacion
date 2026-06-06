@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { FileText, Plus, Search, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { FileText, Plus, Search, ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { updateProposalStatusAction } from "@/lib/server-actions/crm";
 
 const formatUSD = (value: number) => {
   return new Intl.NumberFormat('en-US', {
@@ -14,9 +15,10 @@ const formatUSD = (value: number) => {
   }).format(value);
 };
 
-export default function PropuestasClient({ proposalsData }: { proposalsData: any[] }) {
+export default function PropuestasClient({ proposalsData, userRole = "comercial" }: { proposalsData: any[], userRole?: string }) {
   const [selectedPropId, setSelectedPropId] = useState<string | null>(proposalsData.length > 0 ? proposalsData[0].proposal.id : null);
   const [search, setSearch] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const filteredProposals = proposalsData.filter(p => 
     p.proposal.title?.toLowerCase().includes(search.toLowerCase()) || 
@@ -24,6 +26,26 @@ export default function PropuestasClient({ proposalsData }: { proposalsData: any
   );
 
   const selectedProposal = proposalsData.find(p => p.proposal.id === selectedPropId);
+
+  const canApprove = ["admin", "super_admin", "director_comercial"].includes(userRole);
+
+  const handleApprove = async () => {
+    if (!selectedProposal || !canApprove || isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const res = await updateProposalStatusAction(selectedProposal.proposal.id, "aceptada");
+      if (res.success) {
+        alert("¡Propuesta aprobada exitosamente!");
+        window.location.reload();
+      } else {
+        alert(`Error al aprobar propuesta: ${res.error}`);
+      }
+    } catch (err: any) {
+      alert(`Error al aprobar propuesta: ${err.message}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -34,6 +56,7 @@ export default function PropuestasClient({ proposalsData }: { proposalsData: any
       default: return <span className="bg-bg-primary text-text-primary border border-border-subtle px-2 py-0.5 rounded text-[10px] font-bold uppercase">BORRADOR</span>;
     }
   };
+
 
   return (
     <div className="flex flex-col md:flex-row h-full bg-bg-primary overflow-hidden font-sans border-t border-border-subtle">
@@ -223,9 +246,24 @@ export default function PropuestasClient({ proposalsData }: { proposalsData: any
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <button className="px-8 py-2 bg-text-primary text-bg-primary rounded text-xs font-bold hover:bg-opacity-90 transition-colors shadow-sm">
-                    APROBAR
-                  </button>
+                  {selectedProposal.proposal.status === "aceptada" ? (
+                    <span className="px-8 py-2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded text-xs font-bold uppercase tracking-wider">
+                      PROPUESTA APROBADA
+                    </span>
+                  ) : (
+                    <button 
+                      onClick={handleApprove}
+                      disabled={!canApprove || isUpdating}
+                      className={`px-8 py-2 rounded text-xs font-bold transition-all shadow-sm flex items-center gap-2 ${
+                        canApprove && !isUpdating
+                          ? "bg-text-primary text-bg-primary hover:bg-opacity-90 cursor-pointer"
+                          : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+                      }`}
+                    >
+                      {isUpdating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      {!canApprove ? "APROBACIÓN RESTRINGIDA" : "APROBAR"}
+                    </button>
+                  )}
                   <button className="px-6 py-2 bg-bg-primary border border-text-primary text-text-primary rounded text-xs font-bold hover:bg-bg-secondary transition-colors">
                     NUEVA VERSIÓN
                   </button>

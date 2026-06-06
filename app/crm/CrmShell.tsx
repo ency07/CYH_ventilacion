@@ -15,11 +15,11 @@ const menuGroups = [
     group: "COMERCIAL",
     items: [
       { name: 'Dashboard', href: '/crm/dashboard', icon: LayoutDashboard, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
-      { name: 'Leads', href: '/crm/leads', icon: Target, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
+      { name: 'Leads', href: '/crm/leads', icon: Target, roles: ['admin', 'super_admin', 'director_comercial', 'comercial', 'ingeniero'] },
       { name: 'Pipeline', href: '/crm/pipeline', icon: Kanban, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
       { name: 'Clientes', href: '/crm/clientes', icon: Building2, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
       { name: 'Oportunidades', href: '/crm/oportunidades', icon: DollarSign, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
-      { name: 'Propuestas', href: '/crm/propuestas', icon: FileSignature, roles: ['admin', 'super_admin', 'director_comercial', 'ingeniero'] },
+      { name: 'Propuestas', href: '/crm/propuestas', icon: FileSignature, roles: ['admin', 'super_admin', 'director_comercial', 'comercial', 'ingeniero'] },
     ]
   },
   {
