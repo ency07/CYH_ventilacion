@@ -110,22 +110,15 @@ export default function StepSummary() {
       // PAGE 1: COVER PAGE
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       
-      // Watermarks
-      doc.setTextColor(245, 245, 245);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(40);
-      doc.text("DOCUMENTO PRELIMINAR", 30, 160, { angle: 45 });
-      doc.text("ESTIMACIÓN REFERENCIAL", 70, 260, { angle: 45 });
-
       // Top Corporate Banner block (Siemens/Schneider style - clean white/grey)
       doc.setFillColor(245, 247, 250); // Light industrial grey
       doc.rect(0, 0, 210, 35, "F");
 
       // Draw vector geometry of logo
-      doc.setFillColor(20, 20, 20); // Matte black/dark grey
+      doc.setFillColor(15, 23, 42); // Matte dark steel
       doc.rect(20, 12, 8, 8, "F");
       
-      doc.setTextColor(20, 20, 20);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
       doc.text("CYH", 32, 18);
@@ -136,7 +129,7 @@ export default function StepSummary() {
       doc.text("INGENIERÍA DE VENTILACIÓN", 32, 22);
 
       // Title Block
-      doc.setTextColor(20, 20, 20);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(22);
       doc.text("Preingeniería Estimada de", 20, 65);
@@ -144,11 +137,11 @@ export default function StepSummary() {
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 110, 125);
+      doc.setTextColor(71, 85, 105);
       doc.text("Diagnóstico preliminar para análisis consultivo e ingeniería de concepto.", 20, 85);
 
       // Matte dark accent rule line
-      doc.setDrawColor(20, 20, 20);
+      doc.setDrawColor(15, 23, 42);
       doc.setLineWidth(1.5);
       doc.line(20, 92, 190, 92);
 
@@ -157,7 +150,7 @@ export default function StepSummary() {
       doc.setDrawColor(245, 158, 11);
       doc.setLineWidth(0.5);
       doc.rect(20, 98, 170, 18, "FD");
-      doc.setTextColor(245, 158, 11);
+      doc.setTextColor(180, 83, 9); // Darker amber for better contrast
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.5);
       
@@ -170,14 +163,14 @@ export default function StepSummary() {
       doc.rect(20, 108, 170, 75, "F");
 
       // Vertical Accent line in card
-      doc.setDrawColor(11, 17, 32);
+      doc.setDrawColor(15, 23, 42);
       doc.setLineWidth(0.8);
       doc.line(20, 108, 20, 183);
 
       // Metadata labels
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.setTextColor(40, 40, 40);
+      doc.setTextColor(47, 55, 70);
 
       let metaY = 132;
       const meta = [
@@ -200,7 +193,7 @@ export default function StepSummary() {
 
       // Cover Page Footer Warning
       doc.setFontSize(7.5);
-      doc.setTextColor(150, 150, 150);
+      doc.setTextColor(148, 163, 184);
       doc.text("ESTE DOCUMENTO ES UN ANÁLISIS PRELIMINAR DE PREINGENIERÍA PARA USO INTERNO B2B.", 20, 260);
       doc.text("PROPIEDAD INDUSTRIAL DE CYH INGENIERÍA. REPRODUCCIÓN TOTAL O PARCIAL PROHIBIDA.", 20, 265);
 
@@ -209,34 +202,27 @@ export default function StepSummary() {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       doc.addPage();
 
-      // Watermarks
-      doc.setTextColor(245, 245, 245);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(40);
-      doc.text("DOCUMENTO PRELIMINAR", 30, 160, { angle: 45 });
-      doc.text("ESTIMACIÓN REFERENCIAL", 70, 260, { angle: 45 });
-
       // Top running header
       doc.setFillColor(245, 247, 250);
       doc.rect(0, 0, 210, 12, "F");
-      doc.setTextColor(100, 100, 100);
+      doc.setTextColor(71, 85, 105);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7);
       doc.text(`CYH PREINGENIERÍA  |  CÓDIGO: PRE-ING-2026 REV A`, 15, 8);
 
       // Section 1: Executive Summary
-      doc.setTextColor(11, 17, 32);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.text("1. RESUMEN EJECUTIVO", 15, 28);
-      doc.setDrawColor(11, 17, 32);
+      doc.setDrawColor(15, 23, 42);
       doc.setLineWidth(0.3);
       doc.line(15, 30, 195, 30);
 
       // Description text wrapping
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
+      doc.setTextColor(51, 65, 85);
 
       const summaryText = "El presente diagnóstico consolida la estimación referencial de caudal de aire, renovación volumétrica, e índice de complejidad mediante nuestros algoritmos de evaluación. Este documento sirve como punto de partida consultivo, planteando un escenario estimado bajo lineamientos técnicos AMCA y ASHRAE para entornos industriales.";
       const wrappedSummary = doc.splitTextToSize(summaryText, 180);
@@ -247,7 +233,7 @@ export default function StepSummary() {
       doc.text(wrappedScope, 15, 52);
 
       // Section 2: Parameters Grid Table
-      doc.setTextColor(11, 17, 32);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.text("2. PARÁMETROS OPERATIVOS DE DISEÑO Y MEDICIONES", 15, 76);
@@ -271,14 +257,14 @@ export default function StepSummary() {
       let tableY = 86;
       rows.forEach((row, i) => {
         if (i === 0) {
-          doc.setFillColor(11, 17, 32);
+          doc.setFillColor(15, 23, 42);
           doc.rect(15, tableY, 180, 8, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFont("helvetica", "bold");
         } else {
-          doc.setFillColor(i % 2 === 0 ? "#f3f4f6" : "#ffffff");
+          doc.setFillColor(i % 2 === 0 ? "#f8fafc" : "#ffffff");
           doc.rect(15, tableY, 180, 8, "F");
-          doc.setTextColor(60, 60, 60);
+          doc.setTextColor(51, 65, 85);
           doc.setFont("helvetica", "normal");
         }
         doc.setFontSize(8);
@@ -289,7 +275,7 @@ export default function StepSummary() {
 
       // Footer Page 2
       doc.setFontSize(7.5);
-      doc.setTextColor(150, 150, 150);
+      doc.setTextColor(148, 163, 184);
       doc.text("Página 2 de 3", 98, 285);
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -297,23 +283,16 @@ export default function StepSummary() {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       doc.addPage();
 
-      // Watermarks
-      doc.setTextColor(245, 245, 245);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(40);
-      doc.text("DOCUMENTO PRELIMINAR", 30, 160, { angle: 45 });
-      doc.text("ESTIMACIÓN REFERENCIAL", 70, 260, { angle: 45 });
-
       // Top running header
       doc.setFillColor(245, 247, 250);
       doc.rect(0, 0, 210, 12, "F");
-      doc.setTextColor(100, 100, 100);
+      doc.setTextColor(71, 85, 105);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7);
       doc.text(`CYH PREINGENIERÍA  |  CÓDIGO: PRE-ING-2026 REV A`, 15, 8);
 
       // Section 3: Engineering Recommendations
-      doc.setTextColor(11, 17, 32);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.text("3. ESPECIFICACIÓN Y DIRECTIVAS DE INGENIERÍA", 15, 26);
@@ -335,42 +314,42 @@ export default function StepSummary() {
       docSections.forEach(([sectionTitle, text]) => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8.5);
-        doc.setTextColor(11, 17, 32);
+        doc.setTextColor(15, 23, 42);
         doc.text(sectionTitle, 15, textY);
         
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7.5);
-        doc.setTextColor(70, 70, 70);
+        doc.setTextColor(71, 85, 105);
         const wrapped = doc.splitTextToSize(text, 180);
         doc.text(wrapped, 15, textY + 4);
         textY += 19;
       });
 
       // Section 4: Budget Range (Highlight Card)
-      doc.setTextColor(11, 17, 32);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.text("4. VALORACIÓN PRESUPUESTARIA PRELIMINAR", 15, 120);
       doc.line(15, 122, 195, 122);
 
-      doc.setFillColor(242, 252, 255);
+      doc.setFillColor(248, 250, 252);
       doc.rect(15, 128, 180, 24, "F");
-      doc.setDrawColor(0, 212, 255);
+      doc.setDrawColor(15, 23, 42);
       doc.setLineWidth(1);
       doc.line(15, 128, 15, 152);
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
-      doc.setTextColor(11, 17, 32);
+      doc.setTextColor(15, 23, 42);
       doc.text("RANGO REFERENCIAL DE INVERSIÓN ESTIMADA (EX-WORKS):", 20, 134);
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
-      doc.setTextColor(0, 130, 170);
+      doc.setTextColor(15, 23, 42);
       doc.text(`${formatCOP(prices.minCOP)} – ${formatCOP(prices.maxCOP)}`, 20, 143);
 
       // Section 5: Legal Disclaimer
-      doc.setTextColor(11, 17, 32);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.text("5. DECLARACIÓN DE LÍMITE DE RESPONSABILIDAD LEGAL (DISCLAIMER)", 15, 162);
@@ -379,39 +358,37 @@ export default function StepSummary() {
       const disclaimerText = "Este reporte técnico preliminar es una modelación teórica basada en algoritmos de pre-cálculo y los datos de entrada provistos por el usuario. No representa un compromiso contractual, diseño de detalle de ingeniería final o un presupuesto comercial vinculante. Toda especificación técnica definitiva y cotización formal de compra están sujetas obligatoriamente a una visita técnica en sitio por ingenieros de campo certificados de CYH y a la formalización comercial correspondiente.";
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
-      doc.setTextColor(120, 120, 120);
+      doc.setTextColor(148, 163, 184);
       const wrappedDisclaimer = doc.splitTextToSize(disclaimerText, 180);
       doc.text(wrappedDisclaimer, 15, 168);
 
       // Engineering Closure Card
-      doc.setFillColor(250, 250, 250);
-      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
       doc.setLineWidth(0.5);
       doc.rect(15, 185, 180, 28, "FD");
       
-      doc.setTextColor(11, 17, 32);
+      doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.text("¿CÓMO AVANZAR HACIA UN DISEÑO DEFINITIVO?", 20, 192);
       
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
-      doc.setTextColor(100, 100, 100);
-      doc.text("1. Visita técnica en sitio.", 20, 198);
-      doc.text("2. Levantamiento de variables reales.", 20, 203);
-      doc.text("3. Ingeniería de detalle.", 20, 208);
-      doc.text("4. Selección final de equipos.", 20, 213);
-      doc.text("5. Validación normativa y operativa.", 20, 218);
+      doc.setTextColor(71, 85, 105);
+      doc.text("• Visita técnica en sitio y levantamiento de variables físicas.", 20, 198);
+      doc.text("• Desarrollo de ingeniería de detalle y simulación aerodinámica.", 20, 204);
+      doc.text("• Selección de equipos optimizada y presupuesto comercial en firme.", 20, 210);
       
-      doc.setFillColor(20, 20, 20); // Matte black CTA
+      doc.setFillColor(15, 23, 42); // Matte Steel Gray CTA
       doc.rect(130, 195, 60, 8, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7);
-      doc.text("SOLICITAR ASESORÍA ESPECIALIZADA", 132, 200);
+      doc.text("SOLICITAR EVALUACIÓN COMERCIAL", 132, 200);
 
       // B2B Midnight Blue Footer
-      doc.setFillColor(11, 17, 32);
+      doc.setFillColor(15, 23, 42);
       doc.rect(0, 236, 210, 61, "F");
 
       doc.setTextColor(255, 255, 255);
@@ -421,12 +398,12 @@ export default function StepSummary() {
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
-      doc.setTextColor(180, 190, 200);
+      doc.setTextColor(203, 213, 225);
       doc.text("Soporte B2B y Comisionamiento de Caudales LATAM", 15, 254);
       doc.text("Contacto Proyectos: proyectos@cyhventilacion.com | www.cyhventilacion.com", 15, 259);
       doc.text("Presencia Sede Caribe: Barranquilla (Atlántico, Colombia) | Cumplimiento RETIE / NTC 2050", 15, 264);
 
-      doc.setTextColor(0, 212, 255);
+      doc.setTextColor(248, 250, 252);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.text("CYH OS • PLATAFORMA CORPORATIVA", 138, 254);
