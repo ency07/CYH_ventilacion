@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { FileText, Plus, Search, ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react";
+import { FileText, Plus, Search, ChevronLeft, ChevronRight, X, Loader2, Printer, Share2, Download } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { updateProposalStatusAction } from "@/lib/server-actions/crm";
+import { updateProposalStatusAction, createProposalAction } from "@/lib/server-actions/crm";
 
 const formatUSD = (value: number) => {
   return new Intl.NumberFormat('en-US', {
@@ -15,10 +15,103 @@ const formatUSD = (value: number) => {
   }).format(value);
 };
 
-export default function PropuestasClient({ proposalsData, userRole = "comercial" }: { proposalsData: any[], userRole?: string }) {
+export default function PropuestasClient({ 
+  proposalsData, 
+  activeLeads = [],
+  userRole = "comercial" 
+}: { 
+  proposalsData: any[], 
+  activeLeads?: any[],
+  userRole?: string 
+}) {
   const [selectedPropId, setSelectedPropId] = useState<string | null>(proposalsData.length > 0 ? proposalsData[0].proposal.id : null);
   const [search, setSearch] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // New Proposal Form State
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newProposalError, setNewProposalError] = useState("");
+  const [newForm, setNewForm] = useState({
+    leadId: activeLeads.length > 0 ? activeLeads[0].id : "",
+    title: "",
+    totalValue: 0
+  });
+
+  const handlePrint = () => {
+    const printContent = document.getElementById("printable-proposal");
+    if (!printContent) return;
+    const originalContent = document.body.innerHTML;
+    document.body.innerHTML = printContent.innerHTML;
+    window.print();
+    window.location.reload();
+  };
+
+  const handleShare = () => {
+    if (typeof window !== "undefined" && selectedProposal) {
+      const url = `${window.location.origin}/crm/propuestas?id=${selectedProposal.proposal.id}`;
+      navigator.clipboard.writeText(url);
+      alert("Enlace de la propuesta copiado al portapapeles:\n" + url);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!selectedProposal) return;
+    const headers = ["ID Propuesta", "Titulo", "Version", "Cliente/Empresa", "Valor Total (USD)", "Estado", "Fecha Creacion"];
+    const row = [
+      selectedProposal.proposal.id,
+      selectedProposal.proposal.title,
+      `V${selectedProposal.proposal.version}.0`,
+      selectedProposal.companyName || selectedProposal.lead?.fullName || "Desconocido",
+      selectedProposal.proposal.totalValue,
+      selectedProposal.proposal.status,
+      new Date(selectedProposal.proposal.createdAt).toLocaleDateString()
+    ];
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
+      + [headers.join(","), row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",")].join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `propuesta_${selectedProposal.proposal.title.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCreateProposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newForm.leadId) {
+      setNewProposalError("Debes seleccionar un lead.");
+      return;
+    }
+    setCreating(true);
+    setNewProposalError("");
+    try {
+      const res = await createProposalAction({
+        leadId: newForm.leadId,
+        title: newForm.title,
+        totalValue: Number(newForm.totalValue),
+        status: "borrador"
+      });
+      if (res.success) {
+        setIsNewOpen(false);
+        setNewForm({
+          leadId: activeLeads.length > 0 ? activeLeads[0].id : "",
+          title: "",
+          totalValue: 0
+        });
+        window.location.reload();
+      } else {
+        setNewProposalError(res.error);
+      }
+    } catch (err: any) {
+      setNewProposalError(err.message || "Error al crear la propuesta");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const filteredProposals = proposalsData.filter(p => 
     p.proposal.title?.toLowerCase().includes(search.toLowerCase()) || 
@@ -67,7 +160,10 @@ export default function PropuestasClient({ proposalsData, userRole = "comercial"
         {/* Header List */}
         <div className="p-6 border-b border-border-subtle flex items-center justify-between">
           <h1 className="text-xl font-bold text-text-primary">Propuestas Activas</h1>
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-text-primary text-bg-primary rounded text-xs font-bold hover:bg-opacity-90 transition-colors shadow-sm">
+          <button 
+            onClick={() => setIsNewOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-text-primary text-bg-primary rounded text-xs font-bold hover:bg-opacity-90 transition-colors shadow-sm"
+          >
             <Plus className="w-3.5 h-3.5" /> NEW PROPOSAL
           </button>
         </div>
@@ -154,15 +250,38 @@ export default function PropuestasClient({ proposalsData, userRole = "comercial"
         {selectedProposal ? (
           <>
             {/* Viewer Header */}
-            <div className="px-6 py-4 bg-[#e8edf5] border-b border-[#d1d9e6] flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 bg-bg-secondary border-b border-border-subtle flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-text-secondary" />
                 <div>
-                  <h2 className="text-sm font-bold text-[#041627]">{selectedProposal.proposal.title} - V{selectedProposal.proposal.version}.0.pdf</h2>
-                  <p className="text-[10px] text-text-secondary mt-0.5">
+                  <h2 className="text-sm font-bold text-text-primary">{selectedProposal.proposal.title} - V{selectedProposal.proposal.version}.0.pdf</h2>
+                  <p className="text-[10px] text-text-muted mt-0.5 font-medium">
                     Last updated: {format(new Date(selectedProposal.proposal.updatedAt), "dd MMM yyyy HH:mm")}
                   </p>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handlePrint}
+                  title="Imprimir Propuesta"
+                  className="p-1.5 bg-bg-primary border border-border-subtle rounded text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors shadow-sm cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={handleShare}
+                  title="Compartir Propuesta"
+                  className="p-1.5 bg-bg-primary border border-border-subtle rounded text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors shadow-sm cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={handleExportCSV}
+                  title="Exportar Datos"
+                  className="p-1.5 bg-bg-primary border border-border-subtle rounded text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors shadow-sm cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -170,39 +289,39 @@ export default function PropuestasClient({ proposalsData, userRole = "comercial"
             <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center">
               
               {/* Fake PDF Paper */}
-              <div className="w-full max-w-[800px] bg-bg-primary shadow-md border border-[#d1d9e6] p-12 aspect-[1/1.4] flex flex-col relative shrink-0">
+              <div id="printable-proposal" className="w-full max-w-[800px] bg-white text-slate-900 shadow-md border border-gray-300 p-12 aspect-[1/1.4] flex flex-col relative shrink-0">
                 <h1 className="text-2xl font-black tracking-tighter text-[#0b1c30]">CYH INDUSTRIAL</h1>
-                <p className="text-[10px] tracking-widest text-text-secondary uppercase mb-16">Advanced Engineering Systems</p>
+                <p className="text-[10px] tracking-widest text-gray-500 uppercase mb-16">Advanced Engineering Systems</p>
 
-                <p className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Commercial Proposal For:</p>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Commercial Proposal For:</p>
                 <h2 className="text-4xl font-bold text-[#041627] leading-tight max-w-[80%]">{selectedProposal.proposal.title}</h2>
-                <p className="text-sm text-text-secondary mt-4">{format(new Date(selectedProposal.proposal.createdAt), "MMMM do, yyyy")}</p>
+                <p className="text-sm text-gray-600 mt-4">{format(new Date(selectedProposal.proposal.createdAt), "MMMM do, yyyy")}</p>
 
-                <div className="flex mt-20 gap-16 border-t border-text-primary pt-6">
+                <div className="flex mt-20 gap-16 border-t border-gray-800 pt-6">
                   <div className="flex-1">
-                    <h3 className="text-[10px] font-bold text-text-primary uppercase tracking-wider mb-4">Client Information</h3>
+                    <h3 className="text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-4">Client Information</h3>
                     <p className="text-sm font-bold text-[#0b1c30]">{selectedProposal.companyName || selectedProposal.lead?.fullName || 'Client Name'}</p>
-                    <p className="text-xs text-text-secondary mt-1">Tech Park, Bldg 4, Sector 7</p>
-                    <p className="text-xs text-text-secondary mt-1">Attn: Eng. {selectedProposal.lead?.fullName}</p>
+                    <p className="text-xs text-gray-600 mt-1">Tech Park, Bldg 4, Sector 7</p>
+                    <p className="text-xs text-gray-600 mt-1">Attn: Eng. {selectedProposal.lead?.fullName}</p>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-[10px] font-bold text-text-primary uppercase tracking-wider mb-4">Project Lead</h3>
+                    <h3 className="text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-4">Project Lead</h3>
                     <p className="text-sm font-bold text-[#0b1c30]">Johnathan Doe</p>
-                    <p className="text-xs text-text-secondary mt-1">Senior Project Manager</p>
-                    <p className="text-xs text-text-secondary mt-1">j.doe@cyh-industrial.com</p>
+                    <p className="text-xs text-gray-600 mt-1">Senior Project Manager</p>
+                    <p className="text-xs text-gray-600 mt-1">j.doe@cyh-industrial.com</p>
                   </div>
                 </div>
 
-                <div className="mt-16 border-t border-border-medium pt-6">
-                  <h3 className="text-[10px] font-bold text-text-primary uppercase tracking-wider mb-4">Resumen Ejecutivo</h3>
-                  <div className="h-4 bg-bg-secondary rounded w-full mb-2"></div>
-                  <div className="h-4 bg-bg-secondary rounded w-11/12 mb-2"></div>
-                  <div className="h-4 bg-bg-secondary rounded w-10/12"></div>
+                <div className="mt-16 border-t border-gray-300 pt-6">
+                  <h3 className="text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-4">Resumen Ejecutivo</h3>
+                  <div className="h-4 bg-gray-100 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-100 rounded w-11/12 mb-2"></div>
+                  <div className="h-4 bg-gray-100 rounded w-10/12"></div>
                 </div>
               </div>
 
               {/* Comments Section */}
-              <div className="w-full max-w-[800px] mt-8 bg-bg-primary border border-[#d1d9e6] rounded-t-lg p-6 shadow-sm mb-20 shrink-0">
+              <div className="w-full max-w-[800px] mt-8 bg-bg-primary border border-border-subtle rounded-t-lg p-6 shadow-sm mb-20 shrink-0">
                 <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-6">Historial de Comentarios</h3>
                 
                 <div className="space-y-6">
@@ -226,17 +345,17 @@ export default function PropuestasClient({ proposalsData, userRole = "comercial"
                   <input 
                     type="text" 
                     placeholder="Añadir un comentario o mencionar a alguien..." 
-                    className="w-full px-4 py-2 text-sm bg-bg-secondary border border-[#d1d9e6] rounded focus:outline-none focus:border-text-primary"
+                    className="w-full px-4 py-2 text-sm bg-bg-secondary border border-border-subtle rounded focus:outline-none focus:border-text-primary"
                   />
                 </div>
               </div>
             </div>
 
             {/* Sticky Footer */}
-            <div className="absolute bottom-0 left-0 right-0 bg-bg-primary border-t border-[#d1d9e6] p-4 px-8 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
+            <div className="absolute bottom-0 left-0 right-0 bg-bg-primary border-t border-border-subtle p-4 px-8 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Monto Total</span>
-                <span className="text-2xl font-black text-[#041627] tracking-tight">{formatUSD(selectedProposal.proposal.totalValue || 0)}</span>
+                <span className="text-2xl font-black text-[#041627] dark:text-accent-cyan tracking-tight">{formatUSD(selectedProposal.proposal.totalValue || 0)}</span>
               </div>
               
               <div className="flex items-center gap-6">
@@ -277,6 +396,75 @@ export default function PropuestasClient({ proposalsData, userRole = "comercial"
           </div>
         )}
       </div>
+
+
+      {/* NEW PROPOSAL MODAL */}
+      {isNewOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-bg-primary border border-border-subtle rounded-md w-full max-w-md p-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setIsNewOpen(false)} className="absolute top-4 right-4 text-text-muted hover:text-text-primary">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold text-text-primary uppercase tracking-wide mb-4">Nueva Propuesta</h3>
+            {newProposalError && <p className="text-red-500 text-xs mb-4">{newProposalError}</p>}
+            
+            <form onSubmit={handleCreateProposal} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-text-muted uppercase tracking-wider block mb-1">Lead Relacionado *</label>
+                <select 
+                  required
+                  value={newForm.leadId} 
+                  onChange={e => setNewForm({...newForm, leadId: e.target.value})}
+                  className="w-full bg-bg-secondary border border-border-subtle rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-cyan bg-bg-primary"
+                >
+                  {activeLeads.length === 0 ? (
+                    <option value="">No hay leads activos disponibles</option>
+                  ) : (
+                    activeLeads.map(l => (
+                      <option key={l.id} value={l.id}>{l.companyName} - {l.fullName}</option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-text-muted uppercase tracking-wider block mb-1">Título de la Propuesta *</label>
+                <input 
+                  required 
+                  type="text"
+                  placeholder="Ej: Propuesta Técnica Aire Acondicionado"
+                  value={newForm.title} 
+                  onChange={e => setNewForm({...newForm, title: e.target.value})} 
+                  className="w-full bg-bg-secondary border border-border-subtle rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-cyan" 
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-text-muted uppercase tracking-wider block mb-1">Valor Total (USD) *</label>
+                <input 
+                  required 
+                  type="number"
+                  value={newForm.totalValue} 
+                  onChange={e => setNewForm({...newForm, totalValue: Number(e.target.value)})} 
+                  className="w-full bg-bg-secondary border border-border-subtle rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-cyan" 
+                />
+              </div>
+
+              <button 
+                disabled={creating} 
+                type="submit" 
+                className="w-full py-2.5 bg-text-primary text-bg-primary text-xs font-bold uppercase tracking-wider rounded mt-4 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+                  </>
+                ) : "Crear Propuesta"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

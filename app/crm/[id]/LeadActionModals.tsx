@@ -89,11 +89,11 @@ export default function LeadActionModals({ leadId, assignedTo = "Sin Asignar" }:
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-text-muted uppercase tracking-wide">Tipo de Actividad</label>
                 <select name="activityType" required className="p-2 bg-bg-secondary border border-border-subtle rounded-md text-sm text-text-primary focus:border-accent-cyan focus:outline-none">
-                  <option value="llamada">Llamada Telefónica</option>
-                  <option value="correo">Correo Enviado</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="reunion_online">Reunión Online</option>
-                  <option value="visita_tecnica">Visita Técnica</option>
+                  <option value="call">Llamada Telefónica</option>
+                  <option value="email">Correo Enviado</option>
+                  <option value="call">WhatsApp</option>
+                  <option value="meeting">Reunión Online</option>
+                  <option value="visit">Visita Técnica</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1">

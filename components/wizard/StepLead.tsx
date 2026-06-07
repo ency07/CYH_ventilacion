@@ -47,6 +47,29 @@ function mapErrorToFriendly(errMessage: string): string {
   return USER_FRIENDLY_ERRORS.SERVER;
 }
 
+const COLOMBIAN_INDUSTRIAL_CITIES = [
+  "Barranquilla",
+  "Bogotá",
+  "Medellín",
+  "Cali",
+  "Cartagena",
+  "Montería"
+];
+
+const normalizeString = (str: string) => {
+  return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+};
+
+const findOfficialCity = (input: string): string | null => {
+  const normInput = normalizeString(input);
+  for (const city of COLOMBIAN_INDUSTRIAL_CITIES) {
+    if (normalizeString(city) === normInput) {
+      return city;
+    }
+  }
+  return null;
+};
+
 export default function StepLead() {
   const { service, flowInputs, flowResult, symptomsResult, leadData, setLeadData, setStep } = useWizardStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,10 +77,12 @@ export default function StepLead() {
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
+  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
 
   const {
     control,
     handleSubmit,
+    setError,
     formState: { errors, isValid },
   } = useForm<LeadInputs>({
     resolver: zodResolver(LeadFormSchema),
@@ -74,6 +99,17 @@ export default function StepLead() {
   });
 
   const onSubmit = async (data: LeadInputs) => {
+    const officialCity = findOfficialCity(data.ciudad);
+    if (!officialCity) {
+      setError("ciudad", {
+        type: "manual",
+        message: "Debe seleccionar una de las ciudades industriales oficiales (Barranquilla, Medellín, Bogotá, Cali, Cartagena, Montería)."
+      });
+      return;
+    }
+    // Normalize casing and accents before submitting
+    data.ciudad = officialCity;
+
     setIsSubmitting(true);
     setSubmitError(null);
     setIsSuccess(false);
@@ -440,15 +476,49 @@ export default function StepLead() {
               <Controller
                 name="ciudad"
                 control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    id="ciudad"
-                    disabled={isSubmitting}
-                    placeholder="Ej. Barranquilla, Atlántico"
-                    className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                )}
+                render={({ field }) => {
+                  const suggestions = COLOMBIAN_INDUSTRIAL_CITIES.filter(c =>
+                    normalizeString(c).includes(normalizeString(field.value || ""))
+                  );
+                  return (
+                    <div className="relative w-full">
+                      <input
+                        {...field}
+                        id="ciudad"
+                        type="text"
+                        autoComplete="off"
+                        disabled={isSubmitting}
+                        placeholder="Ej. Barranquilla, Bogotá..."
+                        onFocus={() => setIsCityDropdownOpen(true)}
+                        onBlur={() => {
+                          // Allow click on suggestion list before hiding
+                          setTimeout(() => setIsCityDropdownOpen(false), 200);
+                        }}
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          setIsCityDropdownOpen(true);
+                        }}
+                        className="w-full bg-bg-tertiary border border-border-subtle rounded-sm p-3 text-xs text-text-primary focus:border-accent-cyan focus:outline-none transition-all placeholder:text-text-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      {isCityDropdownOpen && suggestions.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 bg-bg-tertiary border border-border-subtle rounded-sm shadow-xl max-h-48 overflow-y-auto divide-y divide-border-subtle/50 animate-fadeIn">
+                          {suggestions.map((city) => (
+                            <div
+                              key={city}
+                              onMouseDown={() => {
+                                field.onChange(city);
+                                setIsCityDropdownOpen(false);
+                              }}
+                              className="px-3 py-2 text-xs text-text-primary hover:bg-accent-cyan/15 hover:text-accent-cyan cursor-pointer transition-colors font-medium"
+                            >
+                              {city}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }}
               />
               {errors.ciudad && (
                 <span className="text-[10px] font-mono text-danger block">{errors.ciudad.message}</span>

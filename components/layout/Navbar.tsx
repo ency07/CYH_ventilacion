@@ -34,6 +34,10 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
+  if (pathname?.startsWith("/crm")) {
+    return null;
+  }
+
   const navLinks = [
     { name: "Inicio", path: "/" },
     { name: "Catalogo", path: "/catalogo" },

@@ -46,6 +46,10 @@ export async function getCurrentUserAction(): Promise<ActionResult<any>> {
 
 export async function getAllCrmUsersAction(): Promise<ActionResult<any[]>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const users = await db.select().from(crmUsers);
     return { success: true, data: users };
   } catch (err: any) {
@@ -55,6 +59,22 @@ export async function getAllCrmUsersAction(): Promise<ActionResult<any[]>> {
 
 export async function updateCrmUserAction(userId: string, data: { fullName?: string; role?: string }): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const isSelf = user.id === userId;
+    const [currentUserProfile] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const isAuthorizedAdmin = currentUserProfile && ["admin", "super_admin"].includes(currentUserProfile.role);
+
+    if (!isSelf && !isAuthorizedAdmin) {
+      return { success: false, error: "Acceso denegado. No tienes permisos para modificar otros usuarios." };
+    }
+
+    if (data.role && !isAuthorizedAdmin) {
+      return { success: false, error: "Acceso denegado. Solo administradores pueden cambiar roles." };
+    }
+
     const [updated] = await db.update(crmUsers)
       .set({ 
         ...(data.fullName ? { fullName: data.fullName } : {}),

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { diagnosticReports } from "@/lib/db/schema";
+import { diagnosticReports, crmUsers, crmActivityLogs } from "@/lib/db/schema";
 import { DiagnosticInsertSchema } from "@/lib/validations/crm.schema";
 import { eq } from "drizzle-orm";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -13,6 +13,10 @@ export type ActionResult<T> =
 
 export async function createDiagnosticAction(rawInput: any): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const validated = DiagnosticInsertSchema.parse(rawInput);
 
     const [newReport] = await db.insert(diagnosticReports).values({
@@ -38,6 +42,10 @@ export async function createDiagnosticAction(rawInput: any): Promise<ActionResul
 
 export async function getDiagnosticByLeadIdAction(leadId: string): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const [report] = await db.select().from(diagnosticReports).where(eq(diagnosticReports.leadId, leadId));
     if (!report) {
       return { success: false, error: "Reporte no encontrado." };
@@ -52,6 +60,8 @@ export async function getDiagnosticByLeadIdAction(leadId: string): Promise<Actio
 export async function uploadPdfAction(leadId: string, pdfBase64: string): Promise<ActionResult<string>> {
   try {
     const supabaseServer = getSupabaseServer();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
     
     // Ensure the pdfs bucket exists
     try {
@@ -88,5 +98,89 @@ export async function uploadPdfAction(leadId: string, pdfBase64: string): Promis
   } catch (error: any) {
     console.error("Error uploading PDF to storage:", error);
     return { success: false, error: error.message || "Error al subir reporte PDF." };
+  }
+}
+
+export async function upsertDiagnosticAction(rawInput: {
+  leadId: string;
+  airflow?: number | null;
+  dimensions?: { width?: number; length?: number; height?: number } | null;
+  technicalObservations?: string | null;
+  recommendations?: string | null;
+  materialSuggestions?: string | null;
+  status?: string | null;
+  verdictNotes?: string | null;
+}): Promise<ActionResult<any>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "vendedor";
+
+    // Block Vendedor / Comercial from editing/writing
+    if (userRole === "vendedor" || userRole === "comercial") {
+      return { success: false, error: "Acceso denegado: El panel de Preingeniería es Solo Lectura para asesores comerciales." };
+    }
+
+    const leadId = rawInput.leadId;
+    if (!leadId) return { success: false, error: "leadId es requerido." };
+
+    // Check if diagnostic report already exists
+    const [existingReport] = await db.select().from(diagnosticReports).where(eq(diagnosticReports.leadId, leadId));
+
+    let resultReport;
+
+    if (existingReport) {
+      // Update
+      const [updated] = await db.update(diagnosticReports)
+        .set({
+          airflow: rawInput.airflow !== undefined ? rawInput.airflow : existingReport.airflow,
+          dimensions: rawInput.dimensions !== undefined ? rawInput.dimensions : existingReport.dimensions,
+          technicalObservations: rawInput.technicalObservations !== undefined ? rawInput.technicalObservations : existingReport.technicalObservations,
+          recommendations: rawInput.recommendations !== undefined ? rawInput.recommendations : existingReport.recommendations,
+          materialSuggestions: rawInput.materialSuggestions !== undefined ? rawInput.materialSuggestions : existingReport.materialSuggestions,
+          status: rawInput.status !== undefined && rawInput.status !== null ? rawInput.status : existingReport.status,
+          verdictNotes: rawInput.verdictNotes !== undefined ? rawInput.verdictNotes : existingReport.verdictNotes,
+          updatedBy: user.id,
+          approvedBy: rawInput.status === "aprobado" ? user.id : existingReport.approvedBy,
+          approvedAt: rawInput.status === "aprobado" ? new Date() : existingReport.approvedAt,
+        })
+        .where(eq(diagnosticReports.id, existingReport.id))
+        .returning();
+      resultReport = updated;
+    } else {
+      // Insert
+      const [inserted] = await db.insert(diagnosticReports).values({
+        leadId,
+        airflow: rawInput.airflow || null,
+        dimensions: rawInput.dimensions || null,
+        technicalObservations: rawInput.technicalObservations || null,
+        recommendations: rawInput.recommendations || null,
+        materialSuggestions: rawInput.materialSuggestions || null,
+        status: rawInput.status || "pendiente",
+        verdictNotes: rawInput.verdictNotes || null,
+        createdBy: user.id,
+        approvedBy: rawInput.status === "aprobado" ? user.id : null,
+        approvedAt: rawInput.status === "aprobado" ? new Date() : null,
+      }).returning();
+      resultReport = inserted;
+    }
+
+    // Insert an activity log for tracking the technical update
+    await db.insert(crmActivityLogs).values({
+      leadId,
+      activityType: "diagnostic_updated",
+      description: `Reporte de Preingeniería y Veredicto Técnico actualizados.`,
+      userId: user.id,
+    });
+
+    revalidatePath("/crm");
+    revalidatePath(`/crm/${leadId}`);
+    return { success: true, data: resultReport };
+  } catch (error: any) {
+    console.error("Error in upsertDiagnosticAction:", error);
+    return { success: false, error: error.message || "Error al guardar el diagnóstico técnico." };
   }
 }

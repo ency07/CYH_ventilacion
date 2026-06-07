@@ -100,3 +100,42 @@ body {
     linear-gradient(to right, var(--border-subtle) 1px, transparent 1px),
     linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px);
 }
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* Ocultar elementos de navegación y control */
+  aside, 
+  header, 
+  nav, 
+  button, 
+  form, 
+  footer {
+    display: none !important;
+  }
+
+  /* Reset margins for print to avoid white spaces from sidebar margins */
+  [class*="md:ml-64"], [class*="md:ml-16"], [class*="ml-"] {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Mostrar y aislar el área de impresión seleccionada */
+  #printable-proposal, 
+  #printable-lead-drawer {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+}

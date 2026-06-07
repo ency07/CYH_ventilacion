@@ -172,7 +172,7 @@ export default function CalendarClient({ tasks }: { tasks: any[] }) {
                         {t.taskType === 'tarea' && <CalendarIcon className="w-5 h-5" />}
                       </div>
                       <div>
-                        <h4 className="font-bold text-text-primary text-sm uppercase">{t.title}</h4>
+                        <h4 className="font-bold text-text-primary text-sm uppercase">{t.title || (t.taskType === 'visita_tecnica' ? 'Visita Técnica / Campo' : t.taskType === 'reunion' ? 'Reunión Comercial' : t.taskType === 'llamada' ? 'Llamada Telefónica' : 'Tarea Programada')}</h4>
                         <p className="text-xs text-text-secondary">{t.companyName}</p>
                       </div>
                     </div>

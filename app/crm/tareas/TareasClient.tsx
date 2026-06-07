@@ -1,12 +1,28 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Plus, Calendar, AlertTriangle } from "lucide-react";
+import { Search, Plus, Calendar, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { es } from "date-fns/locale";
+import { updateTaskStatusAction } from "@/lib/server-actions/crm";
 
 export default function TareasClient({ tasksData }: { tasksData: any[] }) {
   const [search, setSearch] = useState("");
+  const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
+
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      setLoadingTaskId(taskId);
+      const res = await updateTaskStatusAction(taskId, "completado");
+      if (!res.success) {
+        alert("Error al completar la tarea: " + res.error);
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    } finally {
+      setLoadingTaskId(null);
+    }
+  };
 
   // Por diseño: Mapeo temporal de prioridades simuladas si no existe el campo en la DB.
   // Asumimos que tasksData ya viene con la data necesaria.
@@ -77,10 +93,20 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
               <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${dotColor}`}></div>
               
               <div className="p-4 pl-5">
-                {/* ID Badge */}
-                <span className={`${badgeBg} ${badgeText} text-[10px] font-mono font-bold px-1.5 py-0.5 rounded mb-2 inline-block`}>
-                  T-{(task.id.replace(/\D/g,'') || (8000+idx).toString()).substring(0,4)}
-                </span>
+                {/* ID Badge & Action */}
+                <div className="flex justify-between items-start mb-2">
+                  <span className={`${badgeBg} ${badgeText} text-[10px] font-mono font-bold px-1.5 py-0.5 rounded`}>
+                    T-{(task.id.replace(/\D/g,'') || (8000+idx).toString()).substring(0,4)}
+                  </span>
+                  <button 
+                    onClick={() => handleCompleteTask(task.id)}
+                    disabled={loadingTaskId === task.id}
+                    className="p-1 hover:bg-emerald-500/10 text-text-muted hover:text-emerald-500 rounded transition-colors"
+                    title="Marcar como realizada"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                  </button>
+                </div>
                 
                 {/* Title */}
                 <h4 className="font-bold text-text-primary text-sm leading-tight mb-3">

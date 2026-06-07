@@ -19,10 +19,30 @@ export async function loginAction(formData: FormData) {
     return { error: error.message };
   }
 
+  if (!data?.user) {
+    return { error: "No se pudo obtener el usuario autenticado." };
+  }
 
+  // Get profile role
+  const { data: profile } = await supabase
+    .from("crm_users")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
+
+  const role = profile?.role || "cliente";
 
   revalidatePath("/", "layout");
-  redirect("/crm/dashboard");
+
+  if (role === "admin" || role === "super_admin" || role === "director" || role === "director_comercial") {
+    redirect("/crm/dashboard");
+  } else if (role === "vendedor" || role === "comercial") {
+    redirect("/crm/pipeline");
+  } else if (role === "tecnico" || role === "ingeniero") {
+    redirect("/crm/dashboard/tecnico");
+  } else {
+    redirect("/portal/inicio");
+  }
 }
 
 export async function signupAction(formData: FormData) {
@@ -54,12 +74,11 @@ export async function signupAction(formData: FormData) {
   // Insert en la tabla de perfiles usando service_role o trigger
   // Aquí usamos el cliente autenticado asumiendo que el insert_policy lo permite
   if (data.user) {
-    await supabase.from("user_profiles").insert({
+    await supabase.from("crm_users").insert({
       id: data.user.id,
+      email: email,
       full_name: fullName,
-      company: company,
-      position: position,
-      role: 'comercial' // Default role
+      role: 'vendedor' // Default role in active schema
     });
   }
 

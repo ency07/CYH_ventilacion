@@ -1,7 +1,7 @@
 import React from "react";
 import { db } from "@/lib/db";
 import { crmProposals, leads, crmCompanies } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, ne } from "drizzle-orm";
 import PropuestasClient from "./PropuestasClient";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
@@ -34,9 +34,18 @@ export default async function PropuestasPage() {
   .leftJoin(crmCompanies, eq(leads.companyId, crmCompanies.id))
   .orderBy(desc(crmProposals.updatedAt));
 
+  const activeLeads = await db.select({
+    id: leads.id,
+    fullName: leads.fullName,
+    companyName: leads.companyName
+  })
+  .from(leads)
+  .where(ne(leads.status, "ganado"))
+  .orderBy(desc(leads.createdAt));
+
   return (
     <div className="h-[calc(100vh-4rem)] w-full">
-      <PropuestasClient proposalsData={proposals} userRole={userRole} />
+      <PropuestasClient proposalsData={proposals} activeLeads={activeLeads} userRole={userRole} />
     </div>
   );
 }

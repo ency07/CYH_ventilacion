@@ -27,6 +27,10 @@ export default async function CrmLayout({
   const userEmail = user.email || "";
   const userRole = profile?.role || "comercial";
 
+  if (userRole === "cliente") {
+    redirect("/portal/inicio");
+  }
+
   return (
     <CrmShell userName={userName} userEmail={userEmail} userRole={userRole}>
       {children}

@@ -197,12 +197,21 @@ export default function ReportesClient({ initialData }: { initialData: any }) {
               <p className="text-xs text-text-secondary mt-1">Evaluación de eficiencia: Propuestas cerradas vs Diagnósticos emitidos</p>
             </div>
           </div>
-          <div className="flex-1 flex items-end justify-around pb-4 h-32 relative">
-             <div className="absolute bottom-4 left-0 right-0 border-b border-border-subtle"></div>
-             {/* Barras simuladas como en la imagen */}
-             <div className="w-8 h-20 bg-info/40 z-10 relative"></div>
-             <div className="w-8 h-14 bg-text-secondary z-10 relative"></div>
-             <div className="w-8 h-8 bg-border-medium z-10 relative"></div>
+          <div className="flex-1 min-h-[160px] w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ingenieroData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="iniciales" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={(val) => `${val}%`} />
+                <Tooltip formatter={(value) => [`${value}%`, "Tasa de Conversión"]} contentStyle={{ borderRadius: '4px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="chartVal" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                  {ingenieroData.map((entry: any, index: number) => {
+                    const colors = ["#0b1c30", "#8a9eb8", "#4f6580"];
+                    return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

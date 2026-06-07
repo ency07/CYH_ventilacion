@@ -42,6 +42,7 @@ export default function ClientActions({ initialSearch = "", type = "main_actions
     if (res.success) {
       setIsModalOpen(false);
       setCName(""); setCCity("");
+      window.location.reload();
     } else {
       setError(res.error);
     }
@@ -63,6 +64,7 @@ export default function ClientActions({ initialSearch = "", type = "main_actions
     if (res.success) {
       setIsModalOpen(false);
       setContactName(""); setContactCargo(""); setContactEmail(""); setContactPhone("");
+      window.location.reload();
     } else {
       setError(res.error);
     }

@@ -7,7 +7,7 @@ export const LeadInsertSchema = z.object({
   phone: z.string().min(6, "El teléfono debe tener al menos 6 caracteres."),
   cargo: z.string().optional().nullable(),
   city: z.string().min(2, "La ciudad es obligatoria."),
-  serviceType: z.enum(["fabricacion", "venta", "mantenimiento", "reparacion"]),
+  serviceType: z.enum(["fabricacion", "venta", "mantenimiento", "reparacion", "ventilacion", "extraccion", "climatizacion", "control_termico"]),
   environmentType: z.string().min(1, "El ambiente operativo es obligatorio."),
   urgencyLevel: z.enum(["baja", "media", "alta", "critica"]),
   status: z.enum(["nuevo", "contacto", "reunion", "diagnostico", "propuesta_prep", "propuesta_entregada", "negociacion", "ganado", "perdido"]).default("nuevo"),

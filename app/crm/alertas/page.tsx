@@ -13,7 +13,7 @@ export default async function AlertasPage() {
   const overdueTasks = await db.query.crmTasks.findMany({
     where: (tasks, { and, lt, ne }) => and(
       lt(tasks.dueDate, now),
-      ne(tasks.status, "completada")
+      ne(tasks.status, "completado")
     ),
     with: { lead: true }
   });

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { leads, crmPipeline, crmActivityLogs, crmCompanies, crmContacts, crmTasks, crmOpportunities, crmProposals, diagnosticReports } from "@/lib/db/schema";
+import { leads, crmPipeline, crmActivityLogs, crmCompanies, crmContacts, crmTasks, crmOpportunities, crmProposals, diagnosticReports, crmUsers } from "@/lib/db/schema";
 import { PipelineInsertSchema, ActivityLogInsertSchema } from "@/lib/validations/crm.schema";
 import { eq, desc, ne, and, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -41,13 +41,54 @@ export async function createPipelineEntryAction(rawInput: any): Promise<ActionRe
   }
 }
 
+function sanitizeActivityType(input: string): typeof crmActivityLogs.$inferInsert['activityType'] {
+  const normalized = input.trim().toLowerCase();
+  
+  if (["correo", "email", "mail", "correo electrónico", "correo electronico"].includes(normalized)) {
+    return "email" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["llamada", "call", "telefono", "teléfono", "wsp", "whatsapp"].includes(normalized)) {
+    return "call" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["reunion", "reunión", "meeting", "cita", "mesa_reunion", "mesa reunion"].includes(normalized)) {
+    return "meeting" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["visita", "visit", "inspeccion", "inspección"].includes(normalized)) {
+    return "visit" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["estado", "status", "cambio_estado", "cambio estado"].includes(normalized)) {
+    return "status_changed" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["lead_created", "lead creado", "lead-created"].includes(normalized)) {
+    return "lead_created" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["report_generated", "reporte generado", "report-generated"].includes(normalized)) {
+    return "report_generated" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["proposal", "propuesta", "cotizacion", "cotización"].includes(normalized)) {
+    return "proposal" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  if (["technical", "tecnico", "técnico", "seguimiento tecnico", "seguimiento técnico"].includes(normalized)) {
+    return "technical" as typeof crmActivityLogs.$inferInsert['activityType'];
+  }
+  
+  return "call" as typeof crmActivityLogs.$inferInsert['activityType']; // Fallback defensivo
+}
+
 export async function createActivityLogAction(rawInput: any): Promise<ActionResult<any>> {
   try {
     const supabase = getSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("No autenticado");
 
-    const validated = ActivityLogInsertSchema.parse(rawInput);
+    // Clean and sanitize activity type before parsing
+    const rawActivityType = typeof rawInput === "object" && rawInput !== null ? String(rawInput.activityType || "") : "";
+    const sanitizedType = sanitizeActivityType(rawActivityType);
+
+    const validated = ActivityLogInsertSchema.parse({
+      ...rawInput,
+      activityType: sanitizedType
+    });
 
     const [newLog] = await db.insert(crmActivityLogs).values({
       leadId: validated.leadId,
@@ -56,8 +97,12 @@ export async function createActivityLogAction(rawInput: any): Promise<ActionResu
       userId: user.id,
     }).returning();
 
+    // Atomic cascade revalidation
     revalidatePath("/crm");
+    revalidatePath("/crm/dashboard");
+    revalidatePath("/crm/pipeline");
     revalidatePath(`/crm/${validated.leadId}`);
+    
     return { success: true, data: newLog };
   } catch (error: any) {
     console.error("Error creating activity log:", error);
@@ -75,6 +120,20 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
     const validStages = ["nuevo", "contacto", "reunion", "diagnostico", "propuesta_prep", "propuesta_entregada", "negociacion", "ganado", "perdido"];
     if (!validStages.includes(newStage)) {
       return { success: false, error: "Etapa comercial inválida." };
+    }
+
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "vendedor";
+    const userEmail = dbUser?.email || user.email || "";
+
+    // Ownership check for commercial users
+    if (userRole === "vendedor" || userRole === "comercial") {
+      const [existingPipe] = await db.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
+      if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
+        return { success: false, error: "Acceso denegado: No tiene permisos para modificar este lead." };
+      }
+    } else if (userRole === "tecnico" || userRole === "ingeniero") {
+      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar la etapa comercial." };
     }
 
     // Wrap everything in a database transaction to guarantee full atomic operations!
@@ -104,6 +163,61 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
         });
       }
 
+      // 2.5 Sincronizar crm_opportunities
+      const oppStageMap: Record<string, string> = {
+        "nuevo": "analisis",
+        "contacto": "analisis",
+        "reunion": "analisis",
+        "diagnostico": "analisis",
+        "propuesta_prep": "propuesta",
+        "propuesta_entregada": "propuesta",
+        "negociacion": "negociacion",
+        "ganado": "cerrado_ganado",
+        "perdido": "cerrado_perdido",
+      };
+
+      const probMap: Record<string, number> = {
+        "nuevo": 10,
+        "contacto": 20,
+        "reunion": 30,
+        "diagnostico": 40,
+        "propuesta_prep": 50,
+        "propuesta_entregada": 70, // 70% probability for Propuesta Enviada
+        "negociacion": 80,
+        "ganado": 100,
+        "perdido": 0,
+      };
+
+      const targetOppStage = oppStageMap[newStage] || "analisis";
+      const targetOppProb = probMap[newStage] !== undefined ? probMap[newStage] : 50;
+
+      const [existingOpp] = await tx.select().from(crmOpportunities).where(eq(crmOpportunities.leadId, leadId));
+      const estBudget = updatedLead.estimatedBudgetMax || 0;
+      const weighted = Math.round((estBudget * targetOppProb) / 100);
+
+      if (existingOpp) {
+        await tx.update(crmOpportunities)
+          .set({ 
+            stage: targetOppStage, 
+            probability: targetOppProb, 
+            estimatedValue: estBudget,
+            weightedValue: weighted,
+            updatedAt: new Date() 
+          })
+          .where(eq(crmOpportunities.leadId, leadId));
+      } else {
+        await tx.insert(crmOpportunities).values({
+          leadId,
+          serviceType: updatedLead.serviceType,
+          title: `Proyecto ${updatedLead.serviceType.toUpperCase()} - ${updatedLead.companyName}`,
+          estimatedValue: estBudget,
+          probability: targetOppProb,
+          weightedValue: weighted,
+          stage: targetOppStage,
+          assignedTo: existingPipeline?.assignedTo || userEmail || "comercial@cyh.com",
+        });
+      }
+
       // 3. Register activity log
       await tx.insert(crmActivityLogs).values({
         leadId,
@@ -116,11 +230,76 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
     });
 
     revalidatePath("/crm");
+    revalidatePath("/crm/dashboard");
+    revalidatePath("/crm/leads");
+    revalidatePath("/crm/pipeline");
     revalidatePath(`/crm/${leadId}`);
     return { success: true, data: result };
   } catch (error: any) {
     console.error("Error updating lead status:", error);
     return { success: false, error: error.message || "Error al actualizar la etapa comercial." };
+  }
+}
+
+export async function updateLeadRiskLevelAction(leadId: string, newRiskLevel: string): Promise<ActionResult<any>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "vendedor";
+    const userEmail = dbUser?.email || user.email || "";
+
+    // Ownership check for commercial users
+    if (userRole === "vendedor" || userRole === "comercial") {
+      const [existingPipe] = await db.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
+      if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
+        return { success: false, error: "Acceso denegado: No tiene permisos para modificar este lead." };
+      }
+    } else if (userRole === "tecnico" || userRole === "ingeniero") {
+      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar datos comerciales." };
+    }
+
+    const validRiskLevels = ["HOT", "WARM", "LOW", "SPAM"];
+    if (!validRiskLevels.includes(newRiskLevel)) {
+      return { success: false, error: "Temperatura (Riesgo) inválida." };
+    }
+
+    // Map riskLevel to an approximate leadScore if set manually
+    let targetScore = 10;
+    if (newRiskLevel === "HOT") targetScore = 85;
+    else if (newRiskLevel === "WARM") targetScore = 55;
+    else if (newRiskLevel === "LOW") targetScore = 30;
+
+    const [updated] = await db.update(leads)
+      .set({ 
+        riskLevel: newRiskLevel, 
+        leadScore: targetScore,
+        updatedAt: new Date(), 
+        updatedBy: user.id 
+      })
+      .where(eq(leads.id, leadId))
+      .returning();
+
+    // Log the activity
+    await db.insert(crmActivityLogs).values({
+      leadId,
+      activityType: "status_changed",
+      description: `Temperatura comercial modificada a: ${newRiskLevel}`,
+      userId: user.id,
+    });
+
+    revalidatePath("/crm");
+    revalidatePath("/crm/dashboard");
+    revalidatePath("/crm/leads");
+    revalidatePath("/crm/pipeline");
+    revalidatePath(`/crm/${leadId}`);
+
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error updating lead risk level:", error);
+    return { success: false, error: error.message || "Error al actualizar la temperatura." };
   }
 }
 
@@ -156,15 +335,37 @@ export async function getActivityLogsByLeadIdAction(leadId: string): Promise<Act
 
 export async function getAllLeadsWithCrmDataAction(): Promise<ActionResult<any[]>> {
   try {
-    const allLeads = await db.select({
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "vendedor";
+    const userEmail = dbUser?.email || user.email || "";
+
+    let query = db.select({
       lead: {
         id: leads.id,
         fullName: leads.fullName,
         companyName: leads.companyName,
+        email: leads.email,
+        phone: leads.phone,
+        cargo: leads.cargo,
         city: leads.city,
         serviceType: leads.serviceType,
+        environmentType: leads.environmentType,
+        urgencyLevel: leads.urgencyLevel,
         status: leads.status,
+        source: leads.source,
+        estimatedBudgetMin: leads.estimatedBudgetMin,
         estimatedBudgetMax: leads.estimatedBudgetMax,
+        companyId: leads.companyId,
+        contactId: leads.contactId,
+        complexityScore: leads.complexityScore,
+        severityScore: leads.severityScore,
+        notes: leads.notes,
+        leadScore: leads.leadScore,
+        isVerified: leads.isVerified,
         riskLevel: leads.riskLevel,
         createdAt: leads.createdAt,
         updatedAt: leads.updatedAt
@@ -177,16 +378,34 @@ export async function getAllLeadsWithCrmDataAction(): Promise<ActionResult<any[]
       }
     })
     .from(leads)
-    .leftJoin(crmPipeline, eq(leads.id, crmPipeline.leadId))
-    .orderBy(desc(leads.createdAt));
+    .leftJoin(crmPipeline, eq(leads.id, crmPipeline.leadId));
 
-    // Map into a single flat object for the frontend
-    const mapped = allLeads.map(({ lead, pipeline }) => ({
-      ...lead,
-      ...pipeline, // This merges status, probability, assignedTo, etc.
-      id: lead.id, // Ensure ID is lead ID
-      pipelineId: pipeline?.id,
-    }));
+    // Apply strict server-side filtering for sales/vendedor roles
+    if (userRole === "vendedor" || userRole === "comercial") {
+      query = query.where(eq(crmPipeline.assignedTo, userEmail)) as any;
+    }
+
+    const allLeads = await query.orderBy(desc(leads.createdAt));
+
+    // Fetch all diagnostics to map airflow to leads in memory
+    const allDiagnostics = await db.select({ 
+      leadId: diagnosticReports.leadId, 
+      airflow: diagnosticReports.airflow 
+    }).from(diagnosticReports);
+
+    // Map into a flat object for frontend consumption
+    const mapped = allLeads.map(({ lead, pipeline }) => {
+      const diagsForLead = allDiagnostics.filter(d => d.leadId === lead.id);
+      const airflow = diagsForLead.length > 0 ? diagsForLead[diagsForLead.length - 1].airflow : null;
+
+      return {
+        ...lead,
+        ...pipeline, 
+        id: lead.id, 
+        pipelineId: pipeline?.id,
+        airflow: airflow
+      };
+    });
 
     return { success: true, data: mapped };
   } catch (error: any) {
@@ -203,20 +422,51 @@ export async function updateCommercialDataAction(
   nextTask?: string | null
 ): Promise<ActionResult<any>> {
   try {
-    const updated = await db.update(crmPipeline)
-      .set({ 
-        assignedTo, 
-        probability,
-        nextMeeting: nextMeeting ? new Date(nextMeeting) : null,
-        nextTask,
-        updatedAt: new Date()
-      })
-      .where(eq(crmPipeline.leadId, leadId))
-      .returning();
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "vendedor";
+    const userEmail = dbUser?.email || user.email || "";
+
+    // If commercial user, prevent modifying leads assigned to others
+    if (userRole === "vendedor" || userRole === "comercial") {
+      const [existingPipe] = await db.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
+      if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
+        return { success: false, error: "Acceso denegado: No tiene permisos para modificar la asignación de este lead." };
+      }
+    } else if (userRole === "tecnico" || userRole === "ingeniero") {
+      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar datos comerciales." };
+    }
+
+    const updated = await db.transaction(async (tx) => {
+      // 1. Update pipeline entry
+      const [pipe] = await tx.update(crmPipeline)
+        .set({ 
+          assignedTo, 
+          probability,
+          nextMeeting: nextMeeting ? new Date(nextMeeting) : null,
+          nextTask,
+          updatedAt: new Date()
+        })
+        .where(eq(crmPipeline.leadId, leadId))
+        .returning();
+
+      // 2. Cascade update opportunities table assignedTo for 100% dashboard consistency
+      await tx.update(crmOpportunities)
+        .set({ assignedTo })
+        .where(eq(crmOpportunities.leadId, leadId));
+
+      return pipe;
+    });
     
     revalidatePath("/crm");
+    revalidatePath("/crm/dashboard");
+    revalidatePath("/crm/leads");
+    revalidatePath("/crm/pipeline");
     revalidatePath(`/crm/${leadId}`);
-    return { success: true, data: updated[0] };
+    return { success: true, data: updated };
   } catch (error: any) {
     console.error("Error updating commercial data:", error);
     return { success: false, error: error.message || "Error al actualizar datos comerciales." };
@@ -225,6 +475,10 @@ export async function updateCommercialDataAction(
 
 export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const [allLeads, recentLogs] = await Promise.all([
       db.select({
         id: leads.id,
@@ -325,6 +579,10 @@ export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
 
 export async function createCompanyAction(data: { name: string; industry?: string; city?: string; website?: string }): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const [newCompany] = await db.insert(crmCompanies).values({
       name: data.name,
       industry: data.industry,
@@ -340,6 +598,10 @@ export async function createCompanyAction(data: { name: string; industry?: strin
 
 export async function createContactAction(data: { companyId: string; fullName: string; cargo?: string; email?: string; phone?: string }): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const [newContact] = await db.insert(crmContacts).values({
       companyId: data.companyId,
       fullName: data.fullName,
@@ -395,6 +657,10 @@ export async function createOpportunityAction(data: {
   assignedTo?: string;
 }): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const [newOpp] = await db.insert(crmOpportunities).values({
       leadId: data.leadId,
       diagnosticId: data.diagnosticId || null,
@@ -426,6 +692,10 @@ export async function createProposalAction(data: {
   status?: string;
 }): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const [newProp] = await db.insert(crmProposals).values({
       leadId: data.leadId,
       diagnosticId: data.diagnosticId || null,
@@ -448,6 +718,10 @@ export async function createProposalAction(data: {
 
 export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const [allLeads, allDiagnostics, allProposals, allOpportunities] = await Promise.all([
       db.select().from(leads),
       db.select().from(diagnosticReports),
@@ -534,22 +808,35 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
 
     const tendenciaData = Object.values(monthlyData);
 
-    // Engineer/sales agent metrics (ingenieroData)
-    const engineerMap: Record<string, { diag: number; cerrados: number }> = {
-      "Admin": { diag: 0, cerrados: 0 },
-      "Javier Paz": { diag: 0, cerrados: 0 },
-      "Ana Gómez": { diag: 0, cerrados: 0 },
-    };
+    // Fetch actual users to build dynamic engineer performance report
+    const dbUsers = await db.select().from(crmUsers);
+    const userMap = new Map<string, string>();
+    dbUsers.forEach(u => {
+      userMap.set(u.id, u.fullName || u.email.split("@")[0]);
+    });
 
-    allLeads.forEach(l => {
-      const assigned = l.fullName.includes("Carlos") ? "Ana Gómez" : l.fullName.includes("Argos") ? "Javier Paz" : "Admin";
+    const engineerMap: Record<string, { diag: number; cerrados: number }> = {};
+    dbUsers.forEach(u => {
+      if (u.role === "tecnico" || u.role === "admin") {
+        const name = u.fullName || u.email.split("@")[0];
+        engineerMap[name] = { diag: 0, cerrados: 0 };
+      }
+    });
+
+    if (Object.keys(engineerMap).length === 0) {
+      engineerMap["Admin"] = { diag: 0, cerrados: 0 };
+    }
+
+    allDiagnostics.forEach(d => {
+      const creatorName = d.createdBy ? userMap.get(d.createdBy) : null;
+      const assigned = creatorName || "Admin";
       if (!engineerMap[assigned]) {
         engineerMap[assigned] = { diag: 0, cerrados: 0 };
       }
-      if (l.status === "diagnostico" || l.status === "ganado") {
-        engineerMap[assigned].diag += 1;
-      }
-      if (l.status === "ganado") {
+      engineerMap[assigned].diag += 1;
+      
+      const associatedLead = allLeads.find(l => l.id === d.leadId);
+      if (associatedLead && associatedLead.status === "ganado") {
         engineerMap[assigned].cerrados += 1;
       }
     });
@@ -627,5 +914,80 @@ export async function updateProposalStatusAction(
     return { success: false, error: error.message };
   }
 }
+
+export async function updateTaskStatusAction(
+  taskId: string,
+  newStatus: string
+): Promise<ActionResult<any>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const [updated] = await db
+      .update(crmTasks)
+      .set({ 
+        status: newStatus, 
+        updatedAt: new Date(),
+        completedBy: newStatus === 'completado' ? user.id : null,
+        completedAt: newStatus === 'completado' ? new Date() : null
+      })
+      .where(eq(crmTasks.id, taskId))
+      .returning();
+
+    if (!updated) {
+      return { success: false, error: "Tarea no encontrada." };
+    }
+
+    revalidatePath("/crm");
+    revalidatePath("/crm/tareas");
+    if (updated.leadId) {
+      revalidatePath(`/crm/${updated.leadId}`);
+    }
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error in updateTaskStatusAction:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateLeadCityAction(leadId: string, newCity: string): Promise<ActionResult<any>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
+    if (!newCity || newCity.trim() === "") {
+      return { success: false, error: "La ciudad no puede estar vacía." };
+    }
+
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "vendedor";
+    const userEmail = dbUser?.email || user.email || "";
+
+    if (userRole === "vendedor" || userRole === "comercial") {
+      const [existingPipe] = await db.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
+      if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
+        return { success: false, error: "Acceso denegado: No tiene asignado este lead." };
+      }
+    } else if (userRole === "tecnico" || userRole === "ingeniero") {
+      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar la ciudad del lead." };
+    }
+
+    const [updatedLead] = await db.update(leads)
+      .set({ city: newCity.trim(), updatedAt: new Date(), updatedBy: user.id })
+      .where(eq(leads.id, leadId))
+      .returning();
+
+    revalidatePath("/crm/dashboard");
+    revalidatePath("/crm/leads");
+    revalidatePath("/crm/pipeline");
+
+    return { success: true, data: updatedLead };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Error al actualizar la ciudad." };
+  }
+}
+
 
 

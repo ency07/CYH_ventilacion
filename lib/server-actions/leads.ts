@@ -1,10 +1,11 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { leads, crmCompanies, crmContacts } from "@/lib/db/schema";
+import { crmCompanies, crmContacts, leads, crmUsers, crmPipeline, crmOpportunities } from "@/lib/db/schema";
 import { LeadInsertSchema } from "@/lib/validations/crm.schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getSupabaseServer } from "@/lib/supabase/server";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -64,8 +65,6 @@ function calculateLeadScore(lead: {
 export async function createLeadAction(rawInput: any): Promise<ActionResult<any>> {
   try {
     const validated = LeadInsertSchema.parse(rawInput);
-    
-
 
     const { score, risk } = calculateLeadScore({
       email: validated.email,
@@ -75,7 +74,6 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       city: validated.city,
     });
 
-    
     // B2B Logic: Upsert Company
     let companyId = null;
     if (validated.companyName) {
@@ -118,7 +116,6 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       companyName: validated.companyName,
       companyId: companyId,
       contactId: contactId,
-
       email: validated.email,
       phone: validated.phone,
       cargo: validated.cargo ?? null,
@@ -138,7 +135,32 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       isVerified: validated.isVerified || false,
     }).returning();
 
+    // Auto-create crmPipeline entry
+    await db.insert(crmPipeline).values({
+      leadId: newLead.id,
+      stage: newLead.status || "nuevo",
+      priority: newLead.urgencyLevel === "alta" ? "alta" : "media",
+      assignedTo: "comercial@cyh.com",
+      probability: 10,
+    });
+
+    // Auto-create crmOpportunities entry
+    const estBudget = newLead.estimatedBudgetMax || 0;
+    const initialProb = 20; // corresponding to stage 'nuevo' (analisis)
+    await db.insert(crmOpportunities).values({
+      leadId: newLead.id,
+      serviceType: newLead.serviceType,
+      title: `Proyecto ${newLead.serviceType.toUpperCase()} - ${newLead.companyName}`,
+      estimatedValue: estBudget,
+      probability: initialProb,
+      weightedValue: Math.round((estBudget * initialProb) / 100),
+      stage: "analisis",
+      assignedTo: "comercial@cyh.com",
+    });
+
     revalidatePath("/crm");
+    revalidatePath("/crm/dashboard");
+    revalidatePath("/crm/leads");
     return { success: true, data: newLead };
   } catch (error: any) {
     console.error("CYH CRM SQL ERROR:", {
@@ -162,6 +184,16 @@ export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> 
       return { success: false, error: "Formato de ID inválido." };
     }
 
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "No autenticado." };
+    }
+
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "vendedor";
+    const userEmail = dbUser?.email || user.email || "";
+
     const lead = await db.query.leads.findFirst({
       where: eq(leads.id, id),
       with: {
@@ -171,12 +203,29 @@ export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> 
         crmProposals: true,
         crmDocuments: true,
         crmOpportunities: true,
+        crmPipelines: true,
       }
     });
     
     if (!lead) {
       return { success: false, error: "Lead no encontrado." };
     }
+
+    // Role visibility validation: vendedor/comercial only see their assigned leads (or unassigned leads)
+    if (userRole === "vendedor" || userRole === "comercial") {
+      const hasPipeline = lead.crmPipelines && lead.crmPipelines.length > 0;
+      if (hasPipeline) {
+        const isAssignedToMeOrUnassigned = lead.crmPipelines.some((p: any) => 
+          !p.assignedTo || 
+          p.assignedTo === "" ||
+          p.assignedTo.toLowerCase() === userEmail.toLowerCase()
+        );
+        if (!isAssignedToMeOrUnassigned) {
+          return { success: false, error: "Acceso denegado. Este lead está asignado a otro asesor." };
+        }
+      }
+    }
+
     return { success: true, data: lead };
   } catch (error: any) {
     console.error(`Error fetching lead by id ${id}:`, error);
@@ -186,6 +235,10 @@ export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> 
 
 export async function getRecentLeadsAction(limit = 10): Promise<ActionResult<any[]>> {
   try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
     const recent = await db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit);
     return { success: true, data: recent };
   } catch (error: any) {

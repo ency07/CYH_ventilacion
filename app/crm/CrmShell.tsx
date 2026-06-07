@@ -5,7 +5,7 @@ import {
   Activity, ShieldCheck, LogOut, LayoutDashboard, Settings, FileSignature, Kanban, Menu, X, Building2, Calendar, 
   Target, ClipboardList, Wrench, DollarSign, PhoneCall, CheckSquare, BellRing, LineChart, UsersRound, Users, Lock, User, ChevronDown, Moon, Sun
 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { logoutAction } from "@/lib/server-actions/auth";
@@ -14,7 +14,7 @@ const menuGroups = [
   {
     group: "COMERCIAL",
     items: [
-      { name: 'Dashboard', href: '/crm/dashboard', icon: LayoutDashboard, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
+      { name: 'Dashboard', href: '/crm/dashboard', icon: LayoutDashboard, roles: ['admin', 'super_admin', 'director_comercial', 'comercial', 'tecnico', 'ingeniero'] },
       { name: 'Leads', href: '/crm/leads', icon: Target, roles: ['admin', 'super_admin', 'director_comercial', 'comercial', 'ingeniero'] },
       { name: 'Pipeline', href: '/crm/pipeline', icon: Kanban, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
       { name: 'Clientes', href: '/crm/clientes', icon: Building2, roles: ['admin', 'super_admin', 'director_comercial', 'comercial'] },
@@ -61,6 +61,7 @@ interface CrmShellProps {
 
 export default function CrmShell({ userName, userEmail, userRole, children }: CrmShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
@@ -68,6 +69,28 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Redirect technical users from dashboard to technical dashboard page
+  useEffect(() => {
+    if (pathname === "/crm/dashboard" && (userRole === "tecnico" || userRole === "ingeniero")) {
+      router.push("/crm/dashboard/tecnico");
+    }
+  }, [pathname, userRole, router]);
+
+  // Authorization check
+  const allItems = menuGroups.flatMap(g => g.items);
+  const currentItem = allItems.find(item => 
+    pathname === item.href || 
+    (item.href !== '/crm' && item.href !== '/crm/dashboard' && pathname.startsWith(item.href))
+  );
+
+  const isDetailRoute = pathname.match(/^\/crm\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  let allowedRoles = currentItem ? currentItem.roles : null;
+  if (isDetailRoute) {
+    allowedRoles = ['admin', 'super_admin', 'director_comercial', 'comercial', 'ingeniero'];
+  }
+
+  const isAuthorized = !allowedRoles || userRole === 'admin' || userRole === 'super_admin' || allowedRoles.includes(userRole);
 
   const handleLogout = async () => {
     await logoutAction();
@@ -129,12 +152,16 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
 
                 <div className={`space-y-0.5 overflow-hidden transition-all duration-200 ${!sidebarOpen || isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
                   {group.items.map((item) => {
-                    const isActive = pathname === item.href || (item.href !== '/crm' && item.href !== '/crm/dashboard' && pathname.startsWith(item.href));
+                    let itemHref = item.href;
+                    if (item.name === 'Dashboard' && (userRole === 'tecnico' || userRole === 'ingeniero')) {
+                      itemHref = '/crm/dashboard/tecnico';
+                    }
+                    const isActive = pathname === itemHref || (itemHref !== '/crm' && itemHref !== '/crm/dashboard' && pathname.startsWith(itemHref));
                     const Icon = item.icon;
                     return (
                       <Link
                         key={item.name}
-                        href={item.href}
+                        href={itemHref}
                         title={!sidebarOpen ? item.name : undefined}
                         className={`flex items-center rounded-md text-sm font-medium transition-all whitespace-nowrap ${
                           sidebarOpen ? 'gap-2.5 px-3 py-2' : 'w-10 h-10 justify-center mx-auto'
@@ -174,7 +201,12 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-md text-text-secondary hover:bg-bg-tertiary transition-all md:hidden" aria-label="Abrir menú">
               <Menu className="h-5 w-5" />
             </button>
-            <span className="font-mono text-xs font-bold tracking-widest text-text-muted uppercase hidden sm:block">CYH Enterprise Platform</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs font-bold text-text-primary">Hola, {userName}</span>
+              <span className="px-2 py-0.5 bg-bg-tertiary text-text-muted text-[9px] font-black uppercase tracking-wider rounded border border-border-subtle select-none">
+                {userRole === 'super_admin' ? 'SUPER ADMIN' : userRole.replace('_', ' ')}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -200,7 +232,6 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
                 </div>
                 <div className="text-left hidden lg:block">
                   <p className="text-xs font-bold text-text-primary leading-none">{userName}</p>
-                  <p className="text-[10px] text-text-secondary mt-0.5 capitalize">{userRole}</p>
                 </div>
                 <ChevronDown className="w-3 h-3 text-text-secondary hidden lg:block" />
               </button>
@@ -230,7 +261,18 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
 
         {/* Page Content */}
         <main className="flex-1 overflow-x-hidden">
-          {children}
+          {isAuthorized ? children : (
+            <div className="flex-grow p-8 flex flex-col items-center justify-center text-center min-h-[400px]">
+              <div className="bg-bg-primary p-12 rounded-lg border border-border-subtle shadow-md max-w-md flex flex-col items-center">
+                <Lock className="w-16 h-16 text-red-500 mb-4 animate-bounce" />
+                <h2 className="text-xl font-display font-bold text-text-primary uppercase tracking-wider">Acceso Restringido</h2>
+                <p className="text-sm text-text-secondary mt-2">No tienes permisos para visualizar este módulo comercial o financiero.</p>
+                <button onClick={() => router.push(userRole === 'ingeniero' || userRole === 'tecnico' ? '/crm/diagnosticos' : '/crm/dashboard')} className="mt-6 px-4 py-2 bg-text-primary text-bg-primary rounded text-xs font-bold uppercase hover:bg-opacity-90 transition-all">
+                  Volver al Inicio
+                </button>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

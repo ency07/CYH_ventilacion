@@ -1,62 +1,44 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { 
-  Search, 
-  Filter, 
-  Download, 
-  Star, 
-  Edit2, 
-  X, 
-  MoreHorizontal, 
-  Phone, 
-  FileText, 
-  Mail, 
-  MapPin, 
-  Building2, 
-  Plus, 
-  MessageSquare,
-  Printer, 
-  Share2, 
+  Target,
+  DollarSign,
+  Clock,
+  Search,
+  Filter,
+  FolderKanban,
+  ArrowRight,
+  BriefcaseBusiness,
+  Check,
+  AlertCircle,
   Loader2,
   Calendar,
-  AlertTriangle,
-  Check,
+  MapPin,
+  Building2,
   User,
   Shield,
-  Briefcase,
-  AlertCircle,
-  ExternalLink
+  RefreshCw,
+  LayoutDashboard,
+  Rows,
+  Wrench,
+  Wind,
+  X,
+  Printer,
+  Share2,
+  Phone,
+  MessageSquare,
+  ExternalLink,
+  FileText,
+  AlertTriangle,
+  Plus
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-// Drizzle Schema types for strict B2B contracts
-import { leads, crmCompanies, crmUsers, crmTasks } from "@/lib/db/schema";
-
-type Lead = typeof leads.$inferSelect;
-type CrmCompany = typeof crmCompanies.$inferSelect;
-type CrmUser = typeof crmUsers.$inferSelect;
-type CrmTask = typeof crmTasks.$inferSelect;
-
-interface MappedContact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  title: string;
-  email: string | null;
-  phone: string | null;
-  companyId: string | null;
-}
-
-// Server Actions
-import { 
-  getLeadByIdAction, 
-  createLeadAction 
-} from "@/lib/server-actions/leads";
-
+import { leads, crmUsers } from "@/lib/db/schema";
+import { getLeadByIdAction } from "@/lib/server-actions/leads";
 import { 
   updateCommercialDataAction, 
   updateLeadStatusAction, 
@@ -65,60 +47,90 @@ import {
   createTaskAction
 } from "@/lib/server-actions/crm";
 
-export default function LeadsClient({ 
-  leads = [], 
-  companies = [], 
-  contacts = [], 
-  tasks = [],
+type Lead = typeof leads.$inferSelect;
+type CrmUser = typeof crmUsers.$inferSelect;
+
+type CombinedLead = Lead & {
+  assignedTo?: string | null;
+  stage?: string | null;
+  probability?: number | null;
+  pipelineId?: string | null;
+  airflow?: number | null;
+};
+
+const STAGES = [
+  { id: "nuevo", name: "Nuevo Lead", bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-700", prob: 10 },
+  { id: "contacto", name: "Contacto Inicial", bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-750", prob: 20 },
+  { id: "reunion", name: "Mesa Reunión", bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-800", prob: 30 },
+  { id: "diagnostico", name: "Diagnóstico Técnico", bg: "bg-blue-50/50", border: "border-blue-200", text: "text-blue-800", prob: 40 },
+  { id: "propuesta_prep", name: "Propuesta Prep", bg: "bg-amber-50/40", border: "border-amber-200", text: "text-amber-700", prob: 50 },
+  { id: "propuesta_entregada", name: "Propuesta Enviada", bg: "bg-amber-50/70", border: "border-amber-200", text: "text-amber-800", prob: 70 },
+  { id: "negociacion", name: "Negociación", bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-900", prob: 80 },
+  { id: "ganado", name: "Ganado (Cierre)", bg: "bg-emerald-50", border: "border-emerald-250", text: "text-emerald-800", prob: 100 },
+  { id: "perdido", name: "Perdido", bg: "bg-red-50", border: "border-red-200", text: "text-red-800", prob: 0 },
+];
+
+const COLOMBIAN_INDUSTRIAL_CITIES = [
+  "Barranquilla",
+  "Bogotá",
+  "Medellín",
+  "Cali",
+  "Cartagena",
+  "Montería"
+];
+
+const renderCity = (city: string | null) => {
+  if (!city) {
+    return (
+      <span className="inline-block text-[8px] px-1.5 py-0.5 rounded bg-amber-50 border border-amber-250 text-amber-800 font-bold uppercase select-none font-sans">
+        [Ciudad por Confirmar]
+      </span>
+    );
+  }
+  if (!COLOMBIAN_INDUSTRIAL_CITIES.includes(city)) {
+    return (
+      <span className="inline-block text-[8px] px-1.5 py-0.5 rounded bg-amber-50 border border-amber-250 text-amber-800 font-bold uppercase select-none font-sans" title={city}>
+        [Ciudad por Confirmar]
+      </span>
+    );
+  }
+  return city;
+};
+
+export default function PipelineClient({
+  initialLeads = [],
+  allCrmUsers = [],
   currentUser,
-  allCrmUsers = []
-}: { 
-  leads: any[], 
-  companies: CrmCompany[], 
-  contacts: MappedContact[], 
-  tasks: CrmTask[],
-  currentUser: { name: string; role: string; email: string },
-  allCrmUsers: CrmUser[]
+  initialView = "kanban"
+}: {
+  initialLeads: CombinedLead[];
+  allCrmUsers: CrmUser[];
+  currentUser: { id: string; name: string; role: string; email: string };
+  initialView?: "kanban" | "list";
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   
+  // Local state for leads list to handle optimistic updates
+  const [localLeads, setLocalLeads] = useState<CombinedLead[]>(initialLeads);
+  const [draggedOverStage, setDraggedOverStage] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterAssignee, setFilterAssignee] = useState("all");
+  const [filterService, setFilterService] = useState("all");
+
+  // Derive viewMode directly from URL query parameters (Next.js useSearchParams)
+  const viewParam = searchParams.get("view");
+  const viewMode = viewParam === "list" ? "list" : "kanban";
+
   // Selected Lead Drawer state
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("resumen");
   const [fullLead, setFullLead] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
-  // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterUrgency, setFilterUrgency] = useState("all");
-  const [filterService, setFilterService] = useState("all");
-  const [filterCity, setFilterCity] = useState("all");
-  const [filterRiskLevel, setFilterRiskLevel] = useState("all");
-  const [showFilterPanel, setShowFilterPanel] = useState(false);
-
-  // UI mutation pending state
-  const [isPending, setIsPending] = useState(false);
-  const [actionError, setActionError] = useState("");
-
-  // New Lead Modal State
-  const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
-  const [newLeadForm, setNewLeadForm] = useState({
-    fullName: "",
-    companyName: "",
-    email: "",
-    phone: "",
-    cargo: "",
-    city: "",
-    serviceType: "venta" as "fabricacion" | "venta" | "mantenimiento" | "reparacion" | "ventilacion" | "extraccion" | "climatizacion" | "control_termico",
-    environmentType: "Industrial",
-    urgencyLevel: "media" as "baja" | "media" | "alta" | "critica",
-    notes: ""
-  });
-  const [submittingLead, setSubmittingLead] = useState(false);
-  const [leadError, setLeadError] = useState("");
-
-  // Drawer action states
+  // Drawer Action States
   const [isActivityModalOpen, setActivityModalOpen] = useState(false);
   const [isTaskModalOpen, setTaskModalOpen] = useState(false);
   const [activityTypeInput, setActivityTypeInput] = useState("call");
@@ -128,6 +140,38 @@ export default function LeadsClient({
   const [taskDueTimeInput, setTaskDueTimeInput] = useState("");
   const [taskNotesInput, setTaskNotesInput] = useState("");
   const [savingDrawerAction, setSavingDrawerAction] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  // Sync state if initialLeads updates (cascade reload)
+  useEffect(() => {
+    setLocalLeads(initialLeads);
+  }, [initialLeads]);
+
+  // Load Lead details when selectedLeadId changes
+  useEffect(() => {
+    if (!selectedLeadId) {
+      setFullLead(null);
+      return;
+    }
+    const loadDetails = async () => {
+      setLoadingDetails(true);
+      try {
+        const res = await getLeadByIdAction(selectedLeadId);
+        if (res.success) {
+          setFullLead(res.data);
+        } else {
+          showToast(res.error, "error");
+        }
+      } catch (err) {
+        console.error("Error loading lead details:", err);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+    loadDetails();
+  }, [selectedLeadId]);
+
+  const selectedLead = localLeads.find(l => l.id === selectedLeadId);
 
   // Custom Toast state
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -143,6 +187,94 @@ export default function LeadsClient({
     }, 4000);
   };
 
+  const handleViewChange = (mode: "kanban" | "list") => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", mode);
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent, leadId: string) => {
+    // Only allow drag if initiated from the drag handle marked with data-drag-handle
+    const target = e.target as HTMLElement;
+    const isHandle = target.closest("[data-drag-handle]");
+    if (!isHandle) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData("text/plain", leadId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, stageId: string) => {
+    e.preventDefault();
+    setDraggedOverStage(stageId);
+  };
+
+  const handleDragLeave = () => {
+    setDraggedOverStage(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetStage: string) => {
+    e.preventDefault();
+    setDraggedOverStage(null);
+    const leadId = e.dataTransfer.getData("text/plain");
+    if (!leadId) return;
+
+    const leadToMove = localLeads.find(l => l.id === leadId);
+    if (!leadToMove) return;
+
+    // Failsafe: if dropping in same stage, ignore
+    if (leadToMove.status === targetStage) return;
+
+    // Optimistic Update
+    const previousLeads = [...localLeads];
+    const updatedLeads = localLeads.map(l => 
+      l.id === leadId ? { ...l, status: targetStage, updatedAt: new Date() } : l
+    );
+    setLocalLeads(updatedLeads);
+    setIsPending(true);
+
+    try {
+      const res = await updateLeadStatusAction(leadId, targetStage);
+      if (res.success) {
+        showToast("Etapa de oportunidad comercial actualizada.");
+        router.refresh();
+      } else {
+        throw new Error(res.error || "Permisos insuficientes.");
+      }
+    } catch (err: any) {
+      console.error("Dnd stage update failed:", err);
+      // ROLLBACK on failure (failsafe snapback)
+      setLocalLeads(previousLeads);
+      showToast(err.message || "No se pudo actualizar el lead. Permisos insuficientes.", "error");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  // Click & Drag Separation using Ref Mouse coordinates
+  const mouseStartRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    mouseStartRef.current = { x: e.clientX, y: e.clientY };
+    isDraggingRef.current = false;
+  };
+
+  const handleMouseUp = (e: React.MouseEvent, leadId: string) => {
+    const diffX = Math.abs(e.clientX - mouseStartRef.current.x);
+    const diffY = Math.abs(e.clientY - mouseStartRef.current.y);
+    if (diffX > 5 || diffY > 5) {
+      isDraggingRef.current = true;
+    }
+    if (!isDraggingRef.current) {
+      setSelectedLeadId(leadId);
+      setActionError("");
+    }
+  };
+
+  // Drawer action handlers
   const handleCreateActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLead) return;
@@ -206,139 +338,6 @@ export default function LeadsClient({
     }
   };
 
-  useEffect(() => {
-    if (!selectedLeadId) {
-      setFullLead(null);
-      return;
-    }
-    const loadDetails = async () => {
-      setLoadingDetails(true);
-      try {
-        const res = await getLeadByIdAction(selectedLeadId);
-        if (res.success) {
-          setFullLead(res.data);
-        } else {
-          showToast(res.error, "error");
-        }
-      } catch (err) {
-        console.error("Error loading lead details:", err);
-      } finally {
-        setLoadingDetails(false);
-      }
-    };
-    loadDetails();
-  }, [selectedLeadId]);
-
-  const selectedLead = leads.find(l => l.id === selectedLeadId);
-  const company = selectedLead ? companies.find(c => c.id === selectedLead.companyId) : null;
-  const contact = selectedLead ? contacts.find(c => c.id === selectedLead.contactId) : null;
-
-  // Filter Leads
-  const filteredLeads = leads.filter((lead: any) => {
-    const matchesSearch = 
-      (lead.fullName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (lead.companyName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (lead.city || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (lead.id || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesStatus = filterStatus === "all" || lead.status === filterStatus;
-    const matchesUrgency = filterUrgency === "all" || lead.urgencyLevel === filterUrgency;
-    
-    // Advanced Service mapping for B2B categories:
-    // Ventilación: ventilacion, fabricacion, venta
-    // Extracción: extraccion, reparacion
-    // Control Térmico: climatizacion, control_termico, mantenimiento
-    let matchesService = true;
-    if (filterService !== "all") {
-      if (filterService === "ventilacion") {
-        matchesService = ["ventilacion", "fabricacion", "venta"].includes(lead.serviceType);
-      } else if (filterService === "extraccion") {
-        matchesService = ["extraccion", "reparacion"].includes(lead.serviceType);
-      } else if (filterService === "control_termico") {
-        matchesService = ["control_termico", "climatizacion", "mantenimiento"].includes(lead.serviceType);
-      } else {
-        matchesService = lead.serviceType === filterService;
-      }
-    }
-    
-    let matchesCity = true;
-    if (filterCity !== "all") {
-      matchesCity = (lead.city || "").toLowerCase().trim() === filterCity.toLowerCase().trim();
-    }
-
-    const matchesRiskLevel = filterRiskLevel === "all" || lead.riskLevel === filterRiskLevel;
-    
-    return matchesSearch && matchesStatus && matchesUrgency && matchesService && matchesCity && matchesRiskLevel;
-  });
-
-  // Extract unique cities from active leads to populate the city filter dynamically
-  const uniqueCities = Array.from(new Set(leads.map(l => (l.city || "").trim()).filter(Boolean)));
-
-  const handleExportCSV = () => {
-    const headers = ["ID", "Empresa", "Contacto", "Email", "Telefono", "Ciudad", "Servicio", "Ambiente", "Urgencia", "Estado", "Origen", "Fecha de Creacion"];
-    const rows = filteredLeads.map(l => [
-      l.id,
-      displayCompanyName(l),
-      displayContactName(l),
-      l.email || "",
-      l.phone || "",
-      l.city || "",
-      l.serviceType || "",
-      l.environmentType || "",
-      l.urgencyLevel || "",
-      l.status || "",
-      l.source || "",
-      l.createdAt ? new Date(l.createdAt).toLocaleDateString() : ""
-    ]);
-    
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-      + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
-      
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `leads_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleCreateLead = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmittingLead(true);
-    setLeadError("");
-    try {
-      const res = await createLeadAction({
-        ...newLeadForm,
-        status: "nuevo",
-        source: "manual"
-      });
-      if (res.success) {
-        setIsNewLeadOpen(false);
-        setNewLeadForm({
-          fullName: "",
-          companyName: "",
-          email: "",
-          phone: "",
-          cargo: "",
-          city: "",
-          serviceType: "venta",
-          environmentType: "Industrial",
-          urgencyLevel: "media",
-          notes: ""
-        });
-        showToast("Lead creado con éxito");
-        router.refresh();
-      } else {
-        setLeadError(res.error);
-      }
-    } catch (err: any) {
-      setLeadError(err.message || "Error al crear el lead");
-    } finally {
-      setSubmittingLead(false);
-    }
-  };
-
   const handlePrintDrawer = () => {
     const printContent = document.getElementById("printable-lead-drawer");
     if (!printContent) return;
@@ -386,6 +385,11 @@ export default function LeadsClient({
     if (!selectedLead) return;
     setActionError("");
     setIsPending(true);
+    const previousLeads = [...localLeads];
+    
+    // Optimistic Update
+    setLocalLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, status: newStage, updatedAt: new Date() } : l));
+
     try {
       const res = await updateLeadStatusAction(selectedLead.id, newStage);
       if (res.success) {
@@ -395,10 +399,11 @@ export default function LeadsClient({
         if (detailsRes.success) setFullLead(detailsRes.data);
         router.refresh();
       } else {
-        setActionError(res.error || "No se pudo actualizar la etapa comercial.");
-        showToast(res.error || "Permisos insuficientes", "error");
+        throw new Error(res.error || "No se pudo actualizar la etapa comercial.");
       }
     } catch (err: any) {
+      // Rollback on failure
+      setLocalLeads(previousLeads);
       setActionError(err.message);
       showToast(err.message || "Error de red", "error");
     } finally {
@@ -411,6 +416,11 @@ export default function LeadsClient({
     if (!selectedLead) return;
     setActionError("");
     setIsPending(true);
+    const previousLeads = [...localLeads];
+
+    // Optimistic Update
+    setLocalLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, riskLevel: newRisk } : l));
+
     try {
       const res = await updateLeadRiskLevelAction(selectedLead.id, newRisk);
       if (res.success) {
@@ -420,10 +430,11 @@ export default function LeadsClient({
         if (detailsRes.success) setFullLead(detailsRes.data);
         router.refresh();
       } else {
-        setActionError(res.error || "No se pudo actualizar la temperatura.");
-        showToast(res.error || "Permisos insuficientes", "error");
+        throw new Error(res.error || "No se pudo actualizar la temperatura.");
       }
     } catch (err: any) {
+      // Rollback on failure
+      setLocalLeads(previousLeads);
       setActionError(err.message);
       showToast(err.message || "Error de red", "error");
     } finally {
@@ -431,7 +442,6 @@ export default function LeadsClient({
     }
   };
 
-  // WhatsApp template dispatch
   const handleWhatsAppTrigger = () => {
     if (!selectedLead) return;
     const cleanPhone = selectedLead.phone.replace(/[^0-9+]/g, "");
@@ -440,17 +450,7 @@ export default function LeadsClient({
     window.open(waUrl, "_blank");
   };
 
-  const tabs = [
-    { label: "Resumen", value: "resumen" },
-    { label: "Diagnósticos", value: "diagnosticos" },
-    { label: "Actividades", value: "actividades" },
-    { label: "Propuestas", value: "propuestas" },
-    { label: "Notas", value: "notas" }
-  ];
-
-  const displayCompanyName = (lead: any) => {
-    const c = companies.find(c => c.id === lead.companyId);
-    if (c?.name) return c.name;
+  const displayCompanyName = (lead: CombinedLead) => {
     if (lead.companyName) return lead.companyName;
     return (
       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-250 font-sans tracking-wide uppercase">
@@ -459,11 +459,8 @@ export default function LeadsClient({
     );
   };
 
-  const displayContactName = (lead: any) => {
-    const p = contacts.find(c => c.id === lead.contactId);
-    if (p) return `${p.firstName} ${p.lastName}`;
+  const displayContactName = (lead: CombinedLead) => {
     if (lead.fullName) return lead.fullName;
-    if (lead.firstName || lead.lastName) return `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
     return (
       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-250 font-sans tracking-wide uppercase">
         Contacto sin registrar
@@ -482,8 +479,56 @@ export default function LeadsClient({
     return type;
   };
 
+  const tabs = [
+    { label: "Resumen", value: "resumen" },
+    { label: "Diagnósticos", value: "diagnosticos" },
+    { label: "Actividades", value: "actividades" },
+    { label: "Propuestas", value: "propuestas" },
+    { label: "Notas", value: "notas" }
+  ];
+
+  // Filtering Logic
+  const filteredLeads = localLeads.filter((lead) => {
+    const matchesSearch = 
+      (lead.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.city || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    let matchesAssignee = true;
+    if (filterAssignee !== "all") {
+      const leadAssignee = (lead as any).assignedTo || "";
+      matchesAssignee = leadAssignee.toLowerCase() === filterAssignee.toLowerCase();
+    }
+
+    let matchesService = true;
+    if (filterService !== "all") {
+      if (filterService === "ventilacion") {
+        matchesService = ["ventilacion", "fabricacion", "venta"].includes(lead.serviceType);
+      } else if (filterService === "extraccion") {
+        matchesService = ["extraccion", "reparacion"].includes(lead.serviceType);
+      } else if (filterService === "control_termico") {
+        matchesService = ["control_termico", "climatizacion", "mantenimiento"].includes(lead.serviceType);
+      } else {
+        matchesService = lead.serviceType === filterService;
+      }
+    }
+
+    return matchesSearch && matchesAssignee && matchesService;
+  });
+
+  // Calculate Metrics
+  const openLeads = filteredLeads.filter(l => l.status !== "ganado" && l.status !== "perdido");
+  
+  // Forecast pipeline calculations
+  let weightedPipelineValue = 0;
+  openLeads.forEach(l => {
+    const stageConf = STAGES.find(s => s.id === l.status);
+    const prob = stageConf ? stageConf.prob : 10;
+    weightedPipelineValue += (l.estimatedBudgetMax || 0) * (prob / 100);
+  });
+
   return (
-    <div className="relative flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC] font-sans text-slate-900">
+    <div className="w-full px-6 py-6 flex flex-col space-y-6 bg-[#F8FAFC] font-sans text-slate-900 h-full overflow-hidden relative">
       
       {/* Toast Alert */}
       {toast.show && (
@@ -497,96 +542,100 @@ export default function LeadsClient({
         </div>
       )}
 
-      {/* HEADER PRINCIPAL */}
-      <div className="px-6 py-4 flex items-center justify-between bg-white border-b border-slate-200 shrink-0">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-display font-black tracking-widest uppercase">Leads Pipeline</h2>
-          <span className="bg-slate-50 px-2 py-0.5 rounded text-[10px] font-bold text-slate-800 border border-slate-200 uppercase tracking-wider">{filteredLeads.length} / {leads.length} FILTRADOS</span>
+      {/* HEADER & FILTROS */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 border-b border-slate-200 pb-4 shrink-0">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-display font-black tracking-widest uppercase text-slate-900">
+              Pipeline Comercial
+            </h1>
+            {isPending && <Loader2 className="w-4.5 h-4.5 text-slate-500 animate-spin" />}
+          </div>
+          <p className="text-slate-500 text-xs mt-1 font-semibold uppercase tracking-wider">Gestión B2B Enterprise de CYH Ingeniería.</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Buscar leads, empresas o ciudades..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded w-72 focus:outline-none focus:border-slate-400 font-medium" 
-            />
-          </div>
-          
-          <button 
-            onClick={() => setShowFilterPanel(!showFilterPanel)}
-            className={`px-3 py-1.5 border rounded flex items-center gap-2 transition-colors text-xs font-bold uppercase tracking-wider ${
-              showFilterPanel 
-                ? 'border-slate-800 bg-slate-100 text-slate-900' 
-                : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <Filter className="w-3.5 h-3.5" /> Panel Filtros
-          </button>
-          
-          <button 
-            onClick={handleExportCSV}
-            className="px-3 py-1.5 border border-slate-200 bg-white text-slate-600 hover:text-slate-900 rounded flex items-center gap-2 hover:bg-slate-50 transition-colors text-xs font-bold uppercase tracking-wider"
-          >
-            <Download className="w-3.5 h-3.5" /> Exportar
-          </button>
-          
-          {currentUser.role !== "tecnico" && currentUser.role !== "ingeniero" && (
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          {/* Barra de Búsqueda */}
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <div className="relative w-full sm:w-60">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-slate-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar empresa, contacto..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-3 py-1.5 w-full bg-white border border-slate-200 rounded text-xs text-slate-900 font-medium focus:outline-none focus:border-slate-400 transition-all"
+              />
+            </div>
             <button 
-              onClick={() => setIsNewLeadOpen(true)}
-              className="flex items-center gap-2 px-4 py-1.5 bg-slate-900 text-white rounded text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors shadow-sm"
+              onClick={() => { router.refresh(); showToast("Embudo comercial actualizado."); }}
+              title="Refrescar"
+              className="p-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded transition-colors shadow-xs flex items-center justify-center shrink-0"
             >
-              <Plus className="w-3.5 h-3.5" /> Nuevo Lead
+              <RefreshCw className={`w-3.5 h-3.5 ${isPending ? 'animate-spin' : ''}`} />
             </button>
+            
+            {/* Selector de Tipo de Vista */}
+            <div className="border border-slate-200 rounded bg-white p-0.5 flex items-center shadow-xs shrink-0 select-none">
+              <button
+                onClick={() => handleViewChange("kanban")}
+                className={`p-1 rounded transition-colors flex items-center justify-center ${
+                  viewMode === "kanban" 
+                    ? "bg-slate-900 text-white" 
+                    : "text-slate-550 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+                title="Vista Kanban"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => handleViewChange("list")}
+                className={`p-1 rounded transition-colors flex items-center justify-center ${
+                  viewMode === "list" 
+                    ? "bg-slate-900 text-white" 
+                    : "text-slate-550 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+                title="Vista de Lista Ejecutiva"
+              >
+                <Rows className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Filtro Asesor (Solo para Admin/Director) */}
+          {["admin", "director_comercial"].includes(currentUser.role) ? (
+            <div className="relative w-full sm:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-4 w-4 text-slate-400" />
+              </div>
+              <select
+                value={filterAssignee}
+                onChange={(e) => setFilterAssignee(e.target.value)}
+                className="pl-9 pr-8 py-1.5 w-full border border-slate-200 rounded text-xs text-slate-900 bg-white font-medium focus:outline-none focus:border-slate-400 cursor-pointer appearance-none"
+              >
+                <option value="all">Todos los Asesores</option>
+                {allCrmUsers.filter(u => ["admin", "comercial", "director_comercial"].includes(u.role)).map(u => (
+                  <option key={u.id} value={u.email}>{u.fullName || u.email}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="bg-slate-100 border border-slate-200 rounded px-3 py-1.5 text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5 select-none">
+              <Shield className="w-3.5 h-3.5" /> Mis Leads
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* FILTER PANEL */}
-      {showFilterPanel && (
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-4 shrink-0 font-sans text-xs">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estado Comercial</span>
-            <select 
-              value={filterStatus} 
-              onChange={e => setFilterStatus(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900 font-medium outline-none focus:border-slate-400"
-            >
-              <option value="all">Todos los Estados</option>
-              <option value="nuevo">Nuevo</option>
-              <option value="contacto">Contacto Inicial</option>
-              <option value="reunion">Mesa Reunión</option>
-              <option value="diagnostico">Diagnóstico Técnico</option>
-              <option value="propuesta_prep">Propuesta Prep</option>
-              <option value="propuesta_entregada">Propuesta Enviada</option>
-              <option value="negociacion">Negociación</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Urgencia</span>
-            <select 
-              value={filterUrgency} 
-              onChange={e => setFilterUrgency(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900 font-medium outline-none focus:border-slate-400"
-            >
-              <option value="all">Todas las Urgencias</option>
-              <option value="baja">Baja</option>
-              <option value="media">Media</option>
-              <option value="alta">Alta</option>
-              <option value="critica">Crítica</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Servicio Industrial</span>
-            <select 
-              value={filterService} 
-              onChange={e => setFilterService(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900 font-medium outline-none focus:border-slate-400"
+          {/* Filtro Servicio */}
+          <div className="relative w-full sm:w-44">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Filter className="h-4 w-4 text-slate-400" />
+            </div>
+            <select
+              value={filterService}
+              onChange={(e) => setFilterService(e.target.value)}
+              className="pl-9 pr-8 py-1.5 w-full border border-slate-200 rounded text-xs text-slate-900 bg-white font-medium focus:outline-none focus:border-slate-400 cursor-pointer appearance-none"
             >
               <option value="all">Todos los Servicios</option>
               <option value="ventilacion">Ventilación</option>
@@ -594,116 +643,328 @@ export default function LeadsClient({
               <option value="control_termico">Control Térmico</option>
             </select>
           </div>
+        </div>
+      </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ciudad / Planta</span>
-            <select 
-              value={filterCity} 
-              onChange={e => setFilterCity(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900 font-medium outline-none focus:border-slate-400"
-            >
-              <option value="all">Todas las Ciudades</option>
-              {uniqueCities.map((city, idx) => (
-                <option key={idx} value={city}>{city}</option>
-              ))}
-            </select>
+      {/* 4 ADVANCED KPIs Requeridos */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 shrink-0">
+        <div className="bg-white border border-slate-200 p-5 rounded shadow-xs">
+          <div className="flex items-center gap-2 text-slate-500 mb-3">
+            <div className="p-2 bg-slate-100 rounded">
+              <Clock className="w-4 h-4 text-slate-700" />
+            </div>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest">Leads sin contacto</h3>
           </div>
+          <p className="text-2xl font-black font-display text-slate-950">{filteredLeads.filter(l => l.status === "nuevo").length}</p>
+        </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Calificación de Riesgo / Score</span>
-            <select 
-              value={filterRiskLevel} 
-              onChange={e => setFilterRiskLevel(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-900 font-medium outline-none focus:border-slate-400"
-            >
-              <option value="all">Todas las Temperaturas</option>
-              <option value="HOT">HOT (Crítico / Score &gt;= 75)</option>
-              <option value="WARM">WARM (Interés / Score 45-74)</option>
-              <option value="LOW">LOW (Bajo / Score 15-44)</option>
-              <option value="SPAM">SPAM (Descartado / Score &lt; 15)</option>
-            </select>
+        <div className="bg-white border border-slate-200 p-5 rounded shadow-xs">
+          <div className="flex items-center gap-2 text-slate-500 mb-3">
+            <div className="p-2 bg-red-50 rounded">
+              <AlertCircle className="w-4 h-4 text-red-650" />
+            </div>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest">Leads Críticos (HOT)</h3>
           </div>
+          <p className="text-2xl font-black font-display text-slate-950">{filteredLeads.filter(l => l.riskLevel === "HOT" && l.status !== "ganado" && l.status !== "perdido").length}</p>
+        </div>
 
-          <button 
-            onClick={() => { setFilterStatus("all"); setFilterUrgency("all"); setFilterService("all"); setFilterCity("all"); setFilterRiskLevel("all"); setSearchQuery(""); }}
-            className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-wider rounded self-end transition-colors shadow-xs"
-          >
-            Limpiar Filtros
-          </button>
+        <div className="bg-white border border-slate-200 p-5 rounded shadow-xs">
+          <div className="flex items-center gap-2 text-slate-500 mb-3">
+            <div className="p-2 bg-slate-100 rounded">
+              <Calendar className="w-4 h-4 text-slate-700" />
+            </div>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest">En Mesa de Reunión</h3>
+          </div>
+          <p className="text-2xl font-black font-display text-slate-950">{filteredLeads.filter(l => l.status === "reunion").length}</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 p-5 rounded shadow-xs">
+          <div className="flex items-center gap-2 text-slate-500 mb-3">
+            <div className="p-2 bg-slate-900 rounded">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest">Forecast Ponderado</h3>
+          </div>
+          <p className="text-2xl font-black font-display text-slate-950">
+            ${Math.round(weightedPipelineValue).toLocaleString()} <span className="text-xs font-semibold text-slate-400">COP</span>
+          </p>
+        </div>
+      </div>
+
+      {/* KANBAN / LIST SWITCHER CONTAINER */}
+      {viewMode === "list" ? (
+        <div className="flex-1 overflow-auto bg-white border border-slate-200 rounded shadow-xs p-4">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-slate-250 bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-wider select-none">
+                <th className="py-2.5 px-3">Empresa</th>
+                <th className="py-2.5 px-3">Contacto</th>
+                <th className="py-2.5 px-3">Ciudad / Planta</th>
+                <th className="py-2.5 px-3">Servicio</th>
+                <th className="py-2.5 px-3">Presupuesto Máx</th>
+                <th className="py-2.5 px-3">Asesor</th>
+                <th className="py-2.5 px-3">Temperatura</th>
+                <th className="py-2.5 px-3">Etapa Comercial</th>
+                <th className="py-2.5 px-3 text-right">Ficha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {STAGES.map((stage) => {
+                const stageLeads = filteredLeads.filter(l => l.status === stage.id);
+                if (stageLeads.length === 0) return null;
+
+                return (
+                  <React.Fragment key={stage.id}>
+                    {/* Cabecera de Etapa */}
+                    <tr className="bg-slate-100/60 border-b border-slate-200">
+                      <td colSpan={9} className="py-2 px-3 text-[10px] font-black uppercase tracking-wider text-slate-800 select-none">
+                        {stage.name} <span className="ml-1 text-[9px] text-slate-450 font-bold bg-white border px-1.5 py-0.25 rounded-full">{stageLeads.length}</span>
+                      </td>
+                    </tr>
+                    
+                    {/* Leads de la etapa */}
+                    {stageLeads.map((lead) => {
+                      const budgetMax = lead.estimatedBudgetMax;
+
+                      return (
+                        <tr 
+                          key={lead.id} 
+                          onClick={() => { setSelectedLeadId(lead.id); setActionError(""); }}
+                          className="border-b border-slate-150 hover:bg-slate-50/50 cursor-pointer transition-colors font-medium text-slate-700"
+                        >
+                          <td className="py-2 px-3 font-bold text-slate-900 uppercase">
+                            {displayCompanyName(lead)}
+                          </td>
+                          <td className="py-2 px-3 truncate max-w-[150px]" title={lead.fullName || "Dato Incompleto"}>
+                            {displayContactName(lead)}
+                          </td>
+                          <td className="py-2 px-3">
+                            {renderCity(lead.city)}
+                          </td>
+                          <td className="py-2 px-3 capitalize">
+                            {displayServiceName(lead.serviceType)}
+                          </td>
+                          <td className="py-2 px-3 font-mono">
+                            {budgetMax 
+                              ? `$${Math.round(budgetMax).toLocaleString()} COP` 
+                              : <span className="text-slate-400 italic text-[10px]">No asignado</span>
+                            }
+                          </td>
+                          <td className="py-2 px-3 truncate max-w-[120px]" title={lead.assignedTo || ""}>
+                            {lead.assignedTo || <span className="text-slate-400 italic">Sin asignar</span>}
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className={`text-[8px] px-1.5 py-0.25 rounded font-black border uppercase ${
+                              lead.riskLevel === "HOT" ? "bg-red-50 text-red-705 border-red-200" :
+                              lead.riskLevel === "WARM" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                              lead.riskLevel === "SPAM" ? "bg-slate-100 text-slate-400 border-slate-200" :
+                              "bg-blue-50 text-blue-700 border-blue-200"
+                            }`}>
+                              {lead.riskLevel}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
+                            <select
+                              value={lead.status}
+                              disabled={isPending}
+                              onChange={async (e) => {
+                                const targetStage = e.target.value;
+                                if (targetStage === lead.status) return;
+
+                                // Optimistic Update
+                                const previousLeads = [...localLeads];
+                                const updatedLeads = localLeads.map(l => 
+                                  l.id === lead.id ? { ...l, status: targetStage, updatedAt: new Date() } : l
+                                );
+                                setLocalLeads(updatedLeads);
+                                setIsPending(true);
+
+                                try {
+                                  const res = await updateLeadStatusAction(lead.id, targetStage);
+                                  if (res.success) {
+                                    showToast("Etapa de oportunidad comercial actualizada.");
+                                    router.refresh();
+                                  } else {
+                                    throw new Error(res.error || "Permisos insuficientes.");
+                                  }
+                                } catch (err: any) {
+                                  console.error("List view stage update failed:", err);
+                                  // ROLLBACK on failure
+                                  setLocalLeads(previousLeads);
+                                  showToast(err.message || "No se pudo actualizar el lead. Permisos insuficientes.", "error");
+                                } finally {
+                                  setIsPending(false);
+                                }
+                              }}
+                              className="bg-slate-50 border border-slate-200 text-[10px] font-bold uppercase tracking-wide text-slate-800 rounded px-1.5 py-0.5 focus:outline-none focus:border-slate-400 cursor-pointer font-sans"
+                            >
+                              {STAGES.map((s) => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedLeadId(lead.id);
+                                setActionError("");
+                              }}
+                              className="text-[10px] font-bold text-slate-900 hover:text-slate-600 uppercase tracking-wider"
+                            >
+                              Detalle 360° →
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+          <div className="flex gap-4 h-full min-w-max pb-2">
+            {STAGES.map((stage) => {
+              let stageLeads = filteredLeads.filter(l => l.status === stage.id);
+              const colValue = stageLeads.reduce((acc, l) => acc + (l.estimatedBudgetMax || 0), 0);
+              const isDraggedOver = draggedOverStage === stage.id;
+
+              return (
+                <div
+                  key={stage.id}
+                  onDragOver={(e) => handleDragOver(e, stage.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, stage.id)}
+                  className={`w-[290px] flex-shrink-0 bg-slate-100/50 border rounded flex flex-col transition-all h-full max-h-[calc(100vh-22rem)] ${
+                    isDraggedOver ? "border-slate-800 bg-slate-100 shadow-sm" : "border-slate-200"
+                  }`}
+                >
+                  {/* Column Header */}
+                  <div className={`p-4 border-b border-slate-200 shrink-0 ${stage.bg} rounded-t flex flex-col gap-0.5`}>
+                    <div className="flex justify-between items-center">
+                      <h3 className={`text-xs font-bold ${stage.text} tracking-wider uppercase truncate pr-2`}>{stage.name}</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-white rounded border border-slate-200 text-slate-800 flex-shrink-0 shadow-xs">
+                        {stageLeads.length}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-450 mt-1">
+                      ${Math.round(colValue).toLocaleString()} COP
+                    </p>
+                  </div>
+
+                  {/* Cards Container */}
+                  <div className="p-3 flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-slate-300">
+                    {stageLeads.map((lead) => {
+                      const daysInactive = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+                      const isAlert = stage.id !== 'ganado' && stage.id !== 'perdido';
+                      
+                      let alertBorder = "border-slate-200";
+                      if (isAlert) {
+                        if (daysInactive >= 14) alertBorder = "border-red-400 shadow-[0_0_8px_rgba(220,38,38,0.15)]";
+                        else if (daysInactive >= 7) alertBorder = "border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.15)]";
+                      }
+
+                      const ledBorderClass = 
+                        lead.riskLevel === "HOT" ? "border-l-4 border-l-[#DC2626]" :
+                        lead.riskLevel === "WARM" ? "border-l-4 border-l-[#D97706]" :
+                        lead.riskLevel === "LOW" ? "border-l-4 border-l-[#64748B]" : 
+                        "border-l-4 border-l-slate-400";
+
+                      return (
+                        <div
+                          key={lead.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, lead.id)}
+                          onMouseDown={handleMouseDown}
+                          onMouseUp={(e) => handleMouseUp(e, lead.id)}
+                          className={`bg-white border ${alertBorder} ${ledBorderClass} p-2.5 rounded shadow-xs hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex flex-col gap-2 relative`}
+                        >
+                          {/* Linea 1: Empresa + Badge Temperatura / Grip */}
+                          <div className="flex justify-between items-start gap-2">
+                            <span 
+                              className="text-xs font-bold text-slate-900 uppercase tracking-wide leading-tight line-clamp-1 flex-1 cursor-pointer hover:text-slate-650 transition-colors"
+                              title={lead.companyName || "Dato Incompleto"}
+                            >
+                              {lead.companyName ? (
+                                lead.companyName
+                              ) : (
+                                <span className="inline-block text-[8px] px-1 bg-amber-50 border border-amber-200 text-amber-850 font-bold uppercase rounded-sm font-sans">
+                                  [Dato Incompleto]
+                                </span>
+                              )}
+                            </span>
+                            
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {isAlert && daysInactive >= 7 && (
+                                <span className="flex items-center gap-0.5 text-orange-600 font-black text-[9px]" title={`${daysInactive} días sin actividad`}>
+                                  <Clock className="w-3.5 h-3.5 text-orange-600 animate-pulse" />
+                                  {daysInactive}d
+                                </span>
+                              )}
+                              <span className={`text-[8px] px-1 py-0.25 rounded font-black border uppercase ${
+                                lead.riskLevel === "HOT" ? "bg-red-50 text-red-700 border-red-200" :
+                                lead.riskLevel === "WARM" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                lead.riskLevel === "SPAM" ? "bg-slate-100 text-slate-400 border-slate-200" :
+                                "bg-blue-50 text-blue-700 border-blue-200"
+                              }`}>
+                                {lead.riskLevel}
+                              </span>
+                              <div 
+                                data-drag-handle
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onMouseUp={(e) => e.stopPropagation()}
+                                className="cursor-grab active:cursor-grabbing p-0.5 text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded transition-colors shrink-0"
+                                title="Arrastrar tarjeta"
+                              >
+                                <FolderKanban className="w-3.5 h-3.5" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Linea 2: Datos Técnicos */}
+                          <div className="text-[10px] text-slate-550 font-bold flex items-center gap-1.5 truncate select-none">
+                            <span className="flex items-center gap-0.5 shrink-0">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              {renderCity(lead.city)}
+                            </span>
+                            <span className="text-slate-300">|</span>
+                            <span className="flex items-center gap-0.5 truncate">
+                              <Wind className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              {lead.airflow !== null && lead.airflow !== undefined ? `${lead.airflow} CFM` : <span className="text-slate-450 italic">-- CFM</span>}
+                            </span>
+                          </div>
+
+                          {/* Linea 3: Presupuesto max en caja ABB */}
+                          <div className="bg-[#EDF1F3] border border-slate-300/85 p-1.5 rounded flex justify-between items-center text-[10px] font-mono shadow-inner select-none">
+                            <span className="text-[8px] font-black text-slate-450 uppercase tracking-widest">VALOR ESTIMADO</span>
+                            <span className="font-black text-slate-950 font-mono">
+                              {lead.estimatedBudgetMax 
+                                ? `$${Math.round(lead.estimatedBudgetMax).toLocaleString()} COP` 
+                                : <span className="text-slate-400 font-bold italic text-[9px] uppercase">SIN ASIGNAR</span>
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {stageLeads.length === 0 && (
+                      <div className="h-20 border-2 border-dashed border-slate-200 rounded flex items-center justify-center text-xs font-semibold text-slate-400 bg-white/50 select-none">
+                        Soltar tarjeta aquí
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* BANDEJA DE ENTRADA PRINCIPAL */}
-      <div className="flex-1 overflow-auto w-full bg-white relative">
-        <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
-            <tr>
-              <th className="p-4 pl-6 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Empresa / Cliente</th>
-              <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Contacto principal</th>
-              <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Ubicación Planta</th>
-              <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Servicio Solicitado</th>
-              <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Temperatura</th>
-              <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Fecha de Ingreso</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-150">
-            {filteredLeads.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="p-16 text-center text-xs text-slate-400 italic">No hay leads registrados que coincidan con la búsqueda.</td>
-              </tr>
-            ) : (
-              filteredLeads.map((lead: any) => {
-                const isSelected = lead.id === selectedLeadId;
-                const dateRaw = new Date(lead.createdAt);
-                
-                return (
-                  <tr 
-                    key={lead.id} 
-                    onClick={() => { setSelectedLeadId(lead.id); setActionError(""); }}
-                    className={`cursor-pointer transition-colors group ${isSelected ? 'bg-slate-100/70' : 'hover:bg-slate-50/50'}`}
-                  >
-                    <td className="p-4 pl-6 relative">
-                      {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-900 rounded-r"></div>}
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-950 text-xs uppercase tracking-wide">{displayCompanyName(lead)}</span>
-                        <span className="text-[9px] text-slate-400 font-mono uppercase mt-0.5">ID-{lead.id.substring(0,8).toUpperCase()}</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <p className="text-xs font-semibold text-slate-900">{displayContactName(lead)}</p>
-                      {lead.cargo ? (
-                        <p className="text-[10px] text-slate-500 font-medium">{lead.cargo}</p>
-                      ) : (
-                        <span className="text-[9px] text-red-600 bg-red-50 border border-red-200 px-1 rounded font-bold uppercase">Sin Cargo</span>
-                      )}
-                    </td>
-                    <td className="p-4 text-xs font-semibold text-slate-650">
-                      {lead.city || <span className="text-slate-400 font-normal italic">Sin registrar</span>}
-                    </td>
-                    <td className="p-4">
-                      <span className="text-xs font-bold text-slate-900 capitalize">
-                        {displayServiceName(lead.serviceType)}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                        lead.riskLevel === 'HOT' ? 'bg-red-50 text-red-700 border border-red-200' :
-                        lead.riskLevel === 'WARM' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                        'bg-slate-100 text-slate-600 border border-slate-200'
-                      }`}>{lead.riskLevel}</span>
-                    </td>
-                    <td className="p-4 text-xs text-slate-500 font-mono">
-                      {format(dateRaw, 'dd/MM/yyyy')}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* DRAWER FLOTANTE (PANEL DETALLE DERECHO) */}
+      {/* DRAWER FLOTANTE (PANEL DETALLE DERECHO 360°) */}
       <div 
         className={`absolute top-0 right-0 h-full w-full max-w-[480px] bg-white shadow-[-15px_0_30px_rgba(0,0,0,0.08)] border-l border-slate-200 z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
           selectedLeadId ? "translate-x-0" : "translate-x-full"
@@ -743,10 +1004,10 @@ export default function LeadsClient({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 leading-tight uppercase">{displayCompanyName(selectedLead)}</h3>
-                  <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1 font-semibold">
+                  <div className="text-[10px] text-slate-550 flex items-center gap-1 mt-1 font-semibold">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    {selectedLead.city || 'No registrada'}
-                  </p>
+                    <div className="inline-block">{renderCity(selectedLead.city)}</div>
+                  </div>
                   <div className="flex items-center gap-1.5 mt-2">
                     <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
                       selectedLead.riskLevel === 'HOT' ? 'bg-red-50 text-red-700 border border-red-200' :
@@ -792,7 +1053,7 @@ export default function LeadsClient({
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
               {activeTab === 'resumen' && (
                 <>
-                  {/* BARRA DE ASIGNACIÓN Y ESTADO COMERCIAL (Exclusivo Comercial/Admin) */}
+                  {/* BARRA DE ASIGNACIÓN Y ESTADO COMERCIAL */}
                   {currentUser.role !== 'tecnico' && currentUser.role !== 'ingeniero' ? (
                     <section className="bg-slate-50 border border-slate-250 p-4 rounded space-y-4 shadow-xs">
                       <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1.5">Control de Asignación y Proceso</span>
@@ -804,7 +1065,7 @@ export default function LeadsClient({
                             value={selectedLead.assignedTo || ""}
                             disabled={isPending}
                             onChange={(e) => handleAssignSeller(e.target.value)}
-                            className="w-full p-2 bg-white border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-slate-400 disabled:opacity-55 cursor-pointer"
+                            className="w-full p-2 bg-white border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-slate-400 disabled:opacity-55 cursor-pointer animate-none"
                           >
                             <option value="">Sin Asignar</option>
                             {allCrmUsers.filter(u => ["admin", "comercial", "director_comercial"].includes(u.role)).map(u => (
@@ -819,7 +1080,7 @@ export default function LeadsClient({
                             value={selectedLead.status || "nuevo"}
                             disabled={isPending}
                             onChange={(e) => handleStageChange(e.target.value)}
-                            className="w-full p-2 bg-white border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-slate-400 disabled:opacity-55 cursor-pointer"
+                            className="w-full p-2 bg-white border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-slate-400 disabled:opacity-55 cursor-pointer animate-none"
                           >
                             <option value="nuevo">Nuevo Lead</option>
                             <option value="contacto">Contacto Inicial</option>
@@ -839,7 +1100,7 @@ export default function LeadsClient({
                             value={selectedLead.riskLevel || "LOW"}
                             disabled={isPending}
                             onChange={(e) => handleRiskLevelChange(e.target.value)}
-                            className="w-full p-2 bg-white border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-slate-400 disabled:opacity-55 cursor-pointer"
+                            className="w-full p-2 bg-white border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-slate-400 disabled:opacity-55 cursor-pointer animate-none"
                           >
                             <option value="HOT">HOT 🔥 (Alta prioridad / Score &gt;= 75)</option>
                             <option value="WARM">WARM ☀️ (Interés medio / Score 45-74)</option>
@@ -851,7 +1112,6 @@ export default function LeadsClient({
                       </div>
                     </section>
                   ) : (
-                    // Ficha de Lectura para Técnicos
                     <section className="bg-slate-50 border border-slate-200 p-4 rounded text-xs space-y-2 font-semibold text-slate-800">
                       <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1.5">Asignación de Proceso comercial</span>
                       <div className="grid grid-cols-2 gap-2">
@@ -887,7 +1147,6 @@ export default function LeadsClient({
                       </div>
                     </div>
 
-                    {/* WhatsApp Action Button */}
                     <div className="pt-2">
                       <button
                         type="button"
@@ -991,11 +1250,11 @@ export default function LeadsClient({
                       <div className="text-xs text-slate-400 italic">No hay actividades en el historial.</div>
                     ) : (
                       (fullLead.crmActivityLogs).map((act: any, idx: number) => (
-                        <div key={act.id || idx} className="relative text-xs">
+                        <div key={act.id || idx} className="relative text-xs font-semibold">
                           <div className="absolute -left-[35px] top-1 w-6 h-6 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center z-10">
                             <FileText className="w-3 h-3 text-slate-500" />
                           </div>
-                          <p className="text-xs text-slate-900 font-bold uppercase tracking-wider capitalize">
+                          <p className="text-xs text-slate-900 font-bold uppercase tracking-wider">
                             {act.activityType === "call" ? "Llamada Telefónica" :
                              act.activityType === "email" ? "Correo Electrónico" :
                              act.activityType === "meeting" ? "Reunión Online" :
@@ -1007,7 +1266,7 @@ export default function LeadsClient({
                              act.activityType === "status_changed" ? "Cambio de Estado" :
                              act.activityType.replace(/_/g, ' ')}
                           </p>
-                          <p className="text-xs text-slate-700 mt-0.5 font-medium">{act.description}</p>
+                          <p className="text-xs text-slate-750 mt-0.5 font-semibold leading-relaxed">{act.description}</p>
                           <p className="text-[10px] text-slate-400 font-mono mt-1">{new Date(act.createdAt).toLocaleString()}</p>
                         </div>
                       ))
@@ -1025,7 +1284,7 @@ export default function LeadsClient({
                     <div className="text-xs text-slate-400 italic">No hay propuestas registradas.</div>
                   ) : (
                     (fullLead.crmProposals).map((prop: any, idx: number) => (
-                      <div key={prop.id} className="p-4 bg-slate-50 border border-slate-200 rounded space-y-3">
+                      <div key={prop.id} className="p-4 bg-slate-50 border border-slate-200 rounded space-y-3 font-semibold">
                         <div className="flex justify-between items-center border-b border-slate-150 pb-2">
                           <span className="font-bold text-xs text-slate-900 truncate max-w-[200px]">{prop.title}</span>
                           <span className="bg-white px-2 py-0.5 rounded text-[9px] font-bold uppercase border border-slate-200 tracking-wider">{prop.status}</span>
@@ -1076,161 +1335,6 @@ export default function LeadsClient({
         )}
       </div>
 
-      {/* NEW LEAD MODAL */}
-      {isNewLeadOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded w-full max-w-lg p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-scale-up">
-            <button onClick={() => setIsNewLeadOpen(false)} className="absolute top-4 right-4 text-slate-450 hover:text-slate-900 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-            
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">Nuevo Lead</h3>
-            {leadError && <p className="text-red-500 text-xs mb-4 font-bold">{leadError}</p>}
-            
-            <form onSubmit={handleCreateLead} className="space-y-4 text-xs font-semibold">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Nombre Completo *</label>
-                  <input 
-                    required 
-                    type="text"
-                    value={newLeadForm.fullName} 
-                    onChange={e => setNewLeadForm({...newLeadForm, fullName: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Empresa *</label>
-                  <input 
-                    required 
-                    type="text"
-                    value={newLeadForm.companyName} 
-                    onChange={e => setNewLeadForm({...newLeadForm, companyName: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Email *</label>
-                  <input 
-                    required 
-                    type="email"
-                    value={newLeadForm.email} 
-                    onChange={e => setNewLeadForm({...newLeadForm, email: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Teléfono * (Ej: +573001234567)</label>
-                  <input 
-                    required 
-                    type="text"
-                    value={newLeadForm.phone} 
-                    onChange={e => setNewLeadForm({...newLeadForm, phone: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Cargo / Puesto</label>
-                  <input 
-                    type="text"
-                    value={newLeadForm.cargo} 
-                    onChange={e => setNewLeadForm({...newLeadForm, cargo: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Ciudad *</label>
-                  <input 
-                    required
-                    type="text"
-                    value={newLeadForm.city} 
-                    onChange={e => setNewLeadForm({...newLeadForm, city: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Servicio *</label>
-                  <select 
-                    value={newLeadForm.serviceType} 
-                    onChange={e => setNewLeadForm({...newLeadForm, serviceType: e.target.value as any})}
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 font-medium focus:outline-none focus:border-slate-500"
-                  >
-                    <option value="venta">Venta Equipos</option>
-                    <option value="fabricacion">Fabricación Especial</option>
-                    <option value="mantenimiento">Mantenimiento Preventivo</option>
-                    <option value="reparacion">Reparación / Overhaul</option>
-                    <option value="ventilacion">Ventilación Industrial</option>
-                    <option value="extraccion">Extracción de Contaminantes</option>
-                    <option value="control_termico">Control Térmico / Clima</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Ambiente *</label>
-                  <input 
-                    required 
-                    type="text"
-                    value={newLeadForm.environmentType} 
-                    onChange={e => setNewLeadForm({...newLeadForm, environmentType: e.target.value})} 
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-500 uppercase tracking-wider block">Urgencia *</label>
-                  <select 
-                    value={newLeadForm.urgencyLevel} 
-                    onChange={e => setNewLeadForm({...newLeadForm, urgencyLevel: e.target.value as any})}
-                    className="w-full bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 font-medium focus:outline-none focus:border-slate-500"
-                  >
-                    <option value="baja">Baja</option>
-                    <option value="media">Media</option>
-                    <option value="alta">Alta</option>
-                    <option value="critica">Crítica</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-500 uppercase tracking-wider block">Notas Comerciales</label>
-                <textarea 
-                  value={newLeadForm.notes} 
-                  onChange={e => setNewLeadForm({...newLeadForm, notes: e.target.value})} 
-                  className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500 h-20 resize-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-                <button 
-                  type="button" 
-                  onClick={() => setIsNewLeadOpen(false)}
-                  className="px-4 py-2.5 border border-slate-200 text-slate-700 rounded hover:bg-slate-50 font-bold uppercase tracking-wider text-[10px]"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  disabled={submittingLead} 
-                  type="submit" 
-                  className="px-6 py-2.5 bg-slate-900 text-white rounded hover:bg-slate-800 disabled:bg-slate-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-2"
-                >
-                  {submittingLead ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
-                    </>
-                  ) : "Crear Lead"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       {/* MODAL DRAWER: REGISTRAR ACTIVIDAD */}
       {isActivityModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -1250,7 +1354,6 @@ export default function LeadsClient({
                 >
                   <option value="call">Llamada Telefónica</option>
                   <option value="email">Correo Enviado</option>
-                  <option value="call">WhatsApp</option>
                   <option value="meeting">Reunión Online</option>
                   <option value="visit">Visita Técnica</option>
                 </select>
@@ -1264,7 +1367,7 @@ export default function LeadsClient({
                   required 
                   rows={3} 
                   placeholder="Detalles sobre lo acordado con el cliente..." 
-                  className="p-2 bg-slate-50 border border-slate-250 rounded text-sm text-slate-800 focus:border-slate-400 focus:outline-none"
+                  className="p-2 bg-slate-50 border border-slate-255 rounded text-sm text-slate-805 focus:border-slate-400 focus:outline-none"
                 ></textarea>
               </div>
 
