@@ -32,7 +32,19 @@ function ThemeToggle() {
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
+  // Lock body scroll when mobile menu is active to prevent page content movement underneath
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
 
   if (pathname?.startsWith("/crm")) {
     return null;
@@ -96,30 +108,30 @@ export default function Navbar() {
         <div className="md:hidden flex items-center gap-4">
           <ThemeToggle />
           <button
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="text-text-secondary hover:text-text-primary p-2 focus:outline-none"
             aria-label="Abrir menu"
           >
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
 
       <AnimatePresence>
-        {isOpen && (
+        {isMobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-16 left-0 w-full bg-background/96 backdrop-blur-2xl border-b border-border-subtle md:hidden flex flex-col p-6 gap-6 z-40"
+            className="fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-slate-900 dark:bg-slate-950 border-b border-border-subtle md:hidden flex flex-col p-6 gap-6 z-50 overflow-y-auto"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.path}
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className={`text-lg font-medium py-2 border-b border-border-subtle/60 flex items-center ${
                     pathname === link.path ? "text-accent-cyan" : "text-text-secondary"
                   }`}
@@ -132,7 +144,7 @@ export default function Navbar() {
 
             <Link
               href="/cotizador"
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsMobileMenuOpen(false)}
               className="w-full text-center px-4 py-3 bg-accent-cyan text-white dark:text-background font-semibold text-base rounded-md transition-all flex items-center justify-center gap-2"
             >
               Diagnostico

@@ -62,7 +62,7 @@ interface CrmShellProps {
 export default function CrmShell({ userName, userEmail, userRole, children }: CrmShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
   const { theme, setTheme } = useTheme();
@@ -115,22 +115,22 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
   return (
     <div className="bg-bg-secondary min-h-screen text-text-primary flex transition-colors duration-300">
       {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 z-50 h-screen bg-bg-primary border-r border-border-subtle transition-all duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-16 md:translate-x-0'}`}>
+      <aside className={`fixed top-0 left-0 z-50 h-screen bg-bg-primary transition-all duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'w-64 translate-x-0 border-r border-border-subtle' : 'w-64 -translate-x-full border-r-0 md:w-16 md:translate-x-0 md:border-r md:border-border-subtle'}`}>
         {/* Sidebar Header */}
-        <div className={`flex items-center border-b border-border-subtle h-16 flex-shrink-0 ${sidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
-          <div className={`flex items-center gap-2 overflow-hidden ${sidebarOpen ? 'opacity-100' : 'opacity-0 md:opacity-0'}`}>
+        <div className={`flex items-center border-b border-border-subtle h-16 flex-shrink-0 ${isSidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
+          <div className={`flex items-center gap-2 overflow-hidden ${isSidebarOpen ? 'opacity-100' : 'opacity-0 md:opacity-0'}`}>
             <ShieldCheck className="h-5 w-5 text-accent-cyan flex-shrink-0" />
             <span className="font-mono text-xs font-bold tracking-widest text-text-primary uppercase whitespace-nowrap">CYH OS</span>
           </div>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-md text-text-secondary hover:bg-bg-tertiary transition-all flex-shrink-0 hidden md:block" aria-label="Toggle sidebar">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1.5 rounded-md text-text-secondary hover:bg-bg-tertiary transition-all flex-shrink-0 hidden md:block" aria-label="Toggle sidebar">
             <Menu className="h-4 w-4" />
           </button>
-          <button className="md:hidden text-text-secondary" onClick={() => setSidebarOpen(false)} aria-label="Cerrar menú">
+          <button className="md:hidden text-text-secondary" onClick={() => setIsSidebarOpen(false)} aria-label="Cerrar menú">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -141,7 +141,7 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
             const isOpen = openGroups.includes(group.group);
             return (
               <div key={group.group} className="space-y-0.5">
-                {sidebarOpen ? (
+                {isSidebarOpen ? (
                   <button onClick={() => toggleGroup(group.group)} className="w-full flex items-center justify-between px-2 py-1 hover:bg-bg-tertiary rounded transition-colors group">
                     <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
                       {group.group}
@@ -150,7 +150,7 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
                   </button>
                 ) : <div className="h-3" />}
 
-                <div className={`space-y-0.5 overflow-hidden transition-all duration-200 ${!sidebarOpen || isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`space-y-0.5 overflow-hidden transition-all duration-200 ${!isSidebarOpen || isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
                   {group.items.map((item) => {
                     let itemHref = item.href;
                     if (item.name === 'Dashboard' && (userRole === 'tecnico' || userRole === 'ingeniero')) {
@@ -162,13 +162,13 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
                       <Link
                         key={item.name}
                         href={itemHref}
-                        title={!sidebarOpen ? item.name : undefined}
+                        title={!isSidebarOpen ? item.name : undefined}
                         className={`flex items-center rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-                          sidebarOpen ? 'gap-2.5 px-3 py-2' : 'w-10 h-10 justify-center mx-auto'
+                          isSidebarOpen ? 'gap-2.5 px-3 py-2' : 'w-10 h-10 justify-center mx-auto'
                         } ${isActive ? "bg-accent-cyan/10 text-accent-cyan" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"}`}
                       >
                         <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-accent-cyan" : ""}`} />
-                        {sidebarOpen && <span>{item.name}</span>}
+                        {isSidebarOpen && <span>{item.name}</span>}
                       </Link>
                     );
                   })}
@@ -180,25 +180,25 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
 
         {/* Sidebar Footer */}
         <div className="p-2 border-t border-border-subtle flex flex-col gap-1 flex-shrink-0">
-          <Link href="/crm/perfil" title={!sidebarOpen ? "Mi Perfil" : undefined}
-            className={`flex items-center rounded-md text-sm font-medium text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors ${sidebarOpen ? 'gap-2.5 px-3 py-2' : 'w-10 h-10 justify-center mx-auto'}`}>
+          <Link href="/crm/perfil" title={!isSidebarOpen ? "Mi Perfil" : undefined}
+            className={`flex items-center rounded-md text-sm font-medium text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors ${isSidebarOpen ? 'gap-2.5 px-3 py-2' : 'w-10 h-10 justify-center mx-auto'}`}>
             <User className="h-4 w-4 flex-shrink-0" />
-            {sidebarOpen && <span>Mi Perfil</span>}
+            {isSidebarOpen && <span>Mi Perfil</span>}
           </Link>
-          <button onClick={handleLogout} title={!sidebarOpen ? "Cerrar Sesión" : undefined}
-            className={`flex items-center rounded-md text-sm font-medium text-text-secondary hover:bg-danger/10 hover:text-danger transition-colors ${sidebarOpen ? 'gap-2.5 px-3 py-2 w-full' : 'w-10 h-10 justify-center mx-auto'}`}>
+          <button onClick={handleLogout} title={!isSidebarOpen ? "Cerrar Sesión" : undefined}
+            className={`flex items-center rounded-md text-sm font-medium text-text-secondary hover:bg-danger/10 hover:text-danger transition-colors ${isSidebarOpen ? 'gap-2.5 px-3 py-2 w-full' : 'w-10 h-10 justify-center mx-auto'}`}>
             <LogOut className="h-4 w-4 flex-shrink-0" />
-            {sidebarOpen && <span>Cerrar Sesión</span>}
+            {isSidebarOpen && <span>Cerrar Sesión</span>}
           </button>
         </div>
       </aside>
 
       {/* Main */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-16'}`}>
         {/* Top Bar */}
         <header className="sticky top-0 z-30 h-16 bg-bg-primary border-b border-border-subtle flex items-center justify-between px-4 shadow-sm flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-md text-text-secondary hover:bg-bg-tertiary transition-all md:hidden" aria-label="Abrir menú">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1.5 rounded-md text-text-secondary hover:bg-bg-tertiary transition-all md:hidden" aria-label="Abrir menú">
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2.5">
