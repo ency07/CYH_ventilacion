@@ -97,6 +97,17 @@ const renderCity = (city: string | null) => {
   return city;
 };
 
+const renderAirflow = (airflow: number | null | undefined) => {
+  if (airflow === null || airflow === undefined) {
+    return (
+      <span className="inline-block text-[8px] px-1.5 py-0.5 rounded bg-amber-50 border border-amber-250 text-amber-800 font-bold uppercase select-none font-sans">
+        [Telemetría Pendiente]
+      </span>
+    );
+  }
+  return `${airflow.toLocaleString()} CFM`;
+};
+
 export default function PipelineClient({
   initialLeads = [],
   allCrmUsers = [],
@@ -909,7 +920,7 @@ export default function PipelineClient({
                             </div>
                             <div className="flex items-center gap-1.5 font-mono truncate">
                               <Wind className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{lead.airflow !== null && lead.airflow !== undefined ? `${lead.airflow} CFM` : "-- CFM"}</span>
+                              <span>{renderAirflow(lead.airflow)}</span>
                             </div>
                           </div>
 
@@ -1081,7 +1092,7 @@ export default function PipelineClient({
                             <span className="text-slate-300">|</span>
                             <span className="flex items-center gap-0.5 truncate">
                               <Wind className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              {lead.airflow !== null && lead.airflow !== undefined ? `${lead.airflow} CFM` : <span className="text-slate-450 italic">-- CFM</span>}
+                              {renderAirflow(lead.airflow)}
                             </span>
                           </div>
 

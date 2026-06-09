@@ -375,37 +375,52 @@ export async function getAllLeadsWithCrmDataAction(): Promise<ActionResult<any[]
         assignedTo: crmPipeline.assignedTo,
         stage: crmPipeline.stage,
         probability: crmPipeline.probability
+      },
+      opportunity: {
+        id: crmOpportunities.id,
+        estimatedValue: crmOpportunities.estimatedValue,
+        probability: crmOpportunities.probability,
+        stage: crmOpportunities.stage
+      },
+      diagnostic: {
+        airflow: diagnosticReports.airflow
       }
     })
     .from(leads)
-    .leftJoin(crmPipeline, eq(leads.id, crmPipeline.leadId));
+    .leftJoin(crmPipeline, eq(leads.id, crmPipeline.leadId))
+    .leftJoin(crmOpportunities, eq(leads.id, crmOpportunities.leadId))
+    .leftJoin(diagnosticReports, eq(leads.id, diagnosticReports.leadId));
 
     // Apply strict server-side filtering for sales/vendedor roles
     if (userRole === "vendedor" || userRole === "comercial") {
       query = query.where(eq(crmPipeline.assignedTo, userEmail)) as any;
     }
 
-    const allLeads = await query.orderBy(desc(leads.createdAt));
+    const rawResults = await query.orderBy(desc(leads.createdAt));
 
-    // Fetch all diagnostics to map airflow to leads in memory
-    const allDiagnostics = await db.select({ 
-      leadId: diagnosticReports.leadId, 
-      airflow: diagnosticReports.airflow 
-    }).from(diagnosticReports);
-
-    // Map into a flat object for frontend consumption
-    const mapped = allLeads.map(({ lead, pipeline }) => {
-      const diagsForLead = allDiagnostics.filter(d => d.leadId === lead.id);
-      const airflow = diagsForLead.length > 0 ? diagsForLead[diagsForLead.length - 1].airflow : null;
-
-      return {
-        ...lead,
-        ...pipeline, 
-        id: lead.id, 
-        pipelineId: pipeline?.id,
-        airflow: airflow
-      };
-    });
+    // De-duplicate in memory using a Map keyed by lead ID to avoid duplicates due to left joins
+    const leadMap = new Map<string, any>();
+    for (const row of rawResults) {
+      const existing = leadMap.get(row.lead.id);
+      if (!existing) {
+        leadMap.set(row.lead.id, {
+          ...row.lead,
+          ...row.pipeline,
+          id: row.lead.id,
+          pipelineId: row.pipeline?.id,
+          airflow: row.diagnostic?.airflow || null,
+          opportunityId: row.opportunity?.id || null,
+          opportunityValue: row.opportunity?.estimatedValue || null,
+          opportunityStage: row.opportunity?.stage || null,
+        });
+      } else {
+        // If there's a diagnostic report with airflow, keep the latest one
+        if (row.diagnostic?.airflow && !existing.airflow) {
+          existing.airflow = row.diagnostic.airflow;
+        }
+      }
+    }
+    const mapped = Array.from(leadMap.values());
 
     return { success: true, data: mapped };
   } catch (error: any) {
