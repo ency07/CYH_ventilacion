@@ -4,6 +4,7 @@ import { crmTasks, leads, crmCompanies, crmCustomers, crmPipeline, crmUsers } fr
 import { eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getLeadsForSelectAction } from "@/lib/server-actions/crm";
 import TareasClient from "./TareasClient";
 
 export const dynamic = "force-dynamic";
@@ -57,9 +58,17 @@ export default async function TareasPage() {
     companyName: t.companyName || t.customerName || "Proyecto CYH",
   }));
 
+  // Leads para el dropdown del modal
+  const leadsRes = await getLeadsForSelectAction();
+  const leadsForSelect = leadsRes.success ? leadsRes.data : [];
+
   return (
     <div className="w-full bg-bg-secondary">
-      <TareasClient tasksData={mappedTasks} />
+      <TareasClient
+        tasksData={mappedTasks}
+        leadsForSelect={leadsForSelect}
+        userRole={currentUser.role}
+      />
     </div>
   );
 }

@@ -1188,7 +1188,275 @@ export async function updateTaskAction(
   }
 }
 
+// ─── MODAL SUPPORT ACTIONS ─────────────────────────────────────────────────
 
+/** Tipos para el select de leads en modales */
+export type LeadSelectItem = {
+  leadId: string;
+  label: string;        // "Empresa | Planta o Área"
+  companyName: string;
+  environmentType: string;
+};
 
+/**
+ * Devuelve leads activos (no cerrados) formateados para dropdowns de modales.
+ * Si role === 'tecnico' o 'ingeniero', filtra los asignados al usuario en sesión.
+ */
+export async function getLeadsForSelectAction(): Promise<ActionResult<LeadSelectItem[]>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const userRecord = await db
+      .select({ role: crmUsers.role, fullName: crmUsers.fullName })
+      .from(crmUsers)
+      .where(eq(crmUsers.id, user.id))
+      .limit(1);
+
+    const role = userRecord[0]?.role ?? "vendedor";
+    const fullName = userRecord[0]?.fullName ?? "";
+
+    const rows = await db
+      .select({
+        leadId: leads.id,
+        companyName: leads.companyName,
+        environmentType: leads.environmentType,
+        assignedTo: crmPipeline.assignedTo,
+      })
+      .from(leads)
+      .leftJoin(crmPipeline, eq(crmPipeline.leadId, leads.id))
+      .where(
+        and(
+          ne(leads.status, "cerrado_ganado"),
+          ne(leads.status, "cerrado_perdido"),
+          sql`${leads.deletedAt} IS NULL`
+        )
+      )
+      .orderBy(desc(leads.createdAt))
+      .limit(200);
+
+    let filtered = rows;
+    if (role === "tecnico" || role === "ingeniero") {
+      filtered = rows.filter(r => r.assignedTo === fullName);
+    }
+
+    const items: LeadSelectItem[] = filtered.map(r => ({
+      leadId: r.leadId,
+      label: `${r.companyName} | ${r.environmentType}`,
+      companyName: r.companyName,
+      environmentType: r.environmentType,
+    }));
+
+    return { success: true, data: items };
+  } catch (error: unknown) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/** Payload tipado para crear una tarea desde modal */
+export type CreateTaskInput = {
+  leadId: string;
+  taskType: "visita_tecnica" | "llamada" | "reunion" | "tarea";
+  priority: "critica" | "alta" | "media";
+  dueDate: string;   // ISO string
+  assignedTo?: string;
+  notes?: string;
+};
+
+/**
+ * Crea una tarea completa con priority y revalida en cascada.
+ * Bloquea si faltan campos obligatorios (leadId, taskType, priority, dueDate).
+ */
+export async function createTaskFullAction(data: CreateTaskInput): Promise<ActionResult<typeof crmTasks.$inferSelect>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    if (!data.leadId || !data.taskType || !data.priority || !data.dueDate) {
+      return { success: false, error: "Todos los campos obligatorios deben ser completados." };
+    }
+
+    const [newTask] = await db.insert(crmTasks).values({
+      leadId: data.leadId,
+      taskType: data.taskType,
+      priority: data.priority,
+      dueDate: new Date(data.dueDate),
+      assignedTo: data.assignedTo ?? undefined,
+      notes: data.notes ?? undefined,
+      status: "pendiente",
+    }).returning();
+
+    // Log de actividad
+    await db.insert(crmActivityLogs).values({
+      leadId: data.leadId,
+      activityType: "technical",
+      description: `Nueva tarea [${data.priority.toUpperCase()}]: ${data.taskType}`,
+      userId: user.id,
+    });
+
+    // Revalidación en cascada total
+    revalidatePath("/crm/tareas");
+    revalidatePath("/crm/actividades");
+    revalidatePath("/crm/alertas");
+    revalidatePath("/crm/dashboard");
+    revalidatePath(`/crm/${data.leadId}`);
+
+    return { success: true, data: newTask };
+  } catch (error: unknown) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/** Payload tipado para registrar una actividad desde modal */
+export type CreateActivityInput = {
+  leadId: string;
+  taskType: "visita_tecnica" | "llamada" | "reunion" | "tarea";
+  dueDate: string;
+  assignedTo?: string;
+  notes: string;
+};
+
+/**
+ * Registra una actividad (tarea + log) desde el modal de Actividades.
+ */
+export async function createActivityFullAction(data: CreateActivityInput): Promise<ActionResult<typeof crmTasks.$inferSelect>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    if (!data.leadId || !data.taskType || !data.dueDate || !data.notes.trim()) {
+      return { success: false, error: "Todos los campos obligatorios deben ser completados." };
+    }
+
+    const [newTask] = await db.insert(crmTasks).values({
+      leadId: data.leadId,
+      taskType: data.taskType,
+      dueDate: new Date(data.dueDate),
+      assignedTo: data.assignedTo ?? undefined,
+      notes: data.notes,
+      priority: "media",
+      status: "pendiente",
+    }).returning();
+
+    await db.insert(crmActivityLogs).values({
+      leadId: data.leadId,
+      activityType: sanitizeActivityType(data.taskType),
+      description: data.notes.substring(0, 200),
+      userId: user.id,
+    });
+
+    revalidatePath("/crm/actividades");
+    revalidatePath("/crm/tareas");
+    revalidatePath("/crm/alertas");
+    revalidatePath("/crm/dashboard");
+    revalidatePath(`/crm/${data.leadId}`);
+
+    return { success: true, data: newTask };
+  } catch (error: unknown) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/** Alerta de notificación para el popover de la campana */
+export type NotificationAlert = {
+  id: string;
+  type: "licitacion" | "diagnostico" | "cfm" | "tarea_vencida";
+  message: string;
+  severity: "critica" | "alta";
+  href: string;
+  createdAt: string;
+};
+
+/**
+ * Devuelve alertas críticas vivas para el popover de la campana superior.
+ * Máximo 10 alertas ordenadas por severidad.
+ */
+export async function getNotificationAlertsAction(): Promise<ActionResult<NotificationAlert[]>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const alerts: NotificationAlert[] = [];
+    const now = new Date();
+    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+    // Regla 1: Licitaciones con fecha límite < 48h (pipeline.nextFollowUp próximo)
+    const urgentPipeline = await db
+      .select({ id: crmPipeline.id, leadId: crmPipeline.leadId, nextFollowUp: crmPipeline.nextFollowUp, assignedTo: crmPipeline.assignedTo })
+      .from(crmPipeline)
+      .where(
+        and(
+          sql`${crmPipeline.nextFollowUp} IS NOT NULL`,
+          sql`${crmPipeline.nextFollowUp} >= ${now}`,
+          sql`${crmPipeline.nextFollowUp} <= ${in48h}`,
+        )
+      )
+      .limit(5);
+
+    urgentPipeline.forEach(p => {
+      alerts.push({
+        id: `lic-${p.id}`,
+        type: "licitacion",
+        message: `Seguimiento vence en < 48h — Asignado: ${p.assignedTo ?? "Sin asignar"}`,
+        severity: "critica",
+        href: "/crm/calendario",
+        createdAt: now.toISOString(),
+      });
+    });
+
+    // Regla 2: Diagnósticos con estado requiere_visita
+    const diagsReq = await db
+      .select({ id: diagnosticReports.id, leadId: diagnosticReports.leadId, createdAt: diagnosticReports.createdAt })
+      .from(diagnosticReports)
+      .where(sql`${diagnosticReports.recommendations} ILIKE '%requiere_visita%' OR ${diagnosticReports.recommendations} ILIKE '%requiere visita%'`)
+      .limit(4);
+
+    diagsReq.forEach(d => {
+      alerts.push({
+        id: `diag-${d.id}`,
+        type: "diagnostico",
+        message: "Diagnóstico requiere visita técnica presencial.",
+        severity: "alta",
+        href: "/crm/diagnosticos",
+        createdAt: d.createdAt.toISOString(),
+      });
+    });
+
+    // Regla 3: Tareas vencidas sin completar
+    const vencidas = await db
+      .select({ id: crmTasks.id, taskType: crmTasks.taskType, dueDate: crmTasks.dueDate })
+      .from(crmTasks)
+      .where(
+        and(
+          sql`${crmTasks.status} != 'completado'`,
+          sql`${crmTasks.dueDate} < ${now}`,
+          sql`${crmTasks.deletedAt} IS NULL`
+        )
+      )
+      .limit(3);
+
+    vencidas.forEach(t => {
+      alerts.push({
+        id: `task-${t.id}`,
+        type: "tarea_vencida",
+        message: `Tarea vencida: ${t.taskType}`,
+        severity: "critica",
+        href: "/crm/tareas",
+        createdAt: t.dueDate.toISOString(),
+      });
+    });
+
+    // Ordenar: críticas primero
+    alerts.sort((a, b) => (a.severity === "critica" ? -1 : 1));
+
+    return { success: true, data: alerts.slice(0, 10) };
+  } catch (error: unknown) {
+    return { success: false, error: (error as Error).message };
+  }
+}
 
 

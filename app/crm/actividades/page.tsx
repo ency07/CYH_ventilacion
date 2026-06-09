@@ -4,6 +4,7 @@ import { crmTasks, leads, crmCompanies, crmCustomers, crmPipeline, crmUsers } fr
 import { eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getLeadsForSelectAction } from "@/lib/server-actions/crm";
 import ActividadesClient from "./ActividadesClient";
 
 export const dynamic = "force-dynamic";
@@ -56,10 +57,18 @@ export default async function ActividadesPage() {
     companyName: t.companyName || t.customerName || "Proyecto CYH",
   }));
 
+  // Leads para el dropdown del modal
+  const leadsRes = await getLeadsForSelectAction();
+  const leadsForSelect = leadsRes.success ? leadsRes.data : [];
+
   return (
     <div className="w-full">
       <Suspense fallback={<div className="p-8 text-center animate-pulse text-text-muted">Cargando Historial...</div>}>
-        <ActividadesClient activitiesData={mappedTasks} />
+        <ActividadesClient
+          activitiesData={mappedTasks}
+          leadsForSelect={leadsForSelect}
+          userRole={currentUser.role}
+        />
       </Suspense>
     </div>
   );
