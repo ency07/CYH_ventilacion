@@ -989,5 +989,67 @@ export async function updateLeadCityAction(leadId: string, newCity: string): Pro
   }
 }
 
+export async function updateOpportunityAction(
+  oppId: string,
+  data: {
+    title?: string;
+    serviceType?: string;
+    estimatedValue?: number;
+    probability?: number;
+    expectedCloseDate?: Date | string | null;
+    stage?: string;
+    assignedTo?: string;
+    diagnosticId?: string | null;
+  }
+): Promise<ActionResult<any>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const [existingOpp] = await db.select().from(crmOpportunities).where(eq(crmOpportunities.id, oppId));
+    if (!existingOpp) {
+      return { success: false, error: "Oportunidad no encontrada." };
+    }
+
+    const newEstValue = data.estimatedValue !== undefined ? data.estimatedValue : existingOpp.estimatedValue;
+    const newProbability = data.probability !== undefined ? data.probability : existingOpp.probability;
+    const newWeightedValue = Math.round((newEstValue * newProbability) / 100);
+
+    const updateFields: any = {
+      updatedAt: new Date(),
+    };
+
+    if (data.title !== undefined) updateFields.title = data.title;
+    if (data.serviceType !== undefined) updateFields.serviceType = data.serviceType;
+    if (data.estimatedValue !== undefined) updateFields.estimatedValue = data.estimatedValue;
+    if (data.probability !== undefined) updateFields.probability = data.probability;
+    updateFields.weightedValue = newWeightedValue;
+    if (data.expectedCloseDate !== undefined) {
+      updateFields.expectedCloseDate = data.expectedCloseDate ? new Date(data.expectedCloseDate) : null;
+    }
+    if (data.stage !== undefined) updateFields.stage = data.stage;
+    if (data.assignedTo !== undefined) updateFields.assignedTo = data.assignedTo;
+    if (data.diagnosticId !== undefined) updateFields.diagnosticId = data.diagnosticId;
+
+    const [updatedOpp] = await db.update(crmOpportunities)
+      .set(updateFields)
+      .where(eq(crmOpportunities.id, oppId))
+      .returning();
+
+    revalidatePath("/crm");
+    revalidatePath("/crm/oportunidades");
+    revalidatePath("/crm/dashboard");
+    revalidatePath(`/crm/oportunidades/${oppId}`);
+    revalidatePath(`/crm/${existingOpp.leadId}`);
+
+    return { success: true, data: updatedOpp };
+  } catch (error: any) {
+    console.error("Error in updateOpportunityAction:", error);
+    return { success: false, error: error.message || "Error al actualizar la oportunidad." };
+  }
+}
+
+
 
 
