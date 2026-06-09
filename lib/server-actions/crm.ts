@@ -881,29 +881,75 @@ export async function updateProposalStatusAction(
   if (!user) return { success: false, error: "No autenticado" };
 
   try {
-    const { data: profile } = await supabase
-      .from("crm_users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    const userRole = dbUser?.role || "comercial";
+    const userEmail = dbUser?.email || user.email || "";
 
-    const userRole = profile?.role || "comercial";
-
-    if (newStatus === "aceptada" && !["admin", "super_admin", "director_comercial"].includes(userRole)) {
-      return { success: false, error: "Permisos insuficientes para aprobar propuestas." };
+    if (newStatus === "aceptada" && !["admin", "super_admin", "director_comercial", "director"].includes(userRole)) {
+      return { success: false, error: "Permisos insuficientes para aprobar propuestas comerciales." };
     }
 
-    const [updated] = await db
-      .update(crmProposals)
-      .set({ status: newStatus, updatedAt: new Date() })
-      .where(eq(crmProposals.id, proposalId))
-      .returning();
+    // Vendedor restriction
+    if (userRole === "vendedor" || userRole === "comercial") {
+      const [proposal] = await db.select().from(crmProposals).where(eq(crmProposals.id, proposalId)).limit(1);
+      if (proposal) {
+        const [opp] = await db.select().from(crmOpportunities).where(eq(crmOpportunities.leadId, proposal.leadId)).limit(1);
+        if (opp && opp.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
+          return { success: false, error: "Acceso denegado: Esta propuesta no está asignada a su cartera." };
+        }
+      }
+    }
+
+    const [updated] = await db.transaction(async (tx) => {
+      const [u] = await tx
+        .update(crmProposals)
+        .set({ 
+          status: newStatus, 
+          updatedAt: new Date(), 
+          approvedBy: newStatus === "aceptada" ? user.id : null, 
+          approvedAt: newStatus === "aceptada" ? new Date() : null 
+        })
+        .where(eq(crmProposals.id, proposalId))
+        .returning();
+
+      if (u && newStatus === "aceptada") {
+        // Cascade 1: update lead status to ganado
+        await tx.update(leads)
+          .set({ status: "ganado", updatedAt: new Date() })
+          .where(eq(leads.id, u.leadId));
+
+        // Cascade 2: update crmOpportunities stage to cerrado_ganado, probability to 100, and weightedValue to estimatedValue
+        const [opp] = await tx.select().from(crmOpportunities).where(eq(crmOpportunities.leadId, u.leadId)).limit(1);
+        if (opp) {
+          await tx.update(crmOpportunities)
+            .set({ 
+              stage: "cerrado_ganado", 
+              probability: 100, 
+              weightedValue: opp.estimatedValue,
+              updatedAt: new Date()
+            })
+            .where(eq(crmOpportunities.id, opp.id));
+        }
+
+        // Cascade 3: update crmPipeline stage to ganado
+        await tx.update(crmPipeline)
+          .set({ stage: "ganado", probability: 100, updatedAt: new Date() })
+          .where(eq(crmPipeline.leadId, u.leadId));
+      }
+
+      return [u];
+    });
 
     if (!updated) {
       return { success: false, error: "Propuesta no encontrada." };
     }
 
+    revalidatePath("/crm");
     revalidatePath("/crm/propuestas");
+    revalidatePath("/crm/oportunidades");
+    revalidatePath("/crm/dashboard");
+    revalidatePath("/crm/pipeline");
+    revalidatePath(`/crm/propuestas/${proposalId}`);
     if (updated.leadId) {
       revalidatePath(`/crm/${updated.leadId}`);
     }

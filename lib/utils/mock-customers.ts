@@ -288,3 +288,152 @@ export function getMockOpportunities(userEmail: string) {
     }
   ];
 }
+
+export function getMockProposals(userEmail: string) {
+  return [
+    {
+      proposal: {
+        id: "11111111-3333-4444-5555-666666666661",
+        leadId: "11111111-1111-1111-1111-111111111115",
+        diagnosticId: "11111111-1111-1111-1111-111111111116",
+        title: "CYH-COT-Extractores Nave Ácidos",
+        version: 1,
+        totalValue: 45000000,
+        currency: "COP",
+        status: "enviada",
+        pdfUrl: "/proposals/cot-acids-v1.pdf",
+        validUntil: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Expired 10 days ago (Oferta Expirada)
+        createdAt: new Date("2026-06-01"),
+        updatedAt: new Date("2026-06-01"),
+        deletedAt: null,
+        createdBy: null,
+        approvedBy: null,
+        approvedAt: null,
+        discountAmount: 0,
+        discountReason: null,
+      },
+      lead: {
+        id: "11111111-1111-1111-1111-111111111115",
+        fullName: "Ing. Jorge Pérez",
+        companyName: "Monómeros S.A.",
+        email: "jorge.perez@monomeros.co",
+        phone: "+573001234567",
+        city: "Barranquilla",
+        serviceType: "venta",
+      },
+      companyName: "Monómeros S.A.",
+      opportunity: {
+        id: "11111111-2222-3333-4444-555555555551",
+        title: "Suministro de Extractores CFM - Nave de Ácidos",
+        estimatedValue: 45000000,
+        probability: 80,
+        stage: "negociacion",
+        assignedTo: userEmail,
+      },
+      diagnosticReport: {
+        id: "11111111-1111-1111-1111-111111111116",
+        airflow: 350000,
+        dimensions: { width: 45, length: 120, height: 12 },
+        technicalObservations: "Ambiente corrosivo por gases ácidos. Se requiere extractor helicocentrifugo en acero inoxidable con motor a prueba de explosión.",
+        materialSuggestions: "Acero inoxidable 316, recubrimiento epóxico de alta resistencia.",
+        recommendations: "Instalar 4 extractores de 87,500 CFM cada uno para lograr los 350,000 CFM requeridos.",
+      }
+    },
+    {
+      proposal: {
+        id: "11111111-3333-4444-5555-666666666662",
+        leadId: "22222222-2222-2222-2222-222222222225",
+        diagnosticId: "22222222-2222-2222-2222-222222222226",
+        title: "CYH-COT-Sistema Inyección Fundición",
+        version: 2,
+        totalValue: 85000000,
+        currency: "COP",
+        status: "borrador",
+        pdfUrl: "/proposals/cot-foundry-v2.pdf",
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Válida por 30 días
+        createdAt: new Date("2026-06-02"),
+        updatedAt: new Date("2026-06-02"),
+        deletedAt: null,
+        createdBy: null,
+        approvedBy: null,
+        approvedAt: null,
+        discountAmount: 5000000,
+        discountReason: "Descuento por volumen de materiales",
+      },
+      lead: {
+        id: "22222222-2222-2222-2222-222222222225",
+        fullName: "Carlos Müller",
+        companyName: "Tecnoglass S.A.",
+        email: "carlos.muller@tecnoglass.com",
+        phone: "+573109876543",
+        city: "Barranquilla",
+        serviceType: "fabricacion",
+      },
+      companyName: "Tecnoglass S.A.",
+      opportunity: {
+        id: "11111111-2222-3333-4444-555555555552",
+        title: "Sistema de Inyección y Extracción - Fundición Aluminios",
+        estimatedValue: 85000000,
+        probability: 45,
+        stage: "propuesta",
+        assignedTo: userEmail,
+      },
+      diagnosticReport: {
+        id: "22222222-2222-2222-2222-222222222226",
+        airflow: 180000,
+        dimensions: { width: 30, length: 80, height: 8 },
+        technicalObservations: "Altas temperaturas por fundición de aluminio. Ventilación de confort requerida para operarios en frentes de trabajo.",
+        materialSuggestions: "Lámina galvanizada calibre 18, extractores de transmisión de alta temperatura.",
+        recommendations: "Inyección de aire limpio y fresco a nivel de piso, extracción localizada de humos en hornos.",
+      }
+    },
+    {
+      proposal: {
+        id: "11111111-3333-4444-5555-666666666663",
+        leadId: "33333333-3333-3333-3333-333333333337",
+        diagnosticId: "33333333-3333-3333-3333-333333333338",
+        title: "CYH-COT-Sistema Extracción Envasado",
+        version: 1,
+        totalValue: 120000000,
+        currency: "COP",
+        status: "aceptada",
+        pdfUrl: null,
+        validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+        createdAt: new Date("2026-06-03"),
+        updatedAt: new Date("2026-06-03"),
+        deletedAt: null,
+        createdBy: null,
+        approvedBy: null,
+        approvedAt: new Date("2026-06-05"),
+        discountAmount: 0,
+        discountReason: null,
+      },
+      lead: {
+        id: "33333333-3333-3333-3333-333333333337",
+        fullName: "Andrés Restrepo",
+        companyName: "Cervecería Bavaria",
+        email: "andres.restrepo@bavaria.co",
+        phone: "+573201112222",
+        city: "Barranquilla",
+        serviceType: "venta",
+      },
+      companyName: "Cervecería Bavaria",
+      opportunity: {
+        id: "11111111-2222-3333-4444-555555555553",
+        title: "Renovación de Campanas y Extractores - Envasado Barranquilla",
+        estimatedValue: 120000000,
+        probability: 15,
+        stage: "analisis",
+        assignedTo: userEmail,
+      },
+      diagnosticReport: {
+        id: "33333333-3333-3333-3333-333333333338",
+        airflow: 220000,
+        dimensions: { width: 50, length: 150, height: 10 },
+        technicalObservations: "Condensación de vapor en zona de lavado de botellas. Humedad relativa superior al 90%.",
+        materialSuggestions: "Campanas de extracción en acero inoxidable 304, extractores axiales de acoplamiento directo.",
+        recommendations: "Implementar campanas colectoras de vapor sobre las lavadoras de botellas con extractores dedicados.",
+      }
+    }
+  ];
+}
