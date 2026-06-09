@@ -24,9 +24,8 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
     }
   };
 
-  // Por diseño: Mapeo temporal de prioridades simuladas si no existe el campo en la DB.
-  // Asumimos que tasksData ya viene con la data necesaria.
   const getPriority = (task: any) => {
+    if (task.priority) return task.priority;
     if (task.taskType?.toLowerCase().includes("urgente") || task.taskType?.toLowerCase().includes("diagnóstico")) return "critica";
     if (task.taskType?.toLowerCase().includes("cotización") || task.taskType?.toLowerCase().includes("propuesta")) return "alta";
     return "media";
@@ -40,12 +39,13 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
   const filteredTasks = tasksWithPriority.filter(t => 
     t.task.taskType?.toLowerCase().includes(search.toLowerCase()) || 
     t.task.notes?.toLowerCase().includes(search.toLowerCase()) ||
-    t.companyName?.toLowerCase().includes(search.toLowerCase())
+    t.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+    t.environmentType?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const critica = filteredTasks.filter(t => t.priority === "critica");
-  const alta = filteredTasks.filter(t => t.priority === "alta");
-  const media = filteredTasks.filter(t => t.priority === "media");
+  const critica = filteredTasks.filter(t => t.priority === "critica" || t.priority === "high" || t.priority === "critical");
+  const alta = filteredTasks.filter(t => t.priority === "alta" || t.priority === "normal");
+  const media = filteredTasks.filter(t => t.priority === "media" || t.priority === "low" || !["critica", "critical", "high", "alta", "normal"].includes(t.priority));
 
   const renderDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -65,15 +65,13 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
   const renderColumn = (title: string, priorityValue: string, items: any[]) => {
     const isCritica = priorityValue === "critica";
     const isAlta = priorityValue === "alta";
-    const isMedia = priorityValue === "media";
 
-    const dotColor = isCritica ? "bg-red-600" : isAlta ? "bg-primary" : "bg-slate-400";
-    const borderColor = isCritica ? "border-red-600" : isAlta ? "border-primary" : "border-slate-400";
-    const badgeBg = isCritica ? "bg-red-100" : isAlta ? "bg-blue-100" : "bg-slate-100";
+    const dotColor = isCritica ? "bg-red-650" : isAlta ? "bg-primary" : "bg-slate-400";
+    const badgeBg = isCritica ? "bg-red-50" : isAlta ? "bg-blue-50" : "bg-slate-50";
     const badgeText = isCritica ? "text-red-700" : isAlta ? "text-blue-700" : "text-slate-700";
 
     return (
-      <div className="flex-1 min-w-[320px] max-w-[400px] flex flex-col">
+      <div className="flex-1 w-full md:max-w-[400px] flex flex-col">
         {/* Column Header */}
         <div className="flex items-center justify-between mb-4 px-1">
           <div className="flex items-center gap-2">
@@ -86,8 +84,8 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
         </div>
 
         {/* Column Cards Container */}
-        <div className="flex-1 overflow-y-auto space-y-4 pb-10 scrollbar-thin scrollbar-thumb-border-subtle">
-          {items.map(({ task, leadName, companyName }, idx) => (
+        <div className="flex-1 md:overflow-y-auto overflow-visible space-y-4 pb-10 scrollbar-thin scrollbar-thumb-border-subtle">
+          {items.map(({ task, leadName, companyName, environmentType }, idx) => (
             <div key={task.id} className="bg-bg-primary border-y border-r border-border-subtle shadow-sm flex flex-col hover:shadow-md transition-shadow relative">
               {/* Borde izquierdo (Indicador de prioridad) */}
               <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${dotColor}`}></div>
@@ -110,20 +108,31 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
                 
                 {/* Title */}
                 <h4 className="font-bold text-text-primary text-sm leading-tight mb-3">
-                  {task.taskType} {companyName ? `- ${companyName}` : ''}
+                  {companyName || "CYH"} | {environmentType || "Planta Principal"}
                 </h4>
+
+                <p className="text-xs text-text-secondary mb-3 italic">
+                  Tipo: {task.taskType === 'visita_tecnica' ? 'Visita Técnica' : task.taskType === 'reunion' ? 'Reunión' : task.taskType === 'llamada' ? 'Llamada Comercial' : 'Revisión de Ingeniería'}
+                </p>
 
                 {/* Divider */}
                 <div className="h-px bg-border-subtle/50 w-full mb-3"></div>
 
+                {/* Notes/Detail */}
+                {task.notes && (
+                  <p className="text-xs text-text-secondary line-clamp-2 mb-3 leading-relaxed">
+                    {task.notes}
+                  </p>
+                )}
+
                 {/* Footer (Avatar & Date) */}
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] font-bold">
+                    <div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] font-bold border border-border-subtle">
                       {task.assignedTo ? task.assignedTo.substring(0,2).toUpperCase() : 'CY'}
                     </div>
                     <span className="text-xs text-text-secondary font-medium">
-                      {task.assignedTo || 'Tú'}
+                      {task.assignedTo || 'CYH'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -146,13 +155,13 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col md:h-[calc(100vh-4rem)] h-auto min-h-screen md:overflow-hidden overflow-visible bg-bg-secondary font-sans">
       
       {/* HEADER PRINCIPAL */}
       <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4 shrink-0 px-8 pt-8">
         <div>
           <h1 className="text-3xl font-bold text-text-primary tracking-tight">Gestión de Tareas</h1>
-          <p className="text-sm text-text-secondary mt-1">Monitoreo de actividades operativas e ingeniería.</p>
+          <p className="text-sm text-text-secondary mt-1">Monitoreo de actividades operativas e ingeniería en el Kanban B2B.</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -173,7 +182,7 @@ export default function TareasClient({ tasksData }: { tasksData: any[] }) {
       </div>
 
       {/* KANBAN BOARD */}
-      <div className="flex-1 flex overflow-x-auto gap-6 px-8 pb-8">
+      <div className="flex-1 flex flex-col md:flex-row md:overflow-x-auto overflow-visible gap-6 px-8 pb-8">
         {renderColumn("Prioridad Crítica", "critica", critica)}
         {renderColumn("Prioridad Alta", "alta", alta)}
         {renderColumn("Prioridad Media", "media", media)}

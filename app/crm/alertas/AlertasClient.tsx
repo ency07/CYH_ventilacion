@@ -25,15 +25,15 @@ export default function AlertasClient({ initialAlerts }: { initialAlerts: AlertI
   const getIcon = (type: string) => {
     switch (type) {
       case "tarea_vencida": return <Clock className="w-5 h-5 text-danger" />;
-      case "propuesta_vencida": return <FileWarning className="w-5 h-5 text-warning" />;
-      case "lead_sin_contacto": return <UserX className="w-5 h-5 text-danger" />;
-      case "oportunidad_estancada": return <AlertTriangle className="w-5 h-5 text-warning" />;
+      case "licitacion_critica": return <FileWarning className="w-5 h-5 text-white" />;
+      case "requiere_ajuste": return <AlertTriangle className="w-5 h-5 text-white" />;
+      case "desvio_cfm": return <AlertTriangle className="w-5 h-5 text-white" />;
       default: return <Bell className="w-5 h-5 text-info" />;
     }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-bg-secondary p-8 font-sans overflow-y-auto">
+    <div className="flex flex-col md:h-[calc(100vh-4rem)] h-auto min-h-screen bg-bg-secondary p-8 font-sans md:overflow-y-auto overflow-visible">
       <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="text-3xl font-bold text-text-primary tracking-tight">Centro de Alertas</h1>
@@ -53,38 +53,56 @@ export default function AlertasClient({ initialAlerts }: { initialAlerts: AlertI
         </div>
       ) : (
         <div className="space-y-4">
-          {alerts.map(alert => (
-            <div key={alert.id} className="bg-bg-primary rounded-lg shadow-sm border border-border-subtle p-5 flex items-start justify-between hover:shadow-md transition-shadow group relative overflow-hidden">
-              <div className={`absolute left-0 top-0 bottom-0 w-1 ${alert.priority === 'alta' ? 'bg-danger' : 'bg-warning'}`}></div>
-              <div className="flex gap-4 ml-2">
-                <div className={`p-3 rounded-full shrink-0 ${alert.priority === 'alta' ? 'bg-danger/10' : 'bg-warning/10'}`}>
-                  {getIcon(alert.type)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-text-primary text-base">{alert.title}</h3>
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border ${
-                      alert.priority === 'alta' ? 'bg-danger/10 text-danger border-danger/20' : 'bg-warning/10 text-warning border-warning/20'
-                    }`}>
-                      {alert.priority}
-                    </span>
+          {alerts.map(alert => {
+            const isCritica = alert.priority === 'critica';
+            const isAlta = alert.priority === 'alta';
+
+            let indicatorBg = 'bg-warning';
+            let iconWrapperBg = 'bg-warning/10';
+            let badgeStyle = 'bg-warning/10 text-warning border-warning/20';
+            
+            if (isCritica) {
+              // Rojo ocre style
+              indicatorBg = 'bg-[#9A3412]';
+              iconWrapperBg = 'bg-[#9A3412]';
+              badgeStyle = 'bg-[#9A3412] text-white border-transparent';
+            } else if (isAlta) {
+              indicatorBg = 'bg-danger';
+              iconWrapperBg = 'bg-danger/10';
+              badgeStyle = 'bg-danger/10 text-danger border-danger/20';
+            }
+
+            return (
+              <div key={alert.id} className="bg-bg-primary rounded-lg shadow-sm border border-border-subtle p-5 flex items-start justify-between hover:shadow-md transition-shadow group relative overflow-hidden">
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${indicatorBg}`}></div>
+                <div className="flex gap-4 ml-2">
+                  <div className={`p-3 rounded-full shrink-0 flex items-center justify-center ${iconWrapperBg}`}>
+                    {getIcon(alert.type)}
                   </div>
-                  <p className="text-sm text-text-secondary mb-2">{alert.description}</p>
-                  <div className="flex items-center gap-4 text-xs font-bold text-text-muted">
-                    <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {alert.date ? format(new Date(alert.date), "dd MMM yyyy, HH:mm", { locale: es }) : "N/A"}</span>
-                    <span className="flex items-center gap-1.5"><UserX className="w-3.5 h-3.5" /> Cliente: {alert.leadName}</span>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-text-primary text-base">{alert.title}</h3>
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border ${badgeStyle}`}>
+                        {alert.priority === 'critica' ? 'crítica' : alert.priority}
+                      </span>
+                    </div>
+                    <p className="text-sm text-text-secondary mb-2 leading-relaxed">{alert.description}</p>
+                    <div className="flex items-center gap-4 text-xs font-bold text-text-muted">
+                      <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {alert.date ? format(new Date(alert.date), "dd MMM yyyy, HH:mm", { locale: es }) : "N/A"}</span>
+                      <span className="flex items-center gap-1.5"><UserX className="w-3.5 h-3.5" /> Cliente: {alert.leadName}</span>
+                    </div>
                   </div>
                 </div>
+                <button 
+                  onClick={() => dismissAlert(alert.id)}
+                  className="opacity-0 group-hover:opacity-100 p-2 text-text-muted hover:text-text-primary hover:bg-bg-secondary rounded transition-all"
+                  title="Marcar como revisado"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                </button>
               </div>
-              <button 
-                onClick={() => dismissAlert(alert.id)}
-                className="opacity-0 group-hover:opacity-100 p-2 text-text-muted hover:text-text-primary hover:bg-bg-secondary rounded transition-all"
-                title="Marcar como revisado"
-              >
-                <CheckCircle2 className="w-5 h-5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

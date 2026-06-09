@@ -732,7 +732,7 @@ export async function createProposalAction(data: {
   }
 }
 
-export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
+export async function getReportsMetricsAction(periodo?: string): Promise<ActionResult<any>> {
   try {
     const supabase = getSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
@@ -745,9 +745,22 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
       db.select().from(crmOpportunities),
     ]);
 
-    const totalLeads = allLeads.length;
-    const diagnosticsCount = allDiagnostics.length;
-    const proposalsCount = allProposals.length;
+    // Apply period filtering based on createdAt
+    const now = new Date();
+    let cutoffDate = new Date();
+    if (periodo === "30dias") cutoffDate.setDate(now.getDate() - 30);
+    else if (periodo === "180dias") cutoffDate.setDate(now.getDate() - 180);
+    else if (periodo === "365dias") cutoffDate.setDate(now.getDate() - 365);
+    else cutoffDate.setDate(now.getDate() - 90); // default 90dias
+
+    const filteredLeads = allLeads.filter(l => new Date(l.createdAt) >= cutoffDate);
+    const filteredDiagnostics = allDiagnostics.filter(d => new Date(d.createdAt) >= cutoffDate);
+    const filteredProposals = allProposals.filter(p => new Date(p.createdAt) >= cutoffDate);
+    const filteredOpportunities = allOpportunities.filter(o => new Date(o.createdAt) >= cutoffDate);
+
+    const totalLeads = filteredLeads.length;
+    const diagnosticsCount = filteredDiagnostics.length;
+    const proposalsCount = filteredProposals.length;
 
     // Conversion rate: Diagnostics to proposals
     const conversionRate = diagnosticsCount > 0 
@@ -755,7 +768,7 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
       : 0;
 
     // Average close time (Won/lost leads)
-    const closedLeads = allLeads.filter(l => l.status === "ganado" || l.status === "perdido");
+    const closedLeads = filteredLeads.filter(l => l.status === "ganado" || l.status === "perdido");
     let averageCloseDays = 42; // default standard fallback
     if (closedLeads.length > 0) {
       const totalDays = closedLeads.reduce((acc, l) => {
@@ -766,14 +779,14 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
     }
 
     // Win rate
-    const wonLeads = allLeads.filter(l => l.status === "ganado").length;
-    const lostLeads = allLeads.filter(l => l.status === "perdido").length;
+    const wonLeads = filteredLeads.filter(l => l.status === "ganado").length;
+    const lostLeads = filteredLeads.filter(l => l.status === "perdido").length;
     const winRate = (wonLeads + lostLeads) > 0 
       ? parseFloat(((wonLeads / (wonLeads + lostLeads)) * 100).toFixed(1)) 
       : 0;
 
     // Sales volume: total value of active/won opportunities
-    const salesVolume = allOpportunities
+    const salesVolume = filteredOpportunities
       .filter(opp => opp.stage !== "cerrado_perdido")
       .reduce((sum, opp) => sum + (opp.estimatedValue || 0), 0);
 
@@ -784,40 +797,46 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
       mantenimiento: 0,
       reparacion: 0,
     };
-    allOpportunities.forEach(opp => {
+    filteredOpportunities.forEach(opp => {
       const type = opp.serviceType || "venta";
       if (serviceTypeMap[type] !== undefined) {
-        serviceTypeMap[type] += opp.estimatedValue;
+        serviceTypeMap[type] += (opp.estimatedValue || 0);
       }
     });
 
+    const maxVal = Math.max(...Object.values(serviceTypeMap), 1);
+
     const desgloseData = [
-      { sector: "Fabricación Especial", value: parseFloat((serviceTypeMap.fabricacion / 1000000).toFixed(1)) || 0, max: 100, color: "#0b1c30" },
-      { sector: "Venta Directa", value: parseFloat((serviceTypeMap.venta / 1000000).toFixed(1)) || 0, max: 100, color: "#d3e4fe" },
-      { sector: "Mantenimiento Preventivo", value: parseFloat((serviceTypeMap.mantenimiento / 1000000).toFixed(1)) || 0, max: 100, color: "#8a9eb8" },
-      { sector: "Reparación / Overhaul", value: parseFloat((serviceTypeMap.reparacion / 1000000).toFixed(1)) || 0, max: 100, color: "#4f6580" },
+      { sector: "Fabricación Especial", value: serviceTypeMap.fabricacion || 0, max: maxVal, color: "#0b1c30" },
+      { sector: "Venta Directa", value: serviceTypeMap.venta || 0, max: maxVal, color: "#d3e4fe" },
+      { sector: "Mantenimiento Preventivo", value: serviceTypeMap.mantenimiento || 0, max: maxVal, color: "#8a9eb8" },
+      { sector: "Reparación / Overhaul", value: serviceTypeMap.reparacion || 0, max: maxVal, color: "#4f6580" },
     ];
 
     // Grouping by months for tendenciaData (defaulting to last 6 months)
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const monthlyData: Record<string, { name: string; fabricacion: number; mantenimiento: number }> = {};
+    const monthlyData: Record<string, { name: string; abiertas: number; ganadas: number }> = {};
     
     // Seed last 6 months
-    const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mName = months[d.getMonth()];
-      monthlyData[mName] = { name: mName, fabricacion: 0, mantenimiento: 0 };
+      monthlyData[mName] = { name: mName, abiertas: 0, ganadas: 0 };
     }
 
-    allOpportunities.forEach(opp => {
+    filteredOpportunities.forEach(opp => {
       const date = new Date(opp.createdAt);
       const mName = months[date.getMonth()];
       if (monthlyData[mName]) {
-        if (opp.serviceType === "fabricacion" || opp.serviceType === "venta") {
-          monthlyData[mName].fabricacion += parseFloat((opp.estimatedValue / 1000000).toFixed(2));
-        } else {
-          monthlyData[mName].mantenimiento += parseFloat((opp.estimatedValue / 1000000).toFixed(2));
+        const isWon = opp.stage === "cerrado_ganado";
+        const isLost = opp.stage === "cerrado_perdido";
+        if (!isLost) {
+          const weightedVal = (opp.estimatedValue || 0) * (opp.probability || 0) / 100;
+          if (isWon) {
+            monthlyData[mName].ganadas += weightedVal;
+          } else {
+            monthlyData[mName].abiertas += weightedVal;
+          }
         }
       }
     });
@@ -843,7 +862,7 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
       engineerMap["Admin"] = { diag: 0, cerrados: 0 };
     }
 
-    allDiagnostics.forEach(d => {
+    filteredDiagnostics.forEach(d => {
       const creatorName = d.createdBy ? userMap.get(d.createdBy) : null;
       const assigned = creatorName || "Admin";
       if (!engineerMap[assigned]) {
@@ -851,7 +870,7 @@ export async function getReportsMetricsAction(): Promise<ActionResult<any>> {
       }
       engineerMap[assigned].diag += 1;
       
-      const associatedLead = allLeads.find(l => l.id === d.leadId);
+      const associatedLead = filteredLeads.find(l => l.id === d.leadId);
       if (associatedLead && associatedLead.status === "ganado") {
         engineerMap[assigned].cerrados += 1;
       }
@@ -1003,6 +1022,10 @@ export async function updateTaskStatusAction(
 
     revalidatePath("/crm");
     revalidatePath("/crm/tareas");
+    revalidatePath("/crm/actividades");
+    revalidatePath("/crm/calendario");
+    revalidatePath("/crm/alertas");
+    revalidatePath("/crm/dashboard");
     if (updated.leadId) {
       revalidatePath(`/crm/${updated.leadId}`);
     }
@@ -1152,6 +1175,9 @@ export async function updateTaskAction(
     revalidatePath("/crm");
     revalidatePath("/crm/calendario");
     revalidatePath("/crm/tareas");
+    revalidatePath("/crm/actividades");
+    revalidatePath("/crm/alertas");
+    revalidatePath("/crm/dashboard");
     if (updated.leadId) {
       revalidatePath(`/crm/${updated.leadId}`);
     }
