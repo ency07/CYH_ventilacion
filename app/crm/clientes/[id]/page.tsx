@@ -5,6 +5,7 @@ import { crmCustomers, crmCustomerPlants, crmCustomerContacts, crmProposals, crm
 import { eq, inArray, desc } from "drizzle-orm";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import ClientDetail from "./ClientDetail";
+import { getMockCustomers, getMockPlants, getMockContacts } from "@/lib/utils/mock-customers";
 
 export const dynamic = "force-dynamic";
 
@@ -32,61 +33,93 @@ export default async function CustomerDetailPage({
 
   const customerId = params.id;
 
-  // 1. Fetch customer detail
-  const customer = await db.query.crmCustomers.findFirst({
-    where: eq(crmCustomers.id, customerId),
-  });
+  let customer: any = null;
+  let plants: any[] = [];
+  let contacts: any[] = [];
+  let proposals: any[] = [];
+  let documents: any[] = [];
+  let dbFailed = false;
 
-  if (!customer) {
-    redirect("/crm/clientes?error=not_found");
+  try {
+    customer = await db.query.crmCustomers.findFirst({
+      where: eq(crmCustomers.id, customerId),
+    });
+  } catch (error) {
+    console.error("Database connection failed for customer detail, trying fallback", error);
+    dbFailed = true;
   }
 
-  // 2. RBAC check: Salesperson isolation
   const isVendedor = ["vendedor", "comercial", "asesor_comercial"].includes(userRole);
   const isTecnico = ["tecnico", "ingeniero", "tecnico_preventa"].includes(userRole);
 
+  if (dbFailed || !customer) {
+    const mockCusts = getMockCustomers(userEmail);
+    const mockCust = mockCusts.find((c) => c.id === customerId);
+    if (mockCust) {
+      customer = mockCust;
+      const mockPls = getMockPlants();
+      const mockCos = getMockContacts();
+
+      plants = mockPls
+        .filter((pl) => pl.customerId === customerId)
+        .map((pl) => ({
+          ...pl,
+          diagnostics: [],
+        }));
+      contacts = mockCos.filter((co) => co.customerId === customerId);
+      proposals = [];
+      documents = [];
+    } else {
+      redirect("/crm/clientes?error=not_found");
+    }
+  } else {
+    // Database query succeeded, load relations
+    plants = await db.query.crmCustomerPlants.findMany({
+      where: eq(crmCustomerPlants.customerId, customerId),
+      with: {
+        diagnostics: {
+          orderBy: (diagnosticReports, { desc }) => [desc(diagnosticReports.createdAt)],
+        },
+      },
+      orderBy: (crmCustomerPlants, { desc }) => [desc(crmCustomerPlants.createdAt)],
+    });
+
+    contacts = await db.query.crmCustomerContacts.findMany({
+      where: eq(crmCustomerContacts.customerId, customerId),
+      orderBy: (crmCustomerContacts, { desc }) => [desc(crmCustomerContacts.createdAt)],
+    });
+
+    const customerLeads = await db.query.leads.findMany({
+      where: eq(leads.companyName, customer.name),
+    });
+
+    const leadIds = customerLeads.map((l) => l.id);
+
+    if (leadIds.length > 0) {
+      proposals = await db.query.crmProposals.findMany({
+        where: inArray(crmProposals.leadId, leadIds),
+        orderBy: (crmProposals, { desc }) => [desc(crmProposals.createdAt)],
+      });
+
+      documents = await db.query.crmDocuments.findMany({
+        where: inArray(crmDocuments.leadId, leadIds),
+        orderBy: (crmDocuments, { desc }) => [desc(crmDocuments.createdAt)],
+      });
+    }
+  }
+
+  // 2. RBAC check: Salesperson isolation
   if (isVendedor && customer.assignedTo && customer.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
     redirect("/crm/clientes?error=unauthorized");
   }
 
-  // 3. Fetch plants (locations) with their nested technical measurements
-  const plants = await db.query.crmCustomerPlants.findMany({
-    where: eq(crmCustomerPlants.customerId, customerId),
-    with: {
-      diagnostics: {
-        orderBy: (diagnosticReports, { desc }) => [desc(diagnosticReports.createdAt)],
-      },
-    },
-    orderBy: (crmCustomerPlants, { desc }) => [desc(crmCustomerPlants.createdAt)],
-  });
-
-  // 4. Fetch contacts
-  const contacts = await db.query.crmCustomerContacts.findMany({
-    where: eq(crmCustomerContacts.customerId, customerId),
-    orderBy: (crmCustomerContacts, { desc }) => [desc(crmCustomerContacts.createdAt)],
-  });
-
-  // 5. Fetch sales leads associated with this company name to resolve proposals/documents
-  const customerLeads = await db.query.leads.findMany({
-    where: eq(leads.companyName, customer.name),
-  });
-
-  const leadIds = customerLeads.map((l) => l.id);
-
-  // 6. Fetch proposals and uploaded documents linked to those leads
-  let proposals: (typeof crmProposals.$inferSelect)[] = [];
-  let documents: (typeof crmDocuments.$inferSelect)[] = [];
-
-  if (leadIds.length > 0) {
-    proposals = await db.query.crmProposals.findMany({
-      where: inArray(crmProposals.leadId, leadIds),
-      orderBy: (crmProposals, { desc }) => [desc(crmProposals.createdAt)],
-    });
-
-    documents = await db.query.crmDocuments.findMany({
-      where: inArray(crmDocuments.leadId, leadIds),
-      orderBy: (crmDocuments, { desc }) => [desc(crmDocuments.createdAt)],
-    });
+  // 3. Technical user security masking
+  if (isTecnico && customer) {
+    customer.ltv = 0;
+    proposals = proposals.map(p => ({
+      ...p,
+      totalValue: 0,
+    }));
   }
 
   return (
