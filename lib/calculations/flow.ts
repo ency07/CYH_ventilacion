@@ -17,7 +17,8 @@ export function calculateFlowAndInvestment(inputs: FlowInputs): FlowResult {
   else if (environment === "mining") renewalCoef = 55;
   else if (environment === "warehouse") renewalCoef = 12;
 
-  const estimatedFlow = volume * renewalCoef;
+  // Convert to CFM: (volume in m³ * renewalCoef * 35.3147) / 60
+  const estimatedFlow = (volume * renewalCoef * 35.3147) / 60;
   
   // Initial declarations
   let category = "";
@@ -28,35 +29,35 @@ export function calculateFlowAndInvestment(inputs: FlowInputs): FlowResult {
   let ductingObservations = "";
   let inspectionRecommendations = "";
 
-  if (estimatedFlow > 100000) {
+  if (estimatedFlow > 60000) {
     category = "CAUDAL CRÍTICO DE INFRAESTRUCTURA MÁXIMA";
     recommendation = "Sistema de ventilación de alto caudal tipo Plenum con ventiladores centrífugos de acoplamiento directo y motores WEG/Siemens de eficiencia premium IE4.";
     investmentRange = "Clase Especial - Sistema de Caudal Crítico (Gran Minería & Data Centers)";
-    technicalObservations = `Caudal crítico masivo calculado en ${estimatedFlow.toLocaleString()} m³/h. Solución redundante N+1 diseñada para garantizar la continuidad operativa absoluta de la infraestructura y el barrido total de contaminantes o calor térmico acumulado.`;
+    technicalObservations = `Caudal crítico masivo calculado en ${estimatedFlow.toLocaleString(undefined, {maximumFractionDigits: 0})} CFM. Solución redundante N+1 diseñada para garantizar la continuidad operativa absoluta de la infraestructura y el barrido total de contaminantes o calor térmico acumulado.`;
     materialSuggestions = "Carcasa estructural de Acero ASTM A514 de alta resistencia. Álabes forjados en Aluminio Aeronáutico 6061-T6 o Acero Inoxidable 316L con acabado pulido espejo antidesgaste.";
     ductingObservations = "Sistemas de ductos bridados de alta sección con empaquetaduras de neopreno de alta temperatura. Diseñar Plenum de distribución con compuertas motorizadas multidisco.";
     inspectionRecommendations = "Comisionamiento predictivo H24 con sensores de vibración e inclinación en tiempo real. Termografía infrarroja continua en devanados de motores y cojinetes.";
-  } else if (estimatedFlow > 45000) {
+  } else if (estimatedFlow > 25000) {
     category = "FLUJO INDUSTRIAL DE ALTA PRESIÓN Y CAUDAL ELEVADO";
     recommendation = "Extractor centrífugo industrial de álabes inclinados hacia atrás (Airfoil) autolimitador con acoplamiento directo y variador de frecuencia.";
     investmentRange = "Clase A - Ventilación Forzada de Alta Presión (Infraestructura Mayor)";
-    technicalObservations = `Caudal de alta capacidad determinado en ${estimatedFlow.toLocaleString()} m³/h. Configurado para superar caídas severas de presión estática generadas por sistemas complejos de ductería o bancos de filtros multietapa.`;
+    technicalObservations = `Caudal de alta capacidad determinado en ${estimatedFlow.toLocaleString(undefined, {maximumFractionDigits: 0})} CFM. Configurado para superar caídas severas de presión estática generadas por sistemas complejos de ductería o bancos de filtros multietapa.`;
     materialSuggestions = "Rotor y voluta fabricados en Acero Inoxidable 304. Impulsor soldado continuamente bajo procedimiento calificado AWS y equilibrado dinámico estricto según norma ISO 1940 grado G2.5.";
     ductingObservations = "Ductos de sección circular con soldadura longitudinal hermética. Instalar codos con deflectores de flujo internos y silenciador disipativo para mitigación de ruido acústico.";
     inspectionRecommendations = "Medición periódica trimestral de espectro de vibraciones FFT. Análisis de líquidos penetrantes anual en soldaduras críticas del impulsor.";
-  } else if (estimatedFlow > 15000) {
+  } else if (estimatedFlow > 8000) {
     category = "FLUJO INDUSTRIAL ESTÁNDAR DE REGULACIÓN ACTIVA";
     recommendation = "Extractor centrífugo de álabes curvados hacia adelante (Forward Curved) con transmisión por bandas y poleas y motor de alta eficiencia IE3.";
     investmentRange = "Clase B - Sistema Distribuido de Renovación Media (Planta Local)";
-    technicalObservations = `El caudal de ${estimatedFlow.toLocaleString()} m³/h es ideal para renovaciones distribuidas. Configurado para plantas con requerimientos de presión estática moderada y bajo ruido estructural.`;
+    technicalObservations = `El caudal de ${estimatedFlow.toLocaleString(undefined, {maximumFractionDigits: 0})} CFM es ideal para renovaciones distribuidas. Configurado para plantas con requerimientos de presión estática moderada y bajo ruido estructural.`;
     materialSuggestions = "Estructura de Acero Galvanizado estructural G90 por inmersión en caliente. Chumaceras autoalineables tipo bloque de pie SKF o NSK de servicio pesado con grasera externa.";
-    ductingObservations = "Se sugiere ductería de sección rectangular bridada con juntas elásticas flexibles de lona de neopreno. Mantener velocidades de aire de ducto entre 8 y 12 m/s.";
+    ductingObservations = "Se sugerido ductería de sección rectangular bridada con juntas elásticas flexibles de lona de neopreno. Mantener velocidades de aire de ducto entre 8 y 12 m/s.";
     inspectionRecommendations = "Mantenimiento mensual de tensión de bandas de transmisión y verificación de alineación láser de poleas. Inspección de temperatura termográfica en chumaceras.";
   } else {
     category = "FLUJO COMPACTO ESPECIALIZADO DE BAJA PRESIÓN";
     recommendation = "Extractor helicocentrifugador o axial tubular de acoplamiento directo de bajas revoluciones.";
     investmentRange = "Clase C - Instalación Modular Estándar (PYME Industrial)";
-    technicalObservations = `Caudal estimado de ${estimatedFlow.toLocaleString()} m³/h apto para sistemas locales o descarga libre. Baja firma sonora y óptimo consumo eléctrico en regímenes continuos.`;
+    technicalObservations = `Caudal estimado de ${estimatedFlow.toLocaleString(undefined, {maximumFractionDigits: 0})} CFM apto para sistemas locales o descarga libre. Baja firma sonora y óptimo consumo eléctrico en regímenes continuos.`;
     materialSuggestions = "Carcasa de lámina de Acero al Carbón ASTM A36 con acabado en pintura epóxica horneada. Álabes balanceados de Poliamida reforzada con fibra de vidrio (PAGAS) para bajo par de arranque.";
     ductingObservations = "Diámetro comercial sugerido de ducto: 400mm a 600mm. Diseñar codos limpios con radio R = 1.5D para suprimir turbulencias de retorno.";
     inspectionRecommendations = "Limpieza semestral del polvo acumulado en álabes para evitar desbalances. Verificación de apriete en la base amortiguadora de caucho.";

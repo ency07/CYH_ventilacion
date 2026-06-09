@@ -618,7 +618,7 @@ export default function StepLead() {
                   <div className="bg-bg-primary/60 p-4 border border-border-subtle/80 rounded-sm space-y-1">
                     <span className="font-mono text-[9px] text-text-secondary uppercase">Caudal de Extracción Recomendado</span>
                     <span className="font-mono text-xl font-bold text-accent-cyan block">
-                      {flowResult.estimatedFlow.toLocaleString()} m³/h
+                      {flowResult.estimatedFlow.toLocaleString()} CFM
                     </span>
                   </div>
                   <div className="space-y-2 font-mono text-[9px]">

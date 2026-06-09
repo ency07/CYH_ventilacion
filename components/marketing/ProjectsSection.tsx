@@ -13,7 +13,7 @@ export default function ProjectsSection() {
         "Sistema de inyeccion y extraccion forzada para renovar aire, controlar gases y mantener condiciones seguras de trabajo.",
       image:
         "https://images.unsplash.com/photo-1535813547-99c456a41d4a?q=80&w=900&auto=format&fit=crop",
-      stat: "420.000 m3/h",
+      stat: "247.200 CFM",
       icon: <Building2 className="h-5 w-5 text-accent-cyan" />,
     },
     {

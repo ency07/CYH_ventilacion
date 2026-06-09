@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Search, Plus, Grid, Bell, Share2, Printer, CheckCircle2, AlertTriangle, FileText, X } from "lucide-react";
 import { format } from "date-fns";
+import { normalizeCity } from "@/lib/utils/normalization";
 
 export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosData: any[] }) {
   const [selectedDiagId, setSelectedDiagId] = useState<string | null>(null);
@@ -24,8 +25,8 @@ export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosD
         {/* Header List */}
         <div className="p-8 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary tracking-tight">Diagnostics Registry</h1>
-            <p className="text-sm text-text-secondary mt-1">Systematic technical assessment of industrial electrical assets.</p>
+            <h1 className="text-2xl font-bold text-text-primary tracking-tight">Registro de Diagnósticos Técnicos</h1>
+            <p className="text-sm text-text-secondary mt-1">Evaluación técnica sistemática de activos eléctricos industriales.</p>
           </div>
           
           <div className="flex items-center gap-4">
@@ -92,15 +93,23 @@ export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosD
                       <div className="grid grid-cols-3 gap-2 mb-6">
                         <div>
                           <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5">CAUDAL</p>
-                          <p className="text-sm font-bold text-text-primary">{item.diagnostic.airflow ? `${item.diagnostic.airflow} m³/h` : 'N/A'}</p>
+                          <div className="text-sm font-bold text-text-primary">
+                            {item.diagnostic.airflow ? (
+                              `${item.diagnostic.airflow} CFM`
+                            ) : (
+                              <span className="inline-block bg-amber-50 border border-amber-200 text-amber-800 text-[10px] px-1 py-0.5 rounded font-bold uppercase tracking-wider">
+                                [Lectura Pendiente - 0 CFM]
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5">SERVICIO</p>
                           <p className="text-sm font-bold text-text-primary capitalize">{item.lead?.serviceType || 'Venta'}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5">LOCATION</p>
-                          <p className="text-sm font-bold text-text-primary">{item.lead?.city || 'Cali, CO'}</p>
+                          <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5">UBICACIÓN</p>
+                          <p className="text-sm font-bold text-text-primary">{normalizeCity(item.lead?.city) || 'No registrada'}</p>
                         </div>
                       </div>
                     </div>
@@ -195,7 +204,15 @@ export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosD
                 <div className="grid grid-cols-2 gap-px bg-border-subtle border border-border-subtle rounded overflow-hidden">
                   <div className="bg-bg-secondary p-4">
                     <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">FLUJO DE AIRE</p>
-                    <p className="text-sm font-bold text-text-primary">{selectedDiagnostic.diagnostic.airflow || "N/A"} <span className="font-medium text-text-secondary">CFM</span></p>
+                    <div className="text-sm font-bold text-text-primary">
+                      {selectedDiagnostic.diagnostic.airflow ? (
+                        `${selectedDiagnostic.diagnostic.airflow} CFM`
+                      ) : (
+                        <span className="inline-block bg-amber-50 border border-amber-200 text-amber-800 text-[9px] px-1 py-0.5 rounded font-bold uppercase tracking-wider">
+                          [Lectura Pendiente - 0 CFM]
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-bg-secondary p-4">
                     <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">MONEDA</p>
@@ -214,13 +231,13 @@ export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosD
 
               {/* OBSERVATIONS & RECS */}
               <div>
-                <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-border-subtle pb-2">OBSERVATIONS & RECS</h3>
+                <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-border-subtle pb-2">OBSERVACIONES Y RECOMENDACIONES</h3>
                 <ul className="space-y-4">
                   {selectedDiagnostic.diagnostic.technicalObservations && (
                     <li className="flex items-start gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-text-muted mt-1.5 shrink-0"></div>
                       <div>
-                        <span className="text-xs font-bold text-text-primary block">Technical Observations</span>
+                        <span className="text-xs font-bold text-text-primary block">Observaciones Técnicas</span>
                         <p className="text-[11px] text-text-secondary mt-1 leading-relaxed">{selectedDiagnostic.diagnostic.technicalObservations}</p>
                       </div>
                     </li>
@@ -229,7 +246,7 @@ export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosD
                     <li className="flex items-start gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
                       <div>
-                        <span className="text-xs font-bold text-text-primary block">Recommendations</span>
+                        <span className="text-xs font-bold text-text-primary block">Recomendaciones</span>
                         <p className="text-[11px] text-text-secondary mt-1 leading-relaxed">{selectedDiagnostic.diagnostic.recommendations}</p>
                       </div>
                     </li>
@@ -238,23 +255,23 @@ export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosD
                     <li className="flex items-start gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
                       <div>
-                        <span className="text-xs font-bold text-text-primary block">Material Suggestions</span>
+                        <span className="text-xs font-bold text-text-primary block">Sugerencias de Materiales</span>
                         <p className="text-[11px] text-text-secondary mt-1 leading-relaxed">{selectedDiagnostic.diagnostic.materialSuggestions}</p>
                       </div>
                     </li>
                   )}
                   {!selectedDiagnostic.diagnostic.technicalObservations && !selectedDiagnostic.diagnostic.recommendations && !selectedDiagnostic.diagnostic.materialSuggestions && (
-                    <li className="text-xs text-text-muted italic">No observations or recommendations recorded yet.</li>
+                    <li className="text-xs text-text-muted italic">No se han registrado observaciones o recomendaciones aún.</li>
                   )}
                 </ul>
               </div>
               
               {/* KEY FINDINGS IMAGERY */}
               <div>
-                <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-border-subtle pb-2">KEY FINDINGS IMAGERY</h3>
+                <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-border-subtle pb-2">IMÁGENES DE HALLAZGOS CLAVE</h3>
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                  <div className="aspect-video bg-border-subtle rounded flex items-center justify-center text-text-muted text-[10px]">No Image</div>
-                  <div className="aspect-video bg-border-subtle rounded flex items-center justify-center text-text-muted text-[10px]">No Image</div>
+                  <div className="aspect-video bg-border-subtle rounded flex items-center justify-center text-text-muted text-[10px]">Sin Imagen</div>
+                  <div className="aspect-video bg-border-subtle rounded flex items-center justify-center text-text-muted text-[10px]">Sin Imagen</div>
                 </div>
               </div>
 
@@ -263,7 +280,7 @@ export default function DiagnosticosClient({ diagnosticosData }: { diagnosticosD
             {/* Sticky Footer */}
             <div className="absolute bottom-0 left-0 right-0 bg-bg-primary border-t border-border-subtle p-4 flex gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
               <button className="flex-1 px-4 py-2 bg-text-primary text-bg-primary rounded text-[11px] font-bold uppercase tracking-wider hover:bg-opacity-90 transition-colors">
-                VALIDAR DIAGNÓSTICO
+                APROBAR DIAGNÓSTICO
               </button>
               <button className="flex-1 px-4 py-2 bg-bg-primary border border-border-subtle text-text-primary rounded text-[11px] font-bold uppercase tracking-wider hover:bg-bg-secondary transition-colors shadow-sm">
                 RECHAZAR / REVISAR

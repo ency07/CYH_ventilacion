@@ -39,7 +39,7 @@ const SERVICES_DATA: ServiceDetail[] = [
     subtitle: "INGENIERÍA ESTRUCTURAL Y DE FLUIDOS",
     description: "Cálculo aerodinámico y fabricación a medida de unidades de flujo de aire (centrífugas, axiales y helicoidales) adaptadas a entornos de alta exigencia química y mecánica.",
     alcance: [
-      "Unidades centrífugas de simple y doble aspiración hasta 80,000 m³/h.",
+      "Unidades centrífugas de simple y doble aspiración hasta 47,086 CFM.",
       "Ventiladores axiales de álabes orientables en aluminio fundido.",
       "Aleaciones resistentes: Acero ASTM A514, Inoxidable AISI 316, Titanio.",
       "Recubrimientos anticorrosivos C5-M para resistir la brisa salina del Caribe."

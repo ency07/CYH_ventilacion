@@ -952,7 +952,7 @@ export default function LeadsClient({
                           <span className="bg-white px-2 py-0.5 rounded text-[9px] font-bold uppercase border border-slate-200 tracking-wider">{diag.status}</span>
                         </div>
                         <div className="space-y-2 text-xs font-semibold">
-                          <div><span className="text-slate-450 uppercase text-[10px] block">Caudal de Aire</span> <span className="font-bold text-slate-900">{diag.airflow ? `${diag.airflow} m³/h` : 'N/A'}</span></div>
+                          <div><span className="text-slate-450 uppercase text-[10px] block">Caudal de Aire</span> <span className="font-bold text-slate-900">{diag.airflow ? `${diag.airflow} CFM` : 'N/A'}</span></div>
                           <div><span className="text-slate-450 uppercase text-[10px] block">Observaciones Técnicas</span> <p className="text-slate-700 mt-0.5 leading-relaxed font-medium">{diag.technicalObservations || 'Sin observaciones'}</p></div>
                           <div><span className="text-slate-450 uppercase text-[10px] block">Recomendaciones</span> <p className="text-slate-700 mt-0.5 leading-relaxed font-medium">{diag.recommendations || 'Sin recomendaciones'}</p></div>
                         </div>

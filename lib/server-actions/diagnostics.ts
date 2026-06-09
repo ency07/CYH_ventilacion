@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { diagnosticReports, crmUsers, crmActivityLogs } from "@/lib/db/schema";
+import { diagnosticReports, crmUsers, crmActivityLogs, leads } from "@/lib/db/schema";
 import { DiagnosticInsertSchema } from "@/lib/validations/crm.schema";
 import { eq } from "drizzle-orm";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -182,5 +182,74 @@ export async function upsertDiagnosticAction(rawInput: {
   } catch (error: any) {
     console.error("Error in upsertDiagnosticAction:", error);
     return { success: false, error: error.message || "Error al guardar el diagnóstico técnico." };
+  }
+}
+
+export async function emitirVeredictoAction(
+  diagId: string,
+  leadId: string,
+  status: string,
+  notes: string
+): Promise<ActionResult<any>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    // Fetch user details from DB
+    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
+    if (!dbUser) return { success: false, error: "Usuario no registrado en la base de datos." };
+
+    const userRole = dbUser.role;
+
+    // Strict RBAC checks: tecnico and ingeniero are blocked from signing/approving
+    if (userRole === "tecnico" || userRole === "ingeniero") {
+      return { 
+        success: false, 
+        error: `Acceso Denegado: Su rol de ${userRole.toUpperCase()} no tiene privilegios para firmar digitalmente o aprobar veredictos técnicos.` 
+      };
+    }
+
+    // Update diagnostic report status, verdictNotes, and approvals
+    await db.update(diagnosticReports)
+      .set({ 
+        status, 
+        verdictNotes: notes,
+        approvedBy: status === "aprobado" ? user.id : null,
+        approvedAt: status === "aprobado" ? new Date() : null,
+        updatedBy: user.id
+      })
+      .where(eq(diagnosticReports.id, diagId));
+
+    // Register activity log
+    await db.insert(crmActivityLogs).values({
+      leadId,
+      activityType: "veredicto_tecnico",
+      description: `El diagnóstico técnico fue marcado como: ${status.toUpperCase()}. Notas/Veredicto: ${notes}`,
+      userId: user.id
+    });
+
+    // Update lead stage in cascade
+    if (status === "aprobado") {
+      // Advance to propuesta prep
+      await db.update(leads)
+        .set({ status: 'propuesta_prep', updatedAt: new Date() })
+        .where(eq(leads.id, leadId));
+    } else if (status === "requiere_visita") {
+      // Retroceder to reunion
+      await db.update(leads)
+        .set({ status: 'reunion', updatedAt: new Date() })
+        .where(eq(leads.id, leadId));
+    }
+
+    revalidatePath("/crm");
+    revalidatePath("/crm/revisiones");
+    revalidatePath("/crm/dashboard");
+    revalidatePath(`/crm/${leadId}`);
+
+    return { success: true, data: { status, verdictNotes: notes } };
+  } catch (error: any) {
+    console.error("Error in emitirVeredictoAction:", error);
+    return { success: false, error: error.message || "Error al emitir veredicto." };
   }
 }

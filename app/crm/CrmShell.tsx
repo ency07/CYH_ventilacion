@@ -28,7 +28,6 @@ const menuGroups = [
       { name: 'Diagnósticos', href: '/crm/diagnosticos', icon: Activity, roles: ['admin', 'super_admin', 'director_comercial', 'ingeniero'] },
       { name: 'Revisiones', href: '/crm/revisiones', icon: Wrench, roles: ['admin', 'super_admin', 'director_comercial', 'ingeniero'] },
       { name: 'Calendario', href: '/crm/calendario', icon: Calendar, roles: ['admin', 'super_admin', 'director_comercial', 'comercial', 'ingeniero'] },
-      { name: 'Reuniones', href: '/crm/reuniones', icon: Users, roles: ['admin', 'super_admin', 'director_comercial', 'comercial', 'ingeniero'] },
     ]
   },
   {

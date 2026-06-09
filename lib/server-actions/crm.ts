@@ -1113,6 +1113,56 @@ export async function updateOpportunityAction(
   }
 }
 
+export async function updateTaskAction(
+  taskId: string,
+  data: { status?: string; notes?: string }
+): Promise<ActionResult<any>> {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autenticado" };
+
+    const updateFields: any = {
+      updatedAt: new Date(),
+    };
+    if (data.status !== undefined) {
+      updateFields.status = data.status;
+      if (data.status === 'completado') {
+        updateFields.completedBy = user.id;
+        updateFields.completedAt = new Date();
+      } else {
+        updateFields.completedBy = null;
+        updateFields.completedAt = null;
+      }
+    }
+    if (data.notes !== undefined) {
+      updateFields.notes = data.notes;
+    }
+
+    const [updated] = await db
+      .update(crmTasks)
+      .set(updateFields)
+      .where(eq(crmTasks.id, taskId))
+      .returning();
+
+    if (!updated) {
+      return { success: false, error: "Tarea no encontrada." };
+    }
+
+    revalidatePath("/crm");
+    revalidatePath("/crm/calendario");
+    revalidatePath("/crm/tareas");
+    if (updated.leadId) {
+      revalidatePath(`/crm/${updated.leadId}`);
+    }
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error in updateTaskAction:", error);
+    return { success: false, error: error.message || "Error al actualizar el compromiso." };
+  }
+}
+
+
 
 
 

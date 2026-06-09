@@ -56,7 +56,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1535813547-99c456a41d4a?auto=format&fit=crop&q=80&w=500&h=500",
     category: "axiales",
     rpm: "1,450 RPM",
-    caudal: "18,500 m³/h",
+    caudal: "10,889 CFM",
     presion: "150 Pa",
     potencia: "3.0 HP",
     voltaje: "220/440 V",
@@ -73,7 +73,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=500&h=500",
     category: "axiales",
     rpm: "980 RPM",
-    caudal: "38,000 m³/h",
+    caudal: "22,366 CFM",
     presion: "250 Pa",
     potencia: "7.5 HP",
     voltaje: "440 V",
@@ -90,7 +90,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1581092335397-9583eb92d232?auto=format&fit=crop&q=80&w=500&h=500",
     category: "centrifugos",
     rpm: "1,750 RPM",
-    caudal: "12,000 m³/h",
+    caudal: "7,063 CFM",
     presion: "1,200 Pa",
     potencia: "5.5 HP",
     voltaje: "220/440 V",
@@ -107,7 +107,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=500&h=500",
     category: "centrifugos",
     rpm: "1,150 RPM",
-    caudal: "25,000 m³/h",
+    caudal: "14,714 CFM",
     presion: "800 Pa",
     potencia: "10.0 HP",
     voltaje: "440 V",
@@ -124,7 +124,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1522069818816-e41c463cb9bb?auto=format&fit=crop&q=80&w=500&h=500",
     category: "extractores",
     rpm: "1,420 RPM",
-    caudal: "8,500 m³/h",
+    caudal: "5,003 CFM",
     presion: "80 Pa",
     potencia: "1.5 HP",
     voltaje: "220 V Monofásico / Trifásico",
@@ -141,7 +141,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=500&h=500",
     category: "extractores",
     rpm: "920 RPM",
-    caudal: "14,000 m³/h",
+    caudal: "8,240 CFM",
     presion: "120 Pa",
     potencia: "2.0 HP",
     voltaje: "220/440 V",
@@ -158,7 +158,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1600132806370-bf17e65e942f?auto=format&fit=crop&q=80&w=500&h=500",
     category: "hvac",
     rpm: "2,900 RPM (Variador PLC)",
-    caudal: "15,000 m³/h",
+    caudal: "8,829 CFM",
     presion: "350 Pa",
     potencia: "15.0 HP",
     voltaje: "440 V",
@@ -175,7 +175,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?auto=format&fit=crop&q=80&w=500&h=500",
     category: "colectores",
     rpm: "3,450 RPM (Turbina de Limpieza)",
-    caudal: "9,500 m³/h",
+    caudal: "5,591 CFM",
     presion: "2,400 Pa",
     potencia: "10.0 HP",
     voltaje: "440 V",
@@ -192,7 +192,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1504917595217-d4f50260eb32?auto=format&fit=crop&q=80&w=500&h=500",
     category: "ducteria",
     rpm: "N/A",
-    caudal: "Hasta 50,000 m³/h (Sugerido)",
+    caudal: "Hasta 29,429 CFM (Sugerido)",
     presion: "Soporta hasta 2,500 Pa",
     potencia: "N/A",
     voltaje: "N/A",
@@ -243,7 +243,7 @@ const PRODUCTS: ProductSpec[] = [
     image: "https://images.unsplash.com/photo-1518625624795-3652f19ea3ab?auto=format&fit=crop&q=80&w=500&h=500",
     category: "sistemas",
     rpm: "1,450 RPM",
-    caudal: "45,000 m³/h",
+    caudal: "26,486 CFM",
     presion: "450 Pa",
     potencia: "25.0 HP",
     voltaje: "440 V",
@@ -404,7 +404,7 @@ export default function CatalogoPage() {
                             </defs>
                           </svg>
                           <span className="absolute bottom-1 left-2 font-mono text-[8px] text-text-muted">Presión (Pa)</span>
-                          <span className="absolute bottom-1 right-2 font-mono text-[8px] text-text-muted">Caudal (m³/h)</span>
+                          <span className="absolute bottom-1 right-2 font-mono text-[8px] text-text-muted">Caudal (CFM)</span>
                         </div>
                       </div>
                     ) : (

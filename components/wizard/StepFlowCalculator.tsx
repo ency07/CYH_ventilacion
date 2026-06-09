@@ -285,7 +285,7 @@ export default function StepFlowCalculator() {
                   </span>
                   <div className="font-mono text-3xl font-bold text-accent-cyan tracking-tight flex items-baseline gap-1">
                     <AnimatedCounter value={flowResult.estimatedFlow} />
-                    <span className="text-sm text-text-secondary font-sans font-normal">m³/h</span>
+                    <span className="text-sm text-text-secondary font-sans font-normal">CFM</span>
                   </div>
                 </div>
 

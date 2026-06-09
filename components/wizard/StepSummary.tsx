@@ -245,7 +245,7 @@ export default function StepSummary() {
         ["Tipo de Sector / Entorno de Planta", service === "fabricacion" || service === "venta" ? flowInputs.environment : "Mantenimiento / Reparación Técnico"],
         ["Dimensiones Totales de Nave", service === "fabricacion" || service === "venta" ? `${flowInputs.length}m largo x ${flowInputs.width}m ancho x ${flowInputs.height}m alto` : "N/A"],
         ["Volumen Interno de Nave", flowResult ? `${flowResult.volume.toLocaleString()} m³` : "N/A"],
-        ["Capacidad Estimada", flowResult ? `${flowResult.estimatedFlow.toLocaleString()} m³/h` : "N/A"],
+        ["Capacidad Estimada", flowResult ? `${flowResult.estimatedFlow.toLocaleString()} CFM` : "N/A"],
         ["Clasificación Aerodinámica de Caudal", flowResult ? flowResult.category : "N/A"],
         ["Índice de Complejidad de Falla", symptomsResult ? `${symptomsResult.complexityScore}%` : "N/A"],
         ["Nivel de Severidad de Desgaste", symptomsResult ? symptomsResult.severity.toUpperCase() : "N/A"],
@@ -524,7 +524,7 @@ export default function StepSummary() {
           <div className="border border-border-subtle bg-bg-secondary/40 p-5 rounded-sm space-y-4">
             <div className="flex justify-between border-b border-border-subtle/50 pb-2">
               <span className="text-xs text-text-secondary uppercase">Capacidad requerida</span>
-              <span className="text-xs text-text-primary font-bold uppercase">{flowResult ? `${flowResult.estimatedFlow.toLocaleString()} m³/h` : "Análisis en sitio requerido"}</span>
+              <span className="text-xs text-text-primary font-bold uppercase">{flowResult ? `${flowResult.estimatedFlow.toLocaleString()} CFM` : "Análisis en sitio requerido"}</span>
             </div>
             <div className="flex justify-between border-b border-border-subtle/50 pb-2">
               <span className="text-xs text-text-secondary uppercase">Rango operativo</span>

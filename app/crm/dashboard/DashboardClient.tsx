@@ -755,7 +755,7 @@ export default function DashboardClient({
                     technicalMetrics.diagnosticsList.map((d: any) => (
                       <tr key={d.id} className="hover:bg-slate-50/50">
                         <td className="p-3 font-mono font-bold text-slate-900">ID-{d.id.substring(0, 8).toUpperCase()}</td>
-                        <td className="p-3 font-semibold">{d.airflow ? `${d.airflow} m³/h` : 'N/A'}</td>
+                        <td className="p-3 font-semibold">{d.airflow ? `${d.airflow} CFM` : 'N/A'}</td>
                         <td className="p-3">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                             d.status === 'aprobado' || d.status === 'completado' ? 'bg-slate-100 text-slate-800 border border-slate-200' :
