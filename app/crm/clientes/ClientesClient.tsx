@@ -1,249 +1,427 @@
 "use client";
 
-import React, { useState } from "react";
-import { Filter, Search, Download, Plus, ChevronDown, Building2 } from "lucide-react";
-import ClientActions from "./ClientActions";
+import React, { useState, useTransition } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { 
+  Search, Plus, X, UserCheck, Activity, Coins, ShieldAlert,
+  ChevronRight, Building2, Filter, AlertCircle
+} from "lucide-react";
+import { createCustomerAction } from "@/lib/server-actions/customers";
+import { crmCustomers, crmCustomerPlants, crmCustomerContacts, crmUsers } from "@/lib/db/schema";
 
-const getSector = (name: string) => {
-  const lower = name.toLowerCase();
-  if (lower.includes("metal") || lower.includes("steel") || lower.includes("iron")) return "Manufactura";
-  if (lower.includes("min") || lower.includes("copper") || lower.includes("gold")) return "Minería";
-  if (lower.includes("energy") || lower.includes("power") || lower.includes("elec")) return "Energía";
-  if (lower.includes("chem") || lower.includes("oil") || lower.includes("gas")) return "Petroquímica";
-  return "Industria General";
-};
+interface ClientesClientProps {
+  initialCustomers: (typeof crmCustomers.$inferSelect & {
+    plants: (typeof crmCustomerPlants.$inferSelect)[];
+    contacts: (typeof crmCustomerContacts.$inferSelect)[];
+  })[];
+  salesReps: (typeof crmUsers.$inferSelect)[];
+  kpis: {
+    activeCustomers: number;
+    monitoredPlants: number;
+    commercialLtv: number;
+    recurrenceIndex: number;
+  };
+  userRole: string;
+  isAdmin: boolean;
+  isTecnico: boolean;
+  initialQuery: string;
+  initialEstado: string;
+}
 
-export default function ClientesClient({ 
-  companies, 
-  userRole = "comercial",
-  isAdmin = false 
-}: { 
-  companies: any[], 
-  userRole?: string,
-  isAdmin?: boolean 
-}) {
-  const [search, setSearch] = useState("");
-  const [filterRegion, setFilterRegion] = useState("all");
-  const [filterIndustry, setFilterIndustry] = useState("all");
-  const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
-  const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
+export default function ClientesClient({
+  initialCustomers,
+  salesReps,
+  kpis,
+  userRole,
+  isAdmin,
+  isTecnico,
+  initialQuery,
+  initialEstado,
+}: ClientesClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  // Extract unique cities and industries for the dropdown filter options
-  const uniqueRegions = Array.from(new Set(companies.map(c => c.city).filter(Boolean)));
-  const uniqueIndustries = Array.from(new Set(companies.map(c => c.industry || getSector(c.name)).filter(Boolean)));
+  const [search, setSearch] = useState(initialQuery);
+  const [estado, setEstado] = useState(initialEstado);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState("");
 
-  const filteredCompanies = companies.filter(company => {
-    const sector = company.industry || getSector(company.name);
-    const matchesSearch = company.name?.toLowerCase().includes(search.toLowerCase());
-    const matchesRegion = filterRegion === "all" || company.city === filterRegion;
-    const matchesIndustry = filterIndustry === "all" || sector === filterIndustry;
-    return matchesSearch && matchesRegion && matchesIndustry;
-  });
+  // New Customer Form State
+  const [name, setName] = useState("");
+  const [nit, setNit] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [statusVal, setStatusVal] = useState("activo");
 
-  const handleExportCSV = () => {
-    const headers = ["ID", "Nombre de Empresa", "Ciudad/Region", "Sector Industrial", "Contacto Principal", "Cargo Contacto", "Proyectos Activos", "Valor de Cartera"];
-    const rows = filteredCompanies.map(c => {
-      const activeProjectsCount = c.leads?.filter((l: any) => l.status !== 'perdido').length || 0;
-      const totalValue = c.leads?.reduce((sum: number, l: any) => sum + (l.estimatedBudgetMax || 0), 0) || 0;
-      const mainContact = c.contacts && c.contacts.length > 0 ? c.contacts[0] : null;
-      const sector = c.industry || getSector(c.name);
-      return [
-        c.id,
-        c.name,
-        c.city || "No Registrada",
-        sector,
-        mainContact ? mainContact.fullName : "Sin contacto",
-        mainContact ? (mainContact.cargo || "Sin Cargo") : "",
-        activeProjectsCount,
-        totalValue
-      ];
+  const updateFilters = (newSearch: string, newEstado: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newSearch) {
+      params.set("q", newSearch);
+    } else {
+      params.delete("q");
+    }
+    if (newEstado && newEstado !== "all") {
+      params.set("estado", newEstado);
+    } else if (newEstado === "all") {
+      params.set("estado", "all");
+    } else {
+      params.delete("estado");
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    updateFilters(e.target.value, estado);
+  };
+
+  const handleEstadoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEstado(e.target.value);
+    updateFilters(search, e.target.value);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setError("");
+
+    startTransition(async () => {
+      const res = await createCustomerAction({
+        name,
+        nit: nit.trim() || undefined,
+        assignedTo: assignedTo || undefined,
+        status: statusVal,
+      });
+
+      if (res.success) {
+        setIsModalOpen(false);
+        setName("");
+        setNit("");
+        setAssignedTo("");
+        setStatusVal("activo");
+        router.refresh();
+      } else {
+        setError(res.error);
+      }
     });
-
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
-      + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
-      
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `empresas_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-bg-secondary p-8 font-sans overflow-hidden">
-      
-      {/* HEADER PRINCIPAL */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between mb-6 gap-4 shrink-0">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-bg-secondary p-6 font-sans overflow-hidden">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 shrink-0">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary">Client Directory</h1>
-          <p className="text-sm text-text-secondary mt-1">Manage corporate accounts and industrial portfolios.</p>
+          <h1 className="text-2xl font-bold text-text-primary uppercase tracking-tight flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-accent-cyan" />
+            Directorio de Cuentas B2B
+          </h1>
+          <p className="text-xs text-text-muted mt-1">
+            Gestión centralizada de clientes corporativos, plantas industriales y KPIs de fidelización.
+          </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          {isAdmin && (
-            <button 
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-bg-primary border border-border-subtle rounded-md text-sm font-medium text-text-primary hover:bg-bg-secondary transition-colors shadow-sm"
-            >
-              <Download className="w-4 h-4" /> Export CSV
-            </button>
-          )}
-          <ClientActions type="new_client_button" />
-        </div>
+
+        {!isTecnico && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-text-primary text-bg-primary text-xs font-bold uppercase tracking-wider rounded border border-transparent hover:bg-bg-primary hover:text-text-primary hover:border-border-subtle transition-all duration-200 shadow"
+          >
+            <Plus className="w-4 h-4" /> Nuevo Cliente
+          </button>
+        )}
       </div>
 
-      {/* BARRA DE FILTROS */}
-      <div className="bg-bg-primary border border-border-subtle rounded-t-lg p-2 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 shadow-sm z-20 relative">
-        <div className="flex items-center divide-x divide-border-subtle">
-          <div className="flex items-center gap-2 px-4 text-text-primary">
-            <Filter className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">Filters</span>
+      {/* KPI STATS CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 shrink-0">
+        {/* KPI 1: Clientes Activos */}
+        <div className="bg-bg-primary border border-border-subtle rounded-md p-4 flex items-center justify-between shadow-sm hover:border-accent-cyan/30 transition-all">
+          <div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Clientes Activos</p>
+            <p className="text-2xl font-bold text-text-primary mt-1 font-mono">{kpis.activeCustomers}</p>
           </div>
-          
-          {/* Region Filter */}
-          <div className="px-4 relative">
-            <button 
-              onClick={() => { setRegionDropdownOpen(!regionDropdownOpen); setIndustryDropdownOpen(false); }}
-              className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors capitalize font-medium"
-            >
-              {filterRegion === "all" ? "Todas las Regiones" : filterRegion} <ChevronDown className="w-4 h-4" />
-            </button>
-            {regionDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setRegionDropdownOpen(false)} />
-                <div className="absolute left-4 top-full mt-2 w-48 bg-bg-primary border border-border-subtle rounded shadow-lg z-40 py-1">
-                  <button 
-                    onClick={() => { setFilterRegion("all"); setRegionDropdownOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-secondary hover:text-text-primary font-medium"
-                  >
-                    Todas las Regiones
-                  </button>
-                  {uniqueRegions.map((region: string) => (
-                    <button 
-                      key={region}
-                      onClick={() => { setFilterRegion(region); setRegionDropdownOpen(false); }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-secondary hover:text-text-primary font-medium capitalize"
-                    >
-                      {region}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          
-          {/* Industry Filter */}
-          <div className="px-4 relative">
-            <button 
-              onClick={() => { setIndustryDropdownOpen(!industryDropdownOpen); setRegionDropdownOpen(false); }}
-              className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors capitalize font-medium"
-            >
-              {filterIndustry === "all" ? "Todos los Sectores" : filterIndustry} <ChevronDown className="w-4 h-4" />
-            </button>
-            {industryDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setIndustryDropdownOpen(false)} />
-                <div className="absolute left-4 top-full mt-2 w-48 bg-bg-primary border border-border-subtle rounded shadow-lg z-40 py-1">
-                  <button 
-                    onClick={() => { setFilterIndustry("all"); setIndustryDropdownOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-secondary hover:text-text-primary font-medium"
-                  >
-                    Todos los Sectores
-                  </button>
-                  {uniqueIndustries.map((ind: string) => (
-                    <button 
-                      key={ind}
-                      onClick={() => { setFilterIndustry(ind); setIndustryDropdownOpen(false); }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-secondary hover:text-text-primary font-medium"
-                    >
-                      {ind}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+          <div className="p-2.5 bg-success-subtle/10 rounded-md border border-success/20">
+            <UserCheck className="w-5 h-5 text-success" />
           </div>
         </div>
 
-        <div className="px-2 w-full md:w-72">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input 
-              type="text" 
-              placeholder="Search clients..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-sm bg-bg-secondary border border-border-subtle rounded-md text-text-primary focus:outline-none focus:border-accent-cyan" 
-            />
+        {/* KPI 2: Plantas Monitoreadas */}
+        <div className="bg-bg-primary border border-border-subtle rounded-md p-4 flex items-center justify-between shadow-sm hover:border-accent-cyan/30 transition-all">
+          <div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Plantas Monitoreadas</p>
+            <p className="text-2xl font-bold text-text-primary mt-1 font-mono">{kpis.monitoredPlants}</p>
+          </div>
+          <div className="p-2.5 bg-accent-cyan-soft/10 rounded-md border border-accent-cyan/20">
+            <Activity className="w-5 h-5 text-accent-cyan" />
+          </div>
+        </div>
+
+        {/* KPI 3: LTV Comercial */}
+        {!isTecnico ? (
+          <div className="bg-bg-primary border border-border-subtle rounded-md p-4 flex items-center justify-between shadow-sm hover:border-accent-cyan/30 transition-all">
+            <div>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">LTV Comercial</p>
+              <p className="text-2xl font-bold text-text-primary mt-1 font-mono">
+                ${kpis.commercialLtv.toLocaleString("es-CO")} <span className="text-xs text-text-muted">COP</span>
+              </p>
+            </div>
+            <div className="p-2.5 bg-info-subtle/10 rounded-md border border-info/20">
+              <Coins className="w-5 h-5 text-info" />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-bg-primary border border-border-subtle rounded-md p-4 flex items-center justify-between shadow-sm opacity-50">
+            <div>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">LTV Comercial</p>
+              <p className="text-sm font-semibold text-text-muted mt-2 uppercase tracking-wider">
+                Restringido [Técnico]
+              </p>
+            </div>
+            <div className="p-2.5 bg-bg-secondary rounded-md border border-border-subtle">
+              <ShieldAlert className="w-5 h-5 text-text-muted" />
+            </div>
+          </div>
+        )}
+
+        {/* KPI 4: Índice de Recurrencia */}
+        <div className="bg-bg-primary border border-border-subtle rounded-md p-4 flex items-center justify-between shadow-sm hover:border-accent-cyan/30 transition-all">
+          <div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Índice de Recurrencia</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <p className="text-2xl font-bold text-text-primary font-mono">{kpis.recurrenceIndex}%</p>
+              <span className="text-[9px] font-medium text-text-muted">Lealtad</span>
+            </div>
+          </div>
+          <div className="p-2.5 bg-warning-subtle/10 rounded-md border border-warning/20">
+            <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H12v9l-6-6" />
+            </svg>
           </div>
         </div>
       </div>
 
-      {/* CONTENEDOR DE LA TABLA */}
+      {/* SEARCH AND FILTER BAR */}
+      <div className="bg-bg-primary border border-border-subtle rounded-t-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 shadow-sm z-10">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-2 text-text-secondary">
+            <Filter className="w-4 h-4 text-accent-cyan" />
+            <span className="text-xs font-bold uppercase tracking-wider">Filtros</span>
+          </div>
+
+          <div className="w-px h-5 bg-border-subtle hidden md:block" />
+
+          {/* Contract Status Dropdown */}
+          <div className="relative w-full md:w-48">
+            <select
+              value={estado}
+              onChange={handleEstadoChange}
+              className="w-full bg-bg-secondary border border-border-subtle rounded px-2.5 py-1 text-xs text-text-primary focus:outline-none focus:border-accent-cyan/60"
+            >
+              <option value="activo">Estado: Activos</option>
+              <option value="inactivo">Estado: Inactivos</option>
+              <option value="all">Ver Todos</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Name / NIT Search Bar */}
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre o NIT..."
+            value={search}
+            onChange={handleSearchChange}
+            className="w-full pl-9 pr-4 py-1.5 text-xs bg-bg-secondary border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent-cyan transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* MASTER HIGH-DENSITY CUSTOMERS TABLE (Siemens/ABB Industrial Grid) */}
       <div className="flex-1 overflow-auto bg-bg-primary border-x border-b border-border-subtle rounded-b-lg shadow-sm relative">
         <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 bg-bg-secondary z-10 border-b border-border-subtle">
-            <tr>
-              <th className="p-4 pl-6 text-xs font-bold text-text-muted uppercase tracking-wider">Nombre de la Empresa</th>
-              <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider">Sector Industrial</th>
-              <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider">Contacto Principal</th>
-              <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider">Proyectos Activos</th>
-              <th className="p-4 pr-6 text-xs font-bold text-text-muted uppercase tracking-wider">Valor Total</th>
+          <thead className="sticky top-0 bg-bg-secondary z-20 border-b border-border-subtle">
+            <tr className="divide-x divide-border-subtle/50">
+              <th className="p-3 pl-5 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/4">Nombre Comercial</th>
+              <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/6">NIT</th>
+              <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Plantas</th>
+              <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/4">Asesor Asignado</th>
+              {!isTecnico && (
+                <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/6 text-right">LTV Comercial</th>
+              )}
+              <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Estado</th>
+              <th className="p-3 pr-5 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Acción</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border-subtle">
-            {filteredCompanies.length === 0 ? (
+          <tbody className="divide-y divide-border-subtle/70">
+            {initialCustomers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-10 text-center text-sm text-text-muted">
-                  No hay empresas registradas que coincidan con los filtros.
+                <td colSpan={isTecnico ? 6 : 7} className="p-10 text-center text-xs text-text-muted uppercase tracking-wide">
+                  No se encontraron cuentas corporativas que coincidan con la búsqueda.
                 </td>
               </tr>
             ) : (
-              filteredCompanies.map(company => {
-                const activeProjectsCount = company.leads?.filter((l: any) => l.status !== 'perdido').length || 0;
-                const totalValue = company.leads?.reduce((sum: number, l: any) => sum + (l.estimatedBudgetMax || 0), 0) || 0;
-                const mainContact = company.contacts && company.contacts.length > 0 ? company.contacts[0] : null;
-                const sector = company.industry || getSector(company.name);
+              initialCustomers.map((customer) => (
+                <tr key={customer.id} className="hover:bg-bg-secondary/40 transition-colors duration-150 divide-x divide-border-subtle/30 group">
+                  {/* Account Name */}
+                  <td className="p-2.5 pl-5 font-semibold text-text-primary text-xs relative">
+                    <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-r transition-all group-hover:w-1.5 ${
+                      customer.status === "activo" ? "bg-accent-cyan" : "bg-text-muted/40"
+                    }`}></div>
+                    <span className="truncate block ml-2">{customer.name}</span>
+                  </td>
 
-                return (
-                  <tr key={company.id} className="hover:bg-bg-secondary/50 transition-colors group">
-                    <td className="p-4 pl-6 relative">
-                      <div className="absolute left-0 top-3 bottom-3 w-1 bg-text-primary rounded-r"></div>
-                      <span className="font-bold text-text-primary ml-2">{company.name}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className="bg-info/20 text-info text-xs font-medium px-2.5 py-1 rounded border border-info/30">
-                        {sector}
+                  {/* NIT with warning badge if missing */}
+                  <td className="p-2.5 text-xs">
+                    {customer.nit ? (
+                      <span className="font-mono text-text-secondary">{customer.nit}</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-warning-subtle/10 text-warning border border-warning/20 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded">
+                        <AlertCircle className="w-2.5 h-2.5" /> Falta NIT
                       </span>
+                    )}
+                  </td>
+
+                  {/* Plants count */}
+                  <td className="p-2.5 text-xs text-center font-mono font-medium text-text-secondary">
+                    {customer.plants?.length || 0}
+                  </td>
+
+                  {/* Assigned Advisor */}
+                  <td className="p-2.5 text-xs text-text-secondary truncate">
+                    {customer.assignedTo || "Sin asignar"}
+                  </td>
+
+                  {/* LTV (Commercial value) */}
+                  {!isTecnico && (
+                    <td className="p-2.5 text-xs text-right font-mono font-medium text-text-primary">
+                      ${customer.ltv.toLocaleString("es-CO")}
                     </td>
-                    <td className="p-4">
-                      {mainContact ? (
-                        <>
-                          <p className="text-sm font-medium text-text-primary">{mainContact.fullName}</p>
-                          <p className="text-xs text-text-secondary">{mainContact.cargo || "Sin Cargo"}</p>
-                        </>
-                      ) : (
-                        <p className="text-sm text-text-muted italic">Sin contacto asignado</p>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm text-text-primary">{activeProjectsCount}</span>
-                    </td>
-                    <td className="p-4 pr-6">
-                      <span className="text-sm font-mono text-text-primary">
-                        ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
+                  )}
+
+                  {/* Status Badge */}
+                  <td className="p-2.5 text-center">
+                    <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      customer.status === "activo" 
+                        ? "bg-success-subtle/10 text-success border border-success/20" 
+                        : "bg-danger-subtle/10 text-danger border border-danger/20"
+                    }`}>
+                      {customer.status}
+                    </span>
+                  </td>
+
+                  {/* View action button */}
+                  <td className="p-2 text-center">
+                    <button
+                      onClick={() => router.push(`/crm/clientes/${customer.id}`)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-bg-secondary border border-border-subtle hover:border-accent-cyan hover:bg-bg-primary rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all duration-150"
+                    >
+                      Ver 360° <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
-      
+
+      {/* CREATE CLIENT MODAL DIALOG */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-bg-primary border border-border-subtle rounded-md w-full max-w-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 text-text-muted hover:text-text-primary transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-base font-bold text-text-primary uppercase tracking-wider mb-4 border-b border-border-subtle pb-2">
+              Registrar Cuenta Corporativa B2B
+            </h3>
+
+            {error && (
+              <div className="bg-danger-subtle/10 text-danger border border-danger/20 p-2.5 rounded text-xs mb-4 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">
+                  Razón Social / Nombre de Empresa *
+                </label>
+                <input
+                  required
+                  type="text"
+                  placeholder="Ej: Siemens Colombia S.A."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-bg-secondary border border-border-subtle rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-cyan"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">
+                  NIT (Número de Identificación Tributaria)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: 900.123.456-7"
+                  value={nit}
+                  onChange={(e) => setNit(e.target.value)}
+                  className="w-full bg-bg-secondary border border-border-subtle rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-cyan"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">
+                    Asesor Asignado
+                  </label>
+                  <select
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    className="w-full bg-bg-secondary border border-border-subtle rounded px-2.5 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-cyan"
+                  >
+                    <option value="">Sin Asignar</option>
+                    {salesReps.map((rep) => (
+                      <option key={rep.id} value={rep.email}>
+                        {rep.fullName || rep.email.split("@")[0]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">
+                    Estado Contractual
+                  </label>
+                  <select
+                    value={statusVal}
+                    onChange={(e) => setStatusVal(e.target.value)}
+                    className="w-full bg-bg-secondary border border-border-subtle rounded px-2.5 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-cyan"
+                  >
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="border-t border-border-subtle pt-4 mt-6">
+                <button
+                  disabled={isPending}
+                  type="submit"
+                  className="w-full py-2 bg-text-primary text-bg-primary text-xs font-bold uppercase tracking-wider rounded hover:opacity-95 transition-opacity disabled:opacity-50"
+                >
+                  {isPending ? "Procesando..." : "Crear Cliente B2B"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

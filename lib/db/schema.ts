@@ -89,6 +89,7 @@ export const crmTasks = pgTable("crm_tasks", {
 export const diagnosticReports = pgTable("diagnostic_reports", {
   id: uuid("id").defaultRandom().primaryKey(),
   leadId: uuid("lead_id").references(() => leads.id, { onDelete: "restrict" }).notNull(),
+  plantId: uuid("plant_id").references(() => crmCustomerPlants.id, { onDelete: "set null" }),
   airflow: integer("airflow"),
   dimensions: jsonb("dimensions"),
   technicalObservations: text("technical_observations"),
@@ -177,6 +178,7 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
 
 export const diagnosticReportsRelations = relations(diagnosticReports, ({ one }) => ({
   lead: one(leads, { fields: [diagnosticReports.leadId], references: [leads.id] }),
+  plant: one(crmCustomerPlants, { fields: [diagnosticReports.plantId], references: [crmCustomerPlants.id] }),
 }));
 
 export const crmPipelineRelations = relations(crmPipeline, ({ one }) => ({
@@ -254,6 +256,53 @@ export const crmOpportunities = pgTable("crm_opportunities", {
 export const crmOpportunitiesRelations = relations(crmOpportunities, ({ one }) => ({
   lead: one(leads, { fields: [crmOpportunities.leadId], references: [leads.id] }),
   diagnosticReport: one(diagnosticReports, { fields: [crmOpportunities.diagnosticId], references: [diagnosticReports.id] }),
+}));
+
+// B2B Customer Management Tables
+export const crmCustomers = pgTable("crm_customers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nit: varchar("nit", { length: 50 }),
+  status: varchar("status", { length: 50 }).default("activo").notNull(), // activo, inactivo
+  ltv: integer("ltv").default(0).notNull(), // Lifetime value in COP
+  assignedTo: varchar("assigned_to", { length: 255 }), // assigned salesperson email
+  recurrenceIndex: integer("recurrence_index").default(0).notNull(), // index of loyalty recurrence (0-100)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmCustomerPlants = pgTable("crm_customer_plants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  address: varchar("address", { length: 255 }),
+  airflowCfm: integer("airflow_cfm").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmCustomerContacts = pgTable("crm_customer_contacts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }).notNull(),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  cargo: varchar("cargo", { length: 100 }),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmCustomersRelations = relations(crmCustomers, ({ many }) => ({
+  plants: many(crmCustomerPlants),
+  contacts: many(crmCustomerContacts),
+}));
+
+export const crmCustomerPlantsRelations = relations(crmCustomerPlants, ({ one, many }) => ({
+  customer: one(crmCustomers, { fields: [crmCustomerPlants.customerId], references: [crmCustomers.id] }),
+  diagnostics: many(diagnosticReports),
+}));
+
+export const crmCustomerContactsRelations = relations(crmCustomerContacts, ({ one }) => ({
+  customer: one(crmCustomers, { fields: [crmCustomerContacts.customerId], references: [crmCustomers.id] }),
 }));
 
 

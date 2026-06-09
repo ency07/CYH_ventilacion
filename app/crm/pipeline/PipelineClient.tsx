@@ -691,142 +691,290 @@ export default function PipelineClient({
         </div>
       </div>
 
-      {/* KANBAN / LIST SWITCHER CONTAINER */}
       {viewMode === "list" ? (
-        <div className="flex-1 overflow-auto bg-white border border-slate-200 rounded shadow-xs p-4">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-250 bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-wider select-none">
-                <th className="py-2.5 px-3">Empresa</th>
-                <th className="py-2.5 px-3">Contacto</th>
-                <th className="py-2.5 px-3">Ciudad / Planta</th>
-                <th className="py-2.5 px-3">Servicio</th>
-                <th className="py-2.5 px-3">Presupuesto Máx</th>
-                <th className="py-2.5 px-3">Asesor</th>
-                <th className="py-2.5 px-3">Temperatura</th>
-                <th className="py-2.5 px-3">Etapa Comercial</th>
-                <th className="py-2.5 px-3 text-right">Ficha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {STAGES.map((stage) => {
-                const stageLeads = filteredLeads.filter(l => l.status === stage.id);
-                if (stageLeads.length === 0) return null;
+        <div className="flex-1 overflow-auto bg-white border border-slate-200">
+          {/* Vista para Pantallas de Escritorio (Tabla) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-250 bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-wider select-none">
+                  <th className="py-2.5 px-3">Empresa</th>
+                  <th className="py-2.5 px-3">Contacto</th>
+                  <th className="py-2.5 px-3">Ciudad / Planta</th>
+                  <th className="py-2.5 px-3">Servicio</th>
+                  <th className="py-2.5 px-3">Presupuesto Máx</th>
+                  <th className="py-2.5 px-3">Asesor</th>
+                  <th className="py-2.5 px-3">Temperatura</th>
+                  <th className="py-2.5 px-3">Etapa Comercial</th>
+                  <th className="py-2.5 px-3 text-right">Ficha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {STAGES.map((stage) => {
+                  const stageLeads = filteredLeads.filter(l => l.status === stage.id);
+                  if (stageLeads.length === 0) return null;
 
-                return (
-                  <React.Fragment key={stage.id}>
-                    {/* Cabecera de Etapa */}
-                    <tr className="bg-slate-100/60 border-b border-slate-200">
-                      <td colSpan={9} className="py-2 px-3 text-[10px] font-black uppercase tracking-wider text-slate-800 select-none">
-                        {stage.name} <span className="ml-1 text-[9px] text-slate-450 font-bold bg-white border px-1.5 py-0.25 rounded-full">{stageLeads.length}</span>
-                      </td>
-                    </tr>
-                    
-                    {/* Leads de la etapa */}
+                  return (
+                    <React.Fragment key={stage.id}>
+                      {/* Cabecera de Etapa */}
+                      <tr className="bg-slate-100/60 border-b border-slate-200">
+                        <td colSpan={9} className="py-2 px-3 text-[10px] font-black uppercase tracking-wider text-slate-800 select-none">
+                          {stage.name} <span className="ml-1 text-[9px] text-slate-450 font-bold bg-white border px-1.5 py-0.25 rounded-full">{stageLeads.length}</span>
+                        </td>
+                      </tr>
+                      
+                      {/* Leads de la etapa */}
+                      {stageLeads.map((lead) => {
+                        const budgetMax = lead.estimatedBudgetMax;
+
+                        return (
+                          <tr 
+                            key={lead.id} 
+                            onClick={() => { setSelectedLeadId(lead.id); setActionError(""); }}
+                            className="border-b border-slate-150 hover:bg-slate-50/50 cursor-pointer transition-colors font-medium text-slate-700"
+                          >
+                            <td className="py-2 px-3 font-bold text-slate-900 uppercase">
+                              {displayCompanyName(lead)}
+                            </td>
+                            <td className="py-2 px-3 truncate max-w-[150px]" title={lead.fullName || "Dato Incompleto"}>
+                              {displayContactName(lead)}
+                            </td>
+                            <td className="py-2 px-3">
+                              {renderCity(lead.city)}
+                            </td>
+                            <td className="py-2 px-3 capitalize">
+                              {displayServiceName(lead.serviceType)}
+                            </td>
+                            <td className="py-2 px-3 font-mono">
+                              {budgetMax 
+                                ? `$${Math.round(budgetMax).toLocaleString()} COP` 
+                                : <span className="text-slate-400 italic text-[10px]">No asignado</span>
+                              }
+                            </td>
+                            <td className="py-2 px-3 truncate max-w-[120px]" title={lead.assignedTo || ""}>
+                              {lead.assignedTo || <span className="text-slate-400 italic">Sin asignar</span>}
+                            </td>
+                            <td className="py-2 px-3">
+                              <span className={`text-[8px] px-1.5 py-0.25 rounded font-black border uppercase ${
+                                lead.riskLevel === "HOT" ? "bg-red-50 text-red-705 border-red-200" :
+                                lead.riskLevel === "WARM" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                lead.riskLevel === "SPAM" ? "bg-slate-100 text-slate-400 border-slate-200" :
+                                "bg-blue-50 text-blue-700 border-blue-200"
+                              }`}>
+                                {lead.riskLevel}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
+                              <select
+                                value={lead.status}
+                                disabled={isPending}
+                                onChange={async (e) => {
+                                  const targetStage = e.target.value;
+                                  if (targetStage === lead.status) return;
+
+                                  // Optimistic Update
+                                  const previousLeads = [...localLeads];
+                                  const updatedLeads = localLeads.map(l => 
+                                    l.id === lead.id ? { ...l, status: targetStage, updatedAt: new Date() } : l
+                                  );
+                                  setLocalLeads(updatedLeads);
+                                  setIsPending(true);
+
+                                  try {
+                                    const res = await updateLeadStatusAction(lead.id, targetStage);
+                                    if (res.success) {
+                                      showToast("Etapa de oportunidad comercial actualizada.");
+                                      router.refresh();
+                                    } else {
+                                      throw new Error(res.error || "Permisos insuficientes.");
+                                    }
+                                  } catch (err: any) {
+                                    console.error("List view stage update failed:", err);
+                                    // ROLLBACK on failure
+                                    setLocalLeads(previousLeads);
+                                    showToast(err.message || "No se pudo actualizar el lead. Permisos insuficientes.", "error");
+                                  } finally {
+                                    setIsPending(false);
+                                  }
+                                }}
+                                className="bg-slate-50 border border-slate-200 text-[10px] font-bold uppercase tracking-wide text-slate-800 rounded px-1.5 py-0.5 focus:outline-none focus:border-slate-400 cursor-pointer font-sans"
+                              >
+                                {STAGES.map((s) => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedLeadId(lead.id);
+                                  setActionError("");
+                                }}
+                                className="text-[10px] font-bold text-slate-900 hover:text-slate-600 uppercase tracking-wider"
+                              >
+                                Detalle 360° →
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Vista para Pantallas Móviles (Tarjetas de Fila Apiladas) */}
+          <div className="block md:hidden space-y-6">
+            {STAGES.map((stage) => {
+              const stageLeads = filteredLeads.filter(l => l.status === stage.id);
+              if (stageLeads.length === 0) return null;
+
+              return (
+                <div key={stage.id} className="space-y-3">
+                  {/* Cabecera de Etapa */}
+                  <div className="bg-slate-100 px-3 py-2 rounded text-[10px] font-black uppercase tracking-wider text-slate-800 flex justify-between items-center select-none">
+                    <span>{stage.name}</span>
+                    <span className="text-[9px] text-slate-500 font-bold bg-white border px-1.5 py-0.25 rounded-full">
+                      {stageLeads.length}
+                    </span>
+                  </div>
+
+                  {/* Lista Apilada */}
+                  <div className="space-y-3">
                     {stageLeads.map((lead) => {
-                      const budgetMax = lead.estimatedBudgetMax;
+                      const daysInactive = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+                      const isAlert = stage.id !== 'ganado' && stage.id !== 'perdido';
+
+                      let alertBorder = "border-slate-200";
+                      if (isAlert) {
+                        if (daysInactive >= 14) alertBorder = "border-red-400 shadow-[0_0_8px_rgba(220,38,38,0.15)]";
+                        else if (daysInactive >= 7) alertBorder = "border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.15)]";
+                      }
+
+                      const ledBorderClass = 
+                        lead.riskLevel === "HOT" ? "border-l-4 border-l-[#DC2626]" :
+                        lead.riskLevel === "WARM" ? "border-l-4 border-l-[#D97706]" :
+                        lead.riskLevel === "LOW" ? "border-l-4 border-l-[#64748B]" : 
+                        "border-l-4 border-l-slate-400";
 
                       return (
-                        <tr 
-                          key={lead.id} 
+                        <div
+                          key={lead.id}
                           onClick={() => { setSelectedLeadId(lead.id); setActionError(""); }}
-                          className="border-b border-slate-150 hover:bg-slate-50/50 cursor-pointer transition-colors font-medium text-slate-700"
+                          className={`bg-white border ${alertBorder} ${ledBorderClass} p-4 rounded shadow-sm hover:shadow-md cursor-pointer transition-all flex flex-col gap-3 relative overflow-hidden w-full`}
                         >
-                          <td className="py-2 px-3 font-bold text-slate-900 uppercase">
-                            {displayCompanyName(lead)}
-                          </td>
-                          <td className="py-2 px-3 truncate max-w-[150px]" title={lead.fullName || "Dato Incompleto"}>
-                            {displayContactName(lead)}
-                          </td>
-                          <td className="py-2 px-3">
-                            {renderCity(lead.city)}
-                          </td>
-                          <td className="py-2 px-3 capitalize">
-                            {displayServiceName(lead.serviceType)}
-                          </td>
-                          <td className="py-2 px-3 font-mono">
-                            {budgetMax 
-                              ? `$${Math.round(budgetMax).toLocaleString()} COP` 
-                              : <span className="text-slate-400 italic text-[10px]">No asignado</span>
-                            }
-                          </td>
-                          <td className="py-2 px-3 truncate max-w-[120px]" title={lead.assignedTo || ""}>
-                            {lead.assignedTo || <span className="text-slate-400 italic">Sin asignar</span>}
-                          </td>
-                          <td className="py-2 px-3">
-                            <span className={`text-[8px] px-1.5 py-0.25 rounded font-black border uppercase ${
-                              lead.riskLevel === "HOT" ? "bg-red-50 text-red-705 border-red-200" :
-                              lead.riskLevel === "WARM" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                              lead.riskLevel === "SPAM" ? "bg-slate-100 text-slate-400 border-slate-200" :
-                              "bg-blue-50 text-blue-700 border-blue-200"
-                            }`}>
-                              {lead.riskLevel}
+                          {/* Fila superior: Empresa y Temperatura */}
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-xs font-bold text-slate-900 uppercase tracking-wide truncate max-w-[70%]">
+                              {displayCompanyName(lead)}
                             </span>
-                          </td>
-                          <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
-                            <select
-                              value={lead.status}
-                              disabled={isPending}
-                              onChange={async (e) => {
-                                const targetStage = e.target.value;
-                                if (targetStage === lead.status) return;
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {isAlert && daysInactive >= 7 && (
+                                <span className="flex items-center gap-0.5 text-orange-600 font-black text-[9px]">
+                                  <Clock className="w-3.5 h-3.5 text-orange-600 animate-pulse" />
+                                  {daysInactive}d
+                                </span>
+                              )}
+                              <span className={`text-[8px] px-1.5 py-0.25 rounded font-black border uppercase ${
+                                lead.riskLevel === "HOT" ? "bg-red-50 text-red-700 border-red-200" :
+                                lead.riskLevel === "WARM" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                lead.riskLevel === "SPAM" ? "bg-slate-100 text-slate-400 border-slate-200" :
+                                "bg-blue-50 text-blue-700 border-blue-200"
+                              }`}>
+                                {lead.riskLevel}
+                              </span>
+                            </div>
+                          </div>
 
-                                // Optimistic Update
-                                const previousLeads = [...localLeads];
-                                const updatedLeads = localLeads.map(l => 
-                                  l.id === lead.id ? { ...l, status: targetStage, updatedAt: new Date() } : l
-                                );
-                                setLocalLeads(updatedLeads);
-                                setIsPending(true);
+                          {/* Detalles del Contacto */}
+                          <div className="text-[11px] text-slate-650 font-semibold grid grid-cols-2 gap-2 border-b border-slate-100/60 pb-2">
+                            <div>
+                              <span className="text-[8px] text-slate-400 uppercase tracking-wider block">Contacto Principal</span>
+                              <span className="text-slate-900 block truncate">{displayContactName(lead)}</span>
+                            </div>
+                            <div>
+                              <span className="text-[8px] text-slate-400 uppercase tracking-wider block">Cargo</span>
+                              <span className="text-slate-900 block truncate">{lead.cargo || "Sin registrar"}</span>
+                            </div>
+                          </div>
 
-                                try {
-                                  const res = await updateLeadStatusAction(lead.id, targetStage);
-                                  if (res.success) {
-                                    showToast("Etapa de oportunidad comercial actualizada.");
-                                    router.refresh();
-                                  } else {
-                                    throw new Error(res.error || "Permisos insuficientes.");
-                                  }
-                                } catch (err: any) {
-                                  console.error("List view stage update failed:", err);
-                                  // ROLLBACK on failure
-                                  setLocalLeads(previousLeads);
-                                  showToast(err.message || "No se pudo actualizar el lead. Permisos insuficientes.", "error");
-                                } finally {
-                                  setIsPending(false);
+                          {/* Ciudad y Caudal CFM */}
+                          <div className="text-[11px] text-slate-650 font-semibold grid grid-cols-2 gap-2">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{renderCity(lead.city)}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 font-mono truncate">
+                              <Wind className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{lead.airflow !== null && lead.airflow !== undefined ? `${lead.airflow} CFM` : "-- CFM"}</span>
+                            </div>
+                          </div>
+
+                          {/* Caja de Presupuesto y Selector de Etapas */}
+                          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 border-t border-slate-100 pt-2 mt-1">
+                            <div className="bg-[#EDF1F3] border border-slate-300/85 px-2.5 py-1 rounded flex items-center justify-between text-[10px] font-mono shadow-inner w-full sm:w-auto">
+                              <span className="text-[8px] font-black text-slate-450 uppercase tracking-widest mr-2">VALOR ESTIMADO</span>
+                              <span className="font-black text-slate-950 font-mono">
+                                {lead.estimatedBudgetMax 
+                                  ? `$${Math.round(lead.estimatedBudgetMax).toLocaleString()} COP` 
+                                  : "SIN ASIGNAR"
                                 }
-                              }}
-                              className="bg-slate-50 border border-slate-200 text-[10px] font-bold uppercase tracking-wide text-slate-800 rounded px-1.5 py-0.5 focus:outline-none focus:border-slate-400 cursor-pointer font-sans"
-                            >
-                              {STAGES.map((s) => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="py-2 px-3 text-right">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedLeadId(lead.id);
-                                setActionError("");
-                              }}
-                              className="text-[10px] font-bold text-slate-900 hover:text-slate-600 uppercase tracking-wider"
-                            >
-                              Detalle 360° →
-                            </button>
-                          </td>
-                        </tr>
+                              </span>
+                            </div>
+
+                            <div className="w-full sm:w-auto" onClick={(e) => e.stopPropagation()}>
+                              <select
+                                value={lead.status}
+                                disabled={isPending}
+                                onChange={async (e) => {
+                                  const targetStage = e.target.value;
+                                  if (targetStage === lead.status) return;
+
+                                  const previousLeads = [...localLeads];
+                                  const updatedLeads = localLeads.map(l => 
+                                    l.id === lead.id ? { ...l, status: targetStage, updatedAt: new Date() } : l
+                                  );
+                                  setLocalLeads(updatedLeads);
+                                  setIsPending(true);
+
+                                  try {
+                                    const res = await updateLeadStatusAction(lead.id, targetStage);
+                                    if (res.success) {
+                                      showToast("Etapa de oportunidad comercial actualizada.");
+                                      router.refresh();
+                                    } else {
+                                      throw new Error(res.error || "Permisos insuficientes.");
+                                    }
+                                  } catch (err: any) {
+                                    setLocalLeads(previousLeads);
+                                    showToast(err.message || "No se pudo actualizar el lead. Permisos insuficientes.", "error");
+                                  } finally {
+                                    setIsPending(false);
+                                  }
+                                }}
+                                className="w-full bg-slate-50 border border-slate-200 text-[10px] font-bold uppercase tracking-wide text-slate-800 rounded px-2.5 py-1 focus:outline-none focus:border-slate-400 cursor-pointer font-sans"
+                              >
+                                {STAGES.map((s) => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
-          <div className="flex gap-4 h-full min-w-max pb-2">
+        <div className="flex-grow flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden pb-4 snap-x snap-mandatory scrollbar-thin">
+          <div className="flex gap-4 h-full pb-2">
             {STAGES.map((stage) => {
               let stageLeads = filteredLeads.filter(l => l.status === stage.id);
               const colValue = stageLeads.reduce((acc, l) => acc + (l.estimatedBudgetMax || 0), 0);
@@ -838,7 +986,7 @@ export default function PipelineClient({
                   onDragOver={(e) => handleDragOver(e, stage.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, stage.id)}
-                  className={`w-[290px] flex-shrink-0 bg-slate-100/50 border rounded flex flex-col transition-all h-full max-h-[calc(100vh-22rem)] ${
+                  className={`w-[calc(100vw-3rem)] sm:w-[320px] md:w-[290px] flex-shrink-0 snap-center bg-slate-100/50 border rounded flex flex-col transition-all h-full ${
                     isDraggedOver ? "border-slate-800 bg-slate-100 shadow-sm" : "border-slate-200"
                   }`}
                 >
