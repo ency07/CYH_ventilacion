@@ -6,6 +6,7 @@ import { PipelineInsertSchema, ActivityLogInsertSchema } from "@/lib/validations
 import { eq, desc, ne, and, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { normalizeCity } from "@/lib/utils/normalization";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -513,7 +514,7 @@ export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
         leadCompany: leads.companyName
       })
       .from(crmActivityLogs)
-      .innerJoin(leads, eq(crmActivityLogs.leadId, leads.id))
+      .leftJoin(leads, eq(crmActivityLogs.leadId, leads.id))
       .orderBy(desc(crmActivityLogs.createdAt))
       .limit(10)
     ]);
@@ -1035,8 +1036,9 @@ export async function updateLeadCityAction(leadId: string, newCity: string): Pro
       return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar la ciudad del lead." };
     }
 
+    const normalizedCity = normalizeCity(newCity);
     const [updatedLead] = await db.update(leads)
-      .set({ city: newCity.trim(), updatedAt: new Date(), updatedBy: user.id })
+      .set({ city: normalizedCity, updatedAt: new Date(), updatedBy: user.id })
       .where(eq(leads.id, leadId))
       .returning();
 

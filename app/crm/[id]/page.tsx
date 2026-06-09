@@ -64,7 +64,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
   const allUsers = await db.select().from(crmUsers);
 
   return (
-    <div className="flex-1 flex flex-col w-full overflow-hidden">
+    <div className="flex-1 flex flex-col w-full overflow-visible md:overflow-hidden">
       <LeadDetailClient 
         lead={lead} 
         currentUser={currentUser} 

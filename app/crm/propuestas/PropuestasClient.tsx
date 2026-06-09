@@ -162,7 +162,7 @@ export default function PropuestasClient({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F8FAFC] p-4 md:p-8 font-sans overflow-hidden">
+    <div className="flex flex-col h-auto min-h-screen md:h-full bg-[#F8FAFC] p-4 md:p-8 font-sans overflow-visible md:overflow-hidden">
       
       {/* HEADER PRINCIPAL */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 shrink-0">
@@ -271,7 +271,7 @@ export default function PropuestasClient({
       </div>
 
       {/* COTIZACIONES GRID / TABLE */}
-      <div className="flex-1 bg-white border border-slate-200 rounded-b-md shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 bg-white border border-slate-200 rounded-b-md shadow-sm overflow-visible md:overflow-hidden flex flex-col">
         {filteredProps.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/30">
             <AlertTriangle className="w-10 h-10 text-slate-400 mb-2" />
@@ -281,7 +281,7 @@ export default function PropuestasClient({
             </p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 md:overflow-y-auto overflow-visible">
             
             {/* DESKTOP TABLE: Thin Row Executive Grid */}
             <table className="hidden md:table w-full text-left border-collapse table-fixed">

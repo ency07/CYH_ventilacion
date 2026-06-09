@@ -224,7 +224,7 @@ export default function OportunidadesClient({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-[#F8FAFC] p-4 md:p-8 font-sans overflow-hidden">
+    <div className="flex flex-col h-auto min-h-screen md:h-[calc(100vh-4rem)] bg-[#F8FAFC] p-4 md:p-8 font-sans overflow-visible md:overflow-hidden">
       
       {/* HEADER PRINCIPAL */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 shrink-0">
@@ -386,7 +386,7 @@ export default function OportunidadesClient({
       </div>
 
       {/* CUERPO DE DATOS (Móvil vs Escritorio) */}
-      <div className="flex-1 bg-white border border-slate-200 rounded-b-md shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 bg-white border border-slate-200 rounded-b-md shadow-sm overflow-visible md:overflow-hidden flex flex-col">
         {filteredOpps.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/30">
             <AlertTriangle className="w-10 h-10 text-slate-400 mb-2" />
@@ -404,7 +404,7 @@ export default function OportunidadesClient({
             )}
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 md:overflow-y-auto overflow-visible">
             {/* DESKTOP VIEW: high density table */}
             <table className="hidden md:table w-full text-left border-collapse table-fixed">
               <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-15">
@@ -419,13 +419,16 @@ export default function OportunidadesClient({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredOpps.map(({ opportunity, lead, companyName }) => {
+                {filteredOpps.map(({ opportunity, lead, companyName, diagnosticReport }) => {
                   const critical = isLicitacionCritica(opportunity.expectedCloseDate);
                   return (
                     <tr key={opportunity.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-[10px] text-slate-400 block font-bold shrink-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-slate-850 text-sm uppercase truncate">
+                            {companyName || lead.companyName || "Desconocido"} | <span className="text-slate-500 font-medium normal-case">{lead.environmentType || "Planta General"}</span>
+                          </span>
+                          <span className="bg-slate-100 text-slate-600 font-mono text-[10px] font-bold px-2 py-0.5 rounded select-none shrink-0">
                             OP-{opportunity.id.slice(0, 4).toUpperCase()}
                           </span>
                           {critical && (
@@ -433,11 +436,13 @@ export default function OportunidadesClient({
                               Licitación Crítica
                             </span>
                           )}
+                          {(!diagnosticReport || !diagnosticReport.id) && (
+                            <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight shrink-0">
+                              Telemetría Pendiente
+                            </span>
+                          )}
                         </div>
-                        <span className="font-bold text-slate-800 block text-sm uppercase truncate mt-0.5">
-                          {companyName || lead.companyName || "Desconocido"}
-                        </span>
-                        <span className="text-[11px] text-slate-500 block truncate">{opportunity.title}</span>
+                        <span className="text-[11px] text-slate-500 block truncate mt-1">{opportunity.title}</span>
                       </td>
                       <td className="p-3">
                         <span className="text-[10px] px-2 py-0.5 bg-slate-100 border border-slate-200 rounded font-semibold uppercase text-slate-600 block w-max">
@@ -494,7 +499,7 @@ export default function OportunidadesClient({
 
             {/* MOBILE VIEW: Stacked Cards with LED Glow borders */}
             <div className="md:hidden p-4 space-y-4">
-              {filteredOpps.map(({ opportunity, lead, companyName }) => {
+              {filteredOpps.map(({ opportunity, lead, companyName, diagnosticReport }) => {
                 const critical = isLicitacionCritica(opportunity.expectedCloseDate);
                 
                 // Color configuration for LED borders based on probability
@@ -517,20 +522,27 @@ export default function OportunidadesClient({
                     className={`bg-white rounded-lg border border-slate-200 p-4 flex flex-col justify-between ${ledClass} relative`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                          <span className="font-mono text-[9px] text-slate-400 font-bold bg-slate-50 px-1 border border-slate-200 rounded">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          <h4 className="font-bold text-slate-850 text-sm uppercase truncate">
+                            {companyName || lead.companyName || "Desconocido"} | <span className="text-slate-500 font-medium normal-case">{lead.environmentType || "Planta General"}</span>
+                          </h4>
+                          <span className="bg-slate-100 text-slate-600 font-mono text-[10px] font-bold px-2 py-0.5 rounded select-none shrink-0">
                             OP-{opportunity.id.slice(0, 4).toUpperCase()}
                           </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                           {critical && (
                             <span className="bg-red-50 text-red-700 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight border border-red-100">
                               Licitación Crítica
                             </span>
                           )}
+                          {(!diagnosticReport || !diagnosticReport.id) && (
+                            <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">
+                              Telemetría Pendiente
+                            </span>
+                          )}
                         </div>
-                        <h4 className="font-bold text-slate-800 text-sm uppercase truncate">
-                          {companyName || lead.companyName || "Desconocido"}
-                        </h4>
                         <p className="text-xs text-slate-500 truncate mt-0.5">{opportunity.title}</p>
                       </div>
                       <Link 

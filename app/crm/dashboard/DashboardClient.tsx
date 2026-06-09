@@ -43,6 +43,9 @@ import {
   updateTaskStatusAction 
 } from "@/lib/server-actions/crm";
 
+import { colombiaMapPaths } from "@/lib/utils/colombiaMapPaths";
+import { getDepartmentByCity } from "@/lib/utils/normalization";
+
 const formatCOP = (value: number) => {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -109,6 +112,14 @@ export default function DashboardClient({
 
   const [hoveredCity, setHoveredCity] = useState<{
     city: string;
+    projectCount: number;
+    financialVolume: number;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const [hoveredDept, setHoveredDept] = useState<{
+    name: string;
     projectCount: number;
     financialVolume: number;
     x: number;
@@ -236,6 +247,64 @@ export default function DashboardClient({
       { label: "Extracción de Contaminantes", count: extraccionCount, pct: total > 0 ? Math.round((extraccionCount / total) * 100) : 0 },
       { label: "Control Térmico y HVAC", count: termicoCount, pct: total > 0 ? Math.round((termicoCount / total) * 100) : 0 },
     ].sort((a, b) => b.count - a.count);
+  };
+
+  const deptDataMap = React.useMemo(() => {
+    const map: Record<string, { projectCount: number; financialVolume: number }> = {};
+    
+    // Initialize all departments from colombiaMapPaths with 0s
+    Object.keys(colombiaMapPaths).forEach(dept => {
+      map[dept] = { projectCount: 0, financialVolume: 0 };
+    });
+
+    geoData.forEach(item => {
+      if (!item.city || item.city === "[Por Clasificar]") return;
+      const dept = getDepartmentByCity(item.city);
+      if (!dept) return;
+
+      if (!map[dept]) {
+        map[dept] = { projectCount: 0, financialVolume: 0 };
+      }
+      map[dept].projectCount += item.projectCount;
+      map[dept].financialVolume += item.financialVolume;
+
+      // Group Bogotá capital inside Cundinamarca
+      if (dept === "Cundinamarca") {
+        const capitalDept = "Distrito Capital de Bogotá";
+        if (map[capitalDept]) {
+          map[capitalDept].projectCount += item.projectCount;
+          map[capitalDept].financialVolume += item.financialVolume;
+        }
+      }
+    });
+
+    return map;
+  }, [geoData]);
+
+  const maxDeptVolume = React.useMemo(() => {
+    let maxVal = 1;
+    Object.keys(deptDataMap).forEach(dept => {
+      const vol = deptDataMap[dept].financialVolume;
+      if (vol > maxVal) {
+        maxVal = vol;
+      }
+    });
+    return maxVal;
+  }, [deptDataMap]);
+
+  const getDeptColor = (deptName: string) => {
+    const data = deptDataMap[deptName];
+    if (!data || data.financialVolume === 0) {
+      return "#F8FAFC"; // off-white
+    }
+    const ratio = data.financialVolume / maxDeptVolume;
+    
+    // Siemens/ABB industrial greens scale
+    if (ratio > 0.75) return "#064e3b"; // Deep forest green
+    if (ratio > 0.50) return "#047857"; // Corporate green
+    if (ratio > 0.25) return "#059669"; // Emerald 600
+    if (ratio > 0.10) return "#10b981"; // Emerald 500
+    return "#a7f3d0"; // Mint green
   };
 
   // Filter high priority / critical leads
@@ -839,10 +908,10 @@ export default function DashboardClient({
             <div className="lg:col-span-2 bg-white p-6 rounded border border-slate-200 shadow-sm flex flex-col relative">
               <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
                 <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-emerald-600" /> Regional Sales Distribution
+                  <MapPin className="w-4 h-4 text-emerald-600" /> Distribución Regional de Ventas
                 </h2>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase">Colombia Heatmap</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase">Mapa de Calor de Colombia</span>
                   <button 
                     onClick={handleReloadGeo} 
                     className="p-1 text-slate-500 hover:text-slate-950 hover:bg-slate-50 border border-slate-200 rounded transition-all"
@@ -865,141 +934,72 @@ export default function DashboardClient({
               ) : (
                 <div className="flex-1 flex items-center justify-center relative min-h-[350px]">
                   {/* SVG Heatmap */}
-                  <svg viewBox="0 0 300 380" className="w-full h-auto max-h-[350px] select-none">
+                  <svg viewBox="0 0 620 710" className="w-full h-auto max-h-[350px] select-none">
                     <defs>
-                      <pattern id="dot-grid" width="16" height="16" patternUnits="userSpaceOnUse">
-                        <circle cx="2" cy="2" r="1" fill="#cbd5e1" className="opacity-40" />
+                      <pattern id="dot-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <circle cx="2" cy="2" r="1" fill="#cbd5e1" className="opacity-45" />
                       </pattern>
                     </defs>
                     {/* Background Grid Pattern */}
                     <rect width="100%" height="100%" fill="url(#dot-grid)" />
                     
-                    {/* Stylized Outline of Colombia */}
-                    <path 
-                      d="M 120 40 Q 150 25 180 50 T 200 90 T 170 140 T 210 180 T 190 240 T 170 300 T 140 330 T 120 300 T 90 260 T 90 210 T 110 160 T 90 120 Z" 
-                      fill="#f8fafc" 
-                      stroke="#cbd5e1" 
-                      strokeWidth="1.5" 
-                      className="transition-colors duration-500"
-                    />
-
-                    {/* Connected Network Mesh */}
-                    <path 
-                      d="M 150 70 L 130 80 L 110 110 L 140 180 L 165 220 L 110 250 Z" 
-                      fill="none" 
-                      stroke="#10b981" 
-                      strokeWidth="1" 
-                      strokeDasharray="3 3" 
-                      className="opacity-40"
-                    />
-                    
-                    {/* Render City Nodes */}
-                    {geoData.map((item) => {
-                      const coords = cityCoordinates[item.city];
-                      if (!coords) return null; // [Por Clasificar] doesn't have coordinates on the map
-
-                      const val = item.financialVolume || 0;
-                      const maxVal = Math.max(...geoData.map(c => c.financialVolume || 0)) || 1;
-                      const ratio = val / maxVal;
-                      
-                      // Node style based on volume ratio
-                      let nodeFill = "#D1FAE5"; // Emerald 100
-                      let nodeStroke = "#059669"; // Emerald 600
-                      
-                      if (ratio > 0.75) {
-                        nodeFill = "#047857"; // Emerald 700
-                        nodeStroke = "#064e3b"; // Emerald 900
-                      } else if (ratio > 0.35) {
-                        nodeFill = "#34D399"; // Emerald 400
-                        nodeStroke = "#047857"; // Emerald 700
-                      } else if (ratio > 0) {
-                        nodeFill = "#A7F3D0"; // Emerald 200
-                        nodeStroke = "#10B981"; // Emerald 500
-                      }
-
-                      // Circle radius based on project count
-                      const radius = Math.min(Math.max(item.projectCount * 3 + 4, 6), 16);
-
-                      return (
-                        <g 
-                          key={item.city}
-                          className="cursor-pointer group/node"
-                          onMouseEnter={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const parentRect = e.currentTarget.ownerDocument.getElementById("map-container")?.getBoundingClientRect();
-                            const x = rect.left - (parentRect?.left || 0) + rect.width / 2;
-                            const y = rect.top - (parentRect?.top || 0) - 10;
-                            setHoveredCity({
-                              city: item.city,
-                              projectCount: item.projectCount,
-                              financialVolume: item.financialVolume,
-                              x,
-                              y
-                            });
-                          }}
-                          onMouseLeave={() => setHoveredCity(null)}
-                        >
-                          {/* Pulse Effect for high activity zones */}
-                          {ratio > 0.75 && (
-                            <circle 
-                              cx={coords.x} 
-                              cy={coords.y} 
-                              r={radius + 6} 
-                              fill="none" 
-                              stroke={nodeStroke} 
-                              strokeWidth="1" 
-                              className="animate-ping opacity-30" 
-                            />
-                          )}
-                          
-                          {/* Inner Node circle */}
-                          <circle 
-                            cx={coords.x} 
-                            cy={coords.y} 
-                            r={radius} 
-                            fill={nodeFill} 
-                            stroke={nodeStroke} 
-                            strokeWidth="2" 
-                            className="transition-all duration-300"
+                    <g>
+                      {Object.keys(colombiaMapPaths).map((deptName) => {
+                        const pathD = colombiaMapPaths[deptName];
+                        const fillColor = getDeptColor(deptName);
+                        const data = deptDataMap[deptName] || { projectCount: 0, financialVolume: 0 };
+                        
+                        return (
+                          <path 
+                            key={deptName}
+                            d={pathD}
+                            fill={fillColor}
+                            stroke="#cbd5e1"
+                            strokeWidth="0.8"
+                            className="transition-all duration-200 cursor-pointer hover:stroke-slate-650 hover:opacity-95"
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const parentRect = e.currentTarget.ownerDocument.getElementById("map-container")?.getBoundingClientRect();
+                              const x = rect.left - (parentRect?.left || 0) + rect.width / 2;
+                              const y = rect.top - (parentRect?.top || 0) - 10;
+                              setHoveredDept({
+                                name: deptName,
+                                projectCount: data.projectCount,
+                                financialVolume: data.financialVolume,
+                                x,
+                                y
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredDept(null)}
                           />
-
-                          {/* Node label */}
-                          <text 
-                            x={coords.x} 
-                            y={coords.y - radius - 4} 
-                            textAnchor="middle" 
-                            className="text-[8px] font-mono font-bold text-slate-700 tracking-wider pointer-events-none opacity-80 group-hover/node:opacity-100"
-                          >
-                            {item.city}
-                          </text>
-                        </g>
-                      );
-                    })}
+                        );
+                      })}
+                    </g>
                   </svg>
 
                   {/* Absolute Tooltip Container */}
                   <div id="map-container" className="absolute inset-0 pointer-events-none">
-                    {hoveredCity && (
+                    {hoveredDept && (
                       <div 
-                        className="absolute bg-slate-950/95 border border-emerald-500/40 text-white p-3 rounded-lg shadow-xl text-[10px] w-48 pointer-events-none transition-all duration-200 z-30"
+                        className="absolute bg-slate-950/95 border border-emerald-500/45 text-white p-3 rounded shadow-xl text-[10px] w-48 pointer-events-none transition-all duration-200 z-30"
                         style={{ 
-                          left: `${hoveredCity.x}px`, 
-                          top: `${hoveredCity.y}px`,
+                          left: `${hoveredDept.x}px`, 
+                          top: `${hoveredDept.y}px`,
                           transform: "translate(-50%, -100%)"
                         }}
                       >
                         <div className="flex items-center justify-between border-b border-emerald-500/30 pb-1.5 mb-1.5">
-                          <span className="font-bold uppercase tracking-wider text-emerald-400">{hoveredCity.city}</span>
-                          <span className="bg-emerald-950 border border-emerald-800 text-emerald-400 text-[8px] px-1 py-0.5 rounded font-mono font-bold">ACTIVE</span>
+                          <span className="font-bold uppercase tracking-wider text-emerald-450">{hoveredDept.name}</span>
+                          <span className="bg-emerald-950 border border-emerald-800 text-emerald-400 text-[8px] px-1 py-0.5 rounded font-mono font-bold">ACTIVO</span>
                         </div>
                         <div className="space-y-1">
                           <div className="flex justify-between">
                             <span className="text-slate-400">Proyectos:</span>
-                            <span className="font-bold font-mono text-white">{hoveredCity.projectCount}</span>
+                            <span className="font-bold font-mono text-white">{hoveredDept.projectCount}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Volumen:</span>
-                            <span className="font-bold font-mono text-emerald-400">{formatCOP(hoveredCity.financialVolume)}</span>
+                            <span className="font-bold font-mono text-emerald-400">{formatCOP(hoveredDept.financialVolume)}</span>
                           </div>
                         </div>
                       </div>

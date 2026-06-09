@@ -108,7 +108,7 @@ export default function ClientesClient({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-bg-secondary p-6 font-sans overflow-hidden">
+    <div className="flex flex-col h-auto min-h-screen md:h-[calc(100vh-4rem)] bg-bg-secondary p-6 font-sans overflow-visible md:overflow-hidden">
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 shrink-0">
         <div>
@@ -237,7 +237,7 @@ export default function ClientesClient({
       </div>
 
       {/* MASTER HIGH-DENSITY CUSTOMERS TABLE (Siemens/ABB Industrial Grid) */}
-      <div className="flex-1 overflow-auto bg-bg-primary border-x border-b border-border-subtle rounded-b-lg shadow-sm relative">
+      <div className="flex-1 overflow-visible md:overflow-auto bg-bg-primary border-x border-b border-border-subtle rounded-b-lg shadow-sm relative">
         {/* Desktop View (Table) */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">

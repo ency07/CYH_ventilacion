@@ -4,6 +4,7 @@ import { leads, crmUsers, crmTasks, diagnosticReports, crmOpportunities, crmPipe
 import { eq } from "drizzle-orm";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { normalizeCity, getDepartmentByCity } from "@/lib/utils/normalization";
 import DashboardClient from "./DashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -55,24 +56,25 @@ export default async function DashboardGerencialPage() {
     filteredGeo = geoDataRaw.filter(item => item.assignedTo === currentUser.email);
   }
 
-  // Aggregate by city, grouping under "[Por Clasificar]" for empty or undefined values
+  // Aggregate by city, grouping under "[Por Clasificar]" for empty, undefined, or unmatched values
   const geoGroupMap = new Map<string, { city: string; projectCount: number; financialVolume: number }>();
 
   filteredGeo.forEach(item => {
-    let city = item.city ? item.city.trim() : "";
-    if (!city || city.toLowerCase() === "n/a" || city.toLowerCase() === "null" || city.toLowerCase() === "undefined") {
-      city = "[Por Clasificar]";
-    }
+    const rawCity = item.city;
+    const normalizedCity = normalizeCity(rawCity);
+    const dept = getDepartmentByCity(normalizedCity);
 
+    // If city is empty or doesn't map to a department, group under "[Por Clasificar]"
+    const displayCity = (normalizedCity && dept) ? normalizedCity : "[Por Clasificar]";
     const value = item.opportunityValue || 0;
 
-    const existing = geoGroupMap.get(city);
+    const existing = geoGroupMap.get(displayCity);
     if (existing) {
       existing.projectCount += 1;
       existing.financialVolume += value;
     } else {
-      geoGroupMap.set(city, {
-        city,
+      geoGroupMap.set(displayCity, {
+        city: displayCity,
         projectCount: 1,
         financialVolume: value
       });

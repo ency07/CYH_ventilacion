@@ -166,6 +166,7 @@ export function getMockOpportunities(userEmail: string) {
         phone: "+573001234567",
         city: "Barranquilla",
         serviceType: "venta",
+        environmentType: "ácido",
       },
       companyName: "Monómeros S.A.",
       diagnosticReport: {
@@ -214,6 +215,7 @@ export function getMockOpportunities(userEmail: string) {
         phone: "+573109876543",
         city: "Barranquilla",
         serviceType: "fabricacion",
+        environmentType: "fundición",
       },
       companyName: "Tecnoglass S.A.",
       diagnosticReport: {
@@ -262,6 +264,7 @@ export function getMockOpportunities(userEmail: string) {
         phone: "+573201112222",
         city: "Barranquilla",
         serviceType: "venta",
+        environmentType: "envasado",
       },
       companyName: "Cervecería Bavaria",
       diagnosticReport: {

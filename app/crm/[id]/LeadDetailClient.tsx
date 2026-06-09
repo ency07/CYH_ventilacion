@@ -238,7 +238,7 @@ export default function LeadDetailClient({ lead, currentUser, allCrmUsers }: Lea
   const isTechnicalUser = currentUser.role === "tecnico" || currentUser.role === "ingeniero";
 
   return (
-    <div className="flex flex-col lg:flex-row h-full min-h-[calc(100vh-4rem)] bg-slate-50 font-sans text-slate-900 overflow-hidden relative">
+    <div className="flex flex-col lg:flex-row h-auto min-h-screen lg:h-full bg-slate-50 font-sans text-slate-900 overflow-visible lg:overflow-hidden relative">
       
       {/* Toast Alert */}
       {toast.show && (
@@ -253,7 +253,7 @@ export default function LeadDetailClient({ lead, currentUser, allCrmUsers }: Lea
       )}
 
       {/* PANEL IZQUIERDO: DETALLE DEL LEAD */}
-      <aside className="w-full lg:w-80 border-r border-slate-200 bg-white flex flex-col p-6 space-y-5 shrink-0 overflow-y-auto">
+      <aside className="w-full lg:w-80 border-r border-slate-200 bg-white flex flex-col p-6 space-y-5 shrink-0 lg:overflow-y-auto overflow-visible h-auto">
         <Link href="/crm/pipeline" className="text-xs text-slate-500 hover:text-slate-950 flex items-center gap-1.5 w-fit font-bold uppercase tracking-wider transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> Volver al Pipeline
         </Link>
@@ -375,7 +375,7 @@ export default function LeadDetailClient({ lead, currentUser, allCrmUsers }: Lea
       </aside>
 
       {/* PANEL CENTRAL: TAREAS, ACTIVIDADES, PREINGENIERÍA */}
-      <main className="flex-1 p-6 space-y-6 overflow-y-auto h-[calc(100vh-4rem)]">
+      <main className="flex-1 p-6 space-y-6 lg:overflow-y-auto overflow-visible h-auto lg:h-[calc(100vh-4rem)]">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
           <h2 className="text-lg font-black uppercase tracking-widest text-slate-900">Seguimiento 360° Lead</h2>
           <span className="text-xs font-semibold text-slate-500">CYH OS v3.2</span>

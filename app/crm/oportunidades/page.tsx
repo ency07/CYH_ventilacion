@@ -198,8 +198,22 @@ export default async function OportunidadesPage({
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    opps = await db.select({
-      opportunity: crmOpportunities,
+    const rawOpps = await db.select({
+      opportunity: {
+        id: crmOpportunities.id,
+        leadId: crmOpportunities.leadId,
+        diagnosticId: crmOpportunities.diagnosticId,
+        serviceType: crmOpportunities.serviceType,
+        title: crmOpportunities.title,
+        estimatedValue: crmOpportunities.estimatedValue,
+        probability: crmOpportunities.probability,
+        weightedValue: crmOpportunities.weightedValue,
+        expectedCloseDate: crmOpportunities.expectedCloseDate,
+        stage: crmOpportunities.stage,
+        assignedTo: crmOpportunities.assignedTo,
+        createdAt: crmOpportunities.createdAt,
+        updatedAt: crmOpportunities.updatedAt,
+      },
       lead: { 
         id: leads.id,
         fullName: leads.fullName,
@@ -208,6 +222,7 @@ export default async function OportunidadesPage({
         phone: leads.phone,
         city: leads.city,
         serviceType: leads.serviceType,
+        environmentType: leads.environmentType,
       },
       companyName: crmCompanies.name,
       diagnosticReport: {
@@ -220,12 +235,34 @@ export default async function OportunidadesPage({
         recommendations: diagnosticReports.recommendations,
       },
     })
-    .from(crmOpportunities)
-    .leftJoin(leads, eq(crmOpportunities.leadId, leads.id))
+    .from(leads)
+    .leftJoin(crmOpportunities, eq(leads.id, crmOpportunities.leadId))
     .leftJoin(crmCompanies, eq(leads.companyId, crmCompanies.id))
-    .leftJoin(diagnosticReports, eq(crmOpportunities.diagnosticId, diagnosticReports.id))
+    .leftJoin(diagnosticReports, eq(leads.id, diagnosticReports.leadId))
     .where(whereClause)
-    .orderBy(desc(crmOpportunities.expectedCloseDate));
+    .orderBy(desc(leads.createdAt));
+
+    opps = rawOpps.map(row => {
+      const oppObj = row.opportunity?.id ? row.opportunity : {
+        id: `virtual-${row.lead.id}`,
+        leadId: row.lead.id,
+        diagnosticId: row.diagnosticReport?.id || null,
+        serviceType: row.lead.serviceType || "venta",
+        title: `Proyecto ${row.lead.serviceType?.toUpperCase()} - ${row.lead.companyName}`,
+        estimatedValue: 0,
+        probability: 0,
+        weightedValue: 0,
+        expectedCloseDate: null,
+        stage: "analisis",
+        assignedTo: "comercial@cyh.com",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      return {
+        ...row,
+        opportunity: oppObj
+      };
+    });
 
     activeLeads = await db.select({
       id: leads.id,

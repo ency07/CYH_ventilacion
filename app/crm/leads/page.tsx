@@ -66,7 +66,7 @@ export default async function LeadsPage() {
   });
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col w-full relative overflow-hidden">
+    <div className="min-h-[calc(100vh-4rem)] h-auto md:h-[calc(100vh-4rem)] flex flex-col w-full relative overflow-visible md:overflow-hidden">
       <LeadsClient 
         leads={activeLeads} 
         companies={dbCompanies} 

@@ -6,6 +6,7 @@ import { LeadInsertSchema } from "@/lib/validations/crm.schema";
 import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { normalizeCity } from "@/lib/utils/normalization";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -66,12 +67,13 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
   try {
     const validated = LeadInsertSchema.parse(rawInput);
 
+    const normalizedCity = normalizeCity(validated.city);
     const { score, risk } = calculateLeadScore({
       email: validated.email,
       phone: validated.phone,
       estimatedBudgetMax: validated.estimatedBudgetMax ?? null,
       cargo: validated.cargo ?? null,
-      city: validated.city,
+      city: normalizedCity,
     });
 
     // B2B Logic: Upsert Company
@@ -85,7 +87,7 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       } else {
         const [newComp] = await db.insert(crmCompanies).values({
           name: validated.companyName,
-          city: validated.city,
+          city: normalizedCity,
         }).returning();
         companyId = newComp.id;
       }
@@ -119,7 +121,7 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       email: validated.email,
       phone: validated.phone,
       cargo: validated.cargo ?? null,
-      city: validated.city,
+      city: normalizedCity,
       serviceType: validated.serviceType,
       environmentType: validated.environmentType,
       urgencyLevel: validated.urgencyLevel,

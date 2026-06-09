@@ -483,7 +483,7 @@ export default function LeadsClient({
   };
 
   return (
-    <div className="relative flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC] font-sans text-slate-900">
+    <div className="relative flex-1 flex flex-col h-auto min-h-screen md:h-full overflow-visible md:overflow-hidden bg-[#F8FAFC] font-sans text-slate-900">
       
       {/* Toast Alert */}
       {toast.show && (
@@ -634,7 +634,7 @@ export default function LeadsClient({
       )}
 
       {/* BANDEJA DE ENTRADA PRINCIPAL */}
-      <div className="flex-1 overflow-auto w-full bg-white relative">
+      <div className="flex-1 overflow-visible md:overflow-auto w-full bg-white relative">
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
             <tr>
