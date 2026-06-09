@@ -121,7 +121,7 @@ export default function PipelineClient({
   const [filterService, setFilterService] = useState("all");
 
   // Derive viewMode directly from URL query parameters (Next.js useSearchParams)
-  const viewParam = searchParams.get("view");
+  const viewParam = searchParams ? searchParams.get("view") : null;
   const viewMode = viewParam === "list" ? "list" : "kanban";
 
   // Selected Lead Drawer state
@@ -528,7 +528,7 @@ export default function PipelineClient({
   });
 
   return (
-    <div className="w-full px-6 py-6 flex flex-col space-y-6 bg-[#F8FAFC] font-sans text-slate-900 h-full overflow-hidden relative">
+    <div className="w-full px-6 py-6 flex flex-col space-y-6 bg-[#F8FAFC] font-sans text-slate-900 min-h-full h-auto md:h-full md:overflow-hidden overflow-visible relative">
       
       {/* Toast Alert */}
       {toast.show && (
@@ -973,8 +973,8 @@ export default function PipelineClient({
           </div>
         </div>
       ) : (
-        <div className="flex-grow flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden pb-4 snap-x snap-mandatory scrollbar-thin">
-          <div className="flex gap-4 h-full pb-2">
+        <div className="flex-grow flex-1 min-h-0 w-full md:overflow-x-auto md:overflow-y-hidden overflow-visible pb-4 scrollbar-thin">
+          <div className="flex flex-col md:flex-row gap-4 h-auto md:h-full pb-2">
             {STAGES.map((stage) => {
               let stageLeads = filteredLeads.filter(l => l.status === stage.id);
               const colValue = stageLeads.reduce((acc, l) => acc + (l.estimatedBudgetMax || 0), 0);
@@ -986,7 +986,7 @@ export default function PipelineClient({
                   onDragOver={(e) => handleDragOver(e, stage.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, stage.id)}
-                  className={`w-[calc(100vw-3rem)] sm:w-[320px] md:w-[290px] flex-shrink-0 snap-center bg-slate-100/50 border rounded flex flex-col transition-all h-full ${
+                  className={`w-full md:w-[290px] flex-shrink-0 md:snap-center bg-slate-100/50 border rounded flex flex-col transition-all h-auto md:h-full ${
                     isDraggedOver ? "border-slate-800 bg-slate-100 shadow-sm" : "border-slate-200"
                   }`}
                 >
@@ -1004,7 +1004,7 @@ export default function PipelineClient({
                   </div>
 
                   {/* Cards Container */}
-                  <div className="p-3 flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-slate-300">
+                  <div className="p-3 flex-1 md:overflow-y-auto overflow-visible space-y-3 scrollbar-thin scrollbar-thumb-slate-300">
                     {stageLeads.map((lead) => {
                       const daysInactive = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
                       const isAlert = stage.id !== 'ganado' && stage.id !== 'perdido';
@@ -1100,8 +1100,8 @@ export default function PipelineClient({
                     })}
 
                     {stageLeads.length === 0 && (
-                      <div className="h-20 border-2 border-dashed border-slate-200 rounded flex items-center justify-center text-xs font-semibold text-slate-400 bg-white/50 select-none">
-                        Soltar tarjeta aquí
+                      <div className="py-6 border border-dashed border-amber-200 rounded bg-amber-50/10 flex items-center justify-center text-[10px] font-bold text-amber-700 uppercase tracking-wider select-none">
+                        [Sin leads en esta etapa]
                       </div>
                     )}
                   </div>
@@ -1114,7 +1114,7 @@ export default function PipelineClient({
 
       {/* DRAWER FLOTANTE (PANEL DETALLE DERECHO 360°) */}
       <div 
-        className={`absolute top-0 right-0 h-full w-full max-w-[480px] bg-white shadow-[-15px_0_30px_rgba(0,0,0,0.08)] border-l border-slate-200 z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
+        className={`fixed md:absolute top-0 right-0 h-full w-full max-w-[480px] bg-white shadow-[-15px_0_30px_rgba(0,0,0,0.08)] border-l border-slate-200 z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
           selectedLeadId ? "translate-x-0" : "translate-x-full"
         }`}
       >

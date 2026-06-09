@@ -47,7 +47,7 @@ export default async function PipelinePage({ searchParams }: { searchParams: { v
   const initialView = searchParams.view === "list" ? "list" : "kanban";
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col w-full relative overflow-hidden">
+    <div className="min-h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] flex flex-col w-full relative md:overflow-hidden overflow-visible bg-[#F8FAFC]">
       <PipelineClient 
         initialLeads={activeLeads}
         allCrmUsers={allUsers}
