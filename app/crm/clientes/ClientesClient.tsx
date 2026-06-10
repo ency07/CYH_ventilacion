@@ -4,7 +4,7 @@ import React, { useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { 
   Search, Plus, X, UserCheck, Activity, Coins, ShieldAlert,
-  ChevronRight, Building2, Filter, AlertCircle
+  ChevronRight, Building2, Filter, AlertCircle, LayoutGrid, List
 } from "lucide-react";
 import { createCustomerAction } from "@/lib/server-actions/customers";
 import { crmCustomers, crmCustomerPlants, crmCustomerContacts, crmUsers } from "@/lib/db/schema";
@@ -41,6 +41,7 @@ export default function ClientesClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const currentView = searchParams.get("view") || "list";
 
   const [search, setSearch] = useState(initialQuery);
   const [estado, setEstado] = useState(initialEstado);
@@ -223,85 +224,167 @@ export default function ClientesClient({
           </div>
         </div>
 
-        {/* Name / NIT Search Bar */}
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o NIT..."
-            value={search}
-            onChange={handleSearchChange}
-            className="w-full pl-9 pr-4 py-1.5 text-xs bg-bg-secondary border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent-cyan transition-colors"
-          />
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Name / NIT Search Bar */}
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre o NIT..."
+              value={search}
+              onChange={handleSearchChange}
+              className="w-full pl-9 pr-4 py-1.5 text-xs bg-bg-secondary border border-border-subtle rounded text-text-primary focus:outline-none focus:border-accent-cyan transition-colors"
+            />
+          </div>
+
+          {/* View Switcher */}
+          <div className="flex items-center gap-1.5 border border-border-subtle rounded p-1 bg-bg-secondary shrink-0 select-none">
+            <button
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("view", "list");
+                router.push(`${pathname}?${params.toString()}`);
+              }}
+              title="Vista de Tabla"
+              className={`p-1 rounded transition-colors ${
+                currentView === "list"
+                  ? "bg-accent-cyan text-bg-primary"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("view", "grid");
+                router.push(`${pathname}?${params.toString()}`);
+              }}
+              title="Vista de Tarjetas"
+              className={`p-1 rounded transition-colors ${
+                currentView === "grid"
+                  ? "bg-accent-cyan text-bg-primary"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* MASTER HIGH-DENSITY CUSTOMERS TABLE (Siemens/ABB Industrial Grid) */}
       <div className="flex-1 overflow-visible md:overflow-auto bg-bg-primary border-x border-b border-border-subtle rounded-b-lg shadow-sm relative">
-        {/* Desktop View (Table) */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-bg-secondary z-20 border-b border-border-subtle">
-              <tr className="divide-x divide-border-subtle/50">
-                <th className="p-3 pl-5 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/4">Nombre Comercial</th>
-                <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/6">NIT</th>
-                <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Plantas</th>
-                <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/4">Asesor Asignado</th>
-                {!isTecnico && (
-                  <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/6 text-right">LTV Comercial</th>
-                )}
-                <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Estado</th>
-                <th className="p-3 pr-5 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Acción</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle/70">
+        {currentView === "list" ? (
+          <>
+            {/* Desktop View (Table) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 bg-bg-secondary z-20 border-b border-border-subtle">
+                  <tr className="divide-x divide-border-subtle/50">
+                    <th className="p-3 pl-5 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/4">Nombre Comercial</th>
+                    <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/6">NIT</th>
+                    <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Plantas</th>
+                    <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/4">Asesor Asignado</th>
+                    {!isTecnico && (
+                      <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/6 text-right">LTV Comercial</th>
+                    )}
+                    <th className="p-3 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Estado</th>
+                    <th className="p-3 pr-5 text-[10px] font-bold text-text-muted uppercase tracking-wider w-1/12 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle/70">
+                  {initialCustomers.length === 0 ? (
+                    <tr>
+                      <td colSpan={isTecnico ? 6 : 7} className="p-10 text-center text-xs text-text-muted uppercase tracking-wide">
+                        No se encontraron cuentas corporativas que coincidan con la búsqueda.
+                      </td>
+                    </tr>
+                  ) : (
+                    initialCustomers.map((customer) => (
+                      <tr key={customer.id} className="hover:bg-bg-secondary/40 transition-colors duration-150 divide-x divide-border-subtle/30 group">
+                        {/* Account Name */}
+                        <td className="p-2.5 pl-5 font-semibold text-text-primary text-xs relative">
+                          <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-r transition-all group-hover:w-1.5 ${
+                            customer.status === "activo" ? "bg-accent-cyan" : "bg-text-muted/40"
+                          }`}></div>
+                          <span className="truncate block ml-2">{customer.name}</span>
+                        </td>
+
+                        {/* NIT with warning badge if missing */}
+                        <td className="p-2.5 text-xs">
+                          {customer.nit ? (
+                            <span className="font-mono text-text-secondary">{customer.nit}</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 bg-warning-subtle/10 text-warning border border-warning/20 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded">
+                              <AlertCircle className="w-2.5 h-2.5" /> Falta NIT
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Plants count */}
+                        <td className="p-2.5 text-xs text-center font-mono font-medium text-text-secondary">
+                          {customer.plants?.length || 0}
+                        </td>
+
+                        {/* Assigned Advisor */}
+                        <td className="p-2.5 text-xs text-text-secondary truncate">
+                          {customer.assignedTo || "Sin asignar"}
+                        </td>
+
+                        {/* LTV (Commercial value) */}
+                        {!isTecnico && (
+                          <td className="p-2.5 text-xs text-right font-mono font-medium text-text-primary">
+                            ${customer.ltv.toLocaleString("es-CO")}
+                          </td>
+                        )}
+
+                        {/* Status Badge */}
+                        <td className="p-2.5 text-center">
+                          <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                            customer.status === "activo" 
+                              ? "bg-success-subtle/10 text-success border border-success/20" 
+                              : "bg-danger-subtle/10 text-danger border border-danger/20"
+                          }`}>
+                            {customer.status}
+                          </span>
+                        </td>
+
+                        {/* View action button */}
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => router.push(`/crm/clientes/${customer.id}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-bg-secondary border border-border-subtle hover:border-accent-cyan hover:bg-bg-primary rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all duration-150"
+                          >
+                            Ver 360° <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile View (Stacked Row Cards) */}
+            <div className="block md:hidden space-y-4 p-4">
               {initialCustomers.length === 0 ? (
-                <tr>
-                  <td colSpan={isTecnico ? 6 : 7} className="p-10 text-center text-xs text-text-muted uppercase tracking-wide">
-                    No se encontraron cuentas corporativas que coincidan con la búsqueda.
-                  </td>
-                </tr>
+                <div className="text-center text-xs text-text-muted uppercase tracking-wide py-8">
+                  No se encontraron cuentas corporativas que coincidan con la búsqueda.
+                </div>
               ) : (
                 initialCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-bg-secondary/40 transition-colors duration-150 divide-x divide-border-subtle/30 group">
-                    {/* Account Name */}
-                    <td className="p-2.5 pl-5 font-semibold text-text-primary text-xs relative">
-                      <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-r transition-all group-hover:w-1.5 ${
-                        customer.status === "activo" ? "bg-accent-cyan" : "bg-text-muted/40"
-                      }`}></div>
-                      <span className="truncate block ml-2">{customer.name}</span>
-                    </td>
-
-                    {/* NIT with warning badge if missing */}
-                    <td className="p-2.5 text-xs">
-                      {customer.nit ? (
-                        <span className="font-mono text-text-secondary">{customer.nit}</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-warning-subtle/10 text-warning border border-warning/20 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded">
-                          <AlertCircle className="w-2.5 h-2.5" /> Falta NIT
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Plants count */}
-                    <td className="p-2.5 text-xs text-center font-mono font-medium text-text-secondary">
-                      {customer.plants?.length || 0}
-                    </td>
-
-                    {/* Assigned Advisor */}
-                    <td className="p-2.5 text-xs text-text-secondary truncate">
-                      {customer.assignedTo || "Sin asignar"}
-                    </td>
-
-                    {/* LTV (Commercial value) */}
-                    {!isTecnico && (
-                      <td className="p-2.5 text-xs text-right font-mono font-medium text-text-primary">
-                        ${customer.ltv.toLocaleString("es-CO")}
-                      </td>
-                    )}
-
-                    {/* Status Badge */}
-                    <td className="p-2.5 text-center">
+                  <div 
+                    key={customer.id} 
+                    className={`bg-bg-primary border border-border-subtle rounded p-4 shadow-sm flex flex-col gap-3 relative overflow-hidden w-full border-l-4 ${
+                      customer.status === "activo" ? "border-l-accent-cyan" : "border-l-text-muted/40"
+                    }`}
+                  >
+                    {/* Header: Name and Status */}
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-xs font-bold text-text-primary uppercase tracking-wide truncate max-w-[70%]">
+                        {customer.name}
+                      </span>
                       <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                         customer.status === "activo" 
                           ? "bg-success-subtle/10 text-success border border-success/20" 
@@ -309,101 +392,133 @@ export default function ClientesClient({
                       }`}>
                         {customer.status}
                       </span>
-                    </td>
+                    </div>
 
-                    {/* View action button */}
-                    <td className="p-2 text-center">
+                    {/* NIT and Plants count */}
+                    <div className="text-[11px] text-text-secondary font-semibold grid grid-cols-2 gap-2 border-b border-border-subtle/30 pb-2">
+                      <div>
+                        <span className="text-[8px] text-text-muted uppercase tracking-wider block">NIT</span>
+                        <span className="font-mono text-text-primary">
+                          {customer.nit ? (
+                            customer.nit
+                          ) : (
+                            <span className="inline-flex items-center gap-1 bg-warning-subtle/10 text-warning border border-warning/20 text-[8px] font-bold uppercase px-1 py-0.25 rounded">
+                              Falta NIT
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[8px] text-text-muted uppercase tracking-wider block">Plantas</span>
+                        <span className="font-mono text-text-primary">{customer.plants?.length || 0}</span>
+                      </div>
+                    </div>
+
+                    {/* Assigned advisor and LTV */}
+                    <div className="text-[11px] text-text-secondary font-semibold grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[8px] text-text-muted uppercase tracking-wider block">Asesor Asignado</span>
+                        <span className="text-text-primary truncate block">{customer.assignedTo || "Sin asignar"}</span>
+                      </div>
+                      {!isTecnico && (
+                        <div>
+                          <span className="text-[8px] text-text-muted uppercase tracking-wider block">LTV Comercial</span>
+                          <span className="font-mono text-text-primary block">
+                            ${customer.ltv.toLocaleString("es-CO")} COP
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action button */}
+                    <div className="border-t border-border-subtle/30 pt-2 mt-1 flex justify-end">
                       <button
                         onClick={() => router.push(`/crm/clientes/${customer.id}`)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-bg-secondary border border-border-subtle hover:border-accent-cyan hover:bg-bg-primary rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all duration-150"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-bg-secondary border border-border-subtle hover:border-accent-cyan hover:bg-bg-primary rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all duration-150"
                       >
                         Ver 360° <ChevronRight className="w-3.5 h-3.5" />
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile View (Stacked Row Cards) */}
-        <div className="block md:hidden space-y-4 p-4">
-          {initialCustomers.length === 0 ? (
-            <div className="text-center text-xs text-text-muted uppercase tracking-wide py-8">
-              No se encontraron cuentas corporativas que coincidan con la búsqueda.
             </div>
-          ) : (
-            initialCustomers.map((customer) => (
-              <div 
-                key={customer.id} 
-                className={`bg-bg-primary border border-border-subtle rounded p-4 shadow-sm flex flex-col gap-3 relative overflow-hidden w-full border-l-4 ${
-                  customer.status === "activo" ? "border-l-accent-cyan" : "border-l-text-muted/40"
-                }`}
-              >
-                {/* Header: Name and Status */}
-                <div className="flex justify-between items-start gap-2">
-                  <span className="text-xs font-bold text-text-primary uppercase tracking-wide truncate max-w-[70%]">
-                    {customer.name}
-                  </span>
-                  <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                    customer.status === "activo" 
-                      ? "bg-success-subtle/10 text-success border border-success/20" 
-                      : "bg-danger-subtle/10 text-danger border border-danger/20"
-                  }`}>
-                    {customer.status}
-                  </span>
-                </div>
-
-                {/* NIT and Plants count */}
-                <div className="text-[11px] text-text-secondary font-semibold grid grid-cols-2 gap-2 border-b border-border-subtle/30 pb-2">
-                  <div>
-                    <span className="text-[8px] text-text-muted uppercase tracking-wider block">NIT</span>
-                    <span className="font-mono text-text-primary">
-                      {customer.nit ? (
-                        customer.nit
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-warning-subtle/10 text-warning border border-warning/20 text-[8px] font-bold uppercase px-1 py-0.25 rounded">
-                          Falta NIT
-                        </span>
-                      )}
+          </>
+        ) : (
+          /* Grid View: Cards Grid for all devices */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 overflow-y-auto max-h-full">
+            {initialCustomers.length === 0 ? (
+              <div className="col-span-full text-center text-xs text-text-muted uppercase tracking-wide py-8">
+                No se encontraron cuentas corporativas que coincidan con la búsqueda.
+              </div>
+            ) : (
+              initialCustomers.map((customer) => (
+                <div 
+                  key={customer.id} 
+                  className={`bg-bg-primary border border-border-subtle rounded p-4 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden w-full border-l-4 ${
+                    customer.status === "activo" ? "border-l-accent-cyan" : "border-l-text-muted/40"
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-xs font-bold text-text-primary uppercase tracking-wide truncate max-w-[70%]">
+                      {customer.name}
+                    </span>
+                    <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      customer.status === "activo" 
+                        ? "bg-success-subtle/10 text-success border border-success/20" 
+                        : "bg-danger-subtle/10 text-danger border border-danger/20"
+                    }`}>
+                      {customer.status}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-[8px] text-text-muted uppercase tracking-wider block">Plantas</span>
-                    <span className="font-mono text-text-primary">{customer.plants?.length || 0}</span>
-                  </div>
-                </div>
 
-                {/* Assigned advisor and LTV */}
-                <div className="text-[11px] text-text-secondary font-semibold grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-[8px] text-text-muted uppercase tracking-wider block">Asesor Asignado</span>
-                    <span className="text-text-primary truncate block">{customer.assignedTo || "Sin asignar"}</span>
-                  </div>
-                  {!isTecnico && (
+                  <div className="text-[11px] text-text-secondary font-semibold grid grid-cols-2 gap-2 border-b border-border-subtle/30 pb-2">
                     <div>
-                      <span className="text-[8px] text-text-muted uppercase tracking-wider block">LTV Comercial</span>
-                      <span className="font-mono text-text-primary block">
-                        ${customer.ltv.toLocaleString("es-CO")} COP
+                      <span className="text-[8px] text-text-muted uppercase tracking-wider block">NIT</span>
+                      <span className="font-mono text-text-primary">
+                        {customer.nit ? (
+                          customer.nit
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-warning-subtle/10 text-warning border border-warning/20 text-[8px] font-bold uppercase px-1 py-0.25 rounded">
+                            Falta NIT
+                          </span>
+                        )}
                       </span>
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <span className="text-[8px] text-text-muted uppercase tracking-wider block">Plantas</span>
+                      <span className="font-mono text-text-primary">{customer.plants?.length || 0}</span>
+                    </div>
+                  </div>
 
-                {/* Action button */}
-                <div className="border-t border-border-subtle/30 pt-2 mt-1 flex justify-end">
-                  <button
-                    onClick={() => router.push(`/crm/clientes/${customer.id}`)}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-bg-secondary border border-border-subtle hover:border-accent-cyan hover:bg-bg-primary rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all duration-150"
-                  >
-                    Ver 360° <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="text-[11px] text-text-secondary font-semibold grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[8px] text-text-muted uppercase tracking-wider block">Asesor Asignado</span>
+                      <span className="text-text-primary truncate block">{customer.assignedTo || "Sin asignar"}</span>
+                    </div>
+                    {!isTecnico && (
+                      <div>
+                        <span className="text-[8px] text-text-muted uppercase tracking-wider block">LTV Comercial</span>
+                        <span className="font-mono text-text-primary block">
+                          ${customer.ltv.toLocaleString("es-CO")} COP
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-border-subtle/30 pt-2 mt-1 flex justify-end">
+                    <button
+                      onClick={() => router.push(`/crm/clientes/${customer.id}`)}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-bg-secondary border border-border-subtle hover:border-accent-cyan hover:bg-bg-primary rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all duration-150"
+                    >
+                      Ver 360° <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* CREATE CLIENT MODAL DIALOG */}

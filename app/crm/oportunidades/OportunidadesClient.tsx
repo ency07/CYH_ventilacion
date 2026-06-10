@@ -17,7 +17,9 @@ import {
   Loader2, 
   AlertTriangle,
   Eye,
-  ShieldAlert
+  ShieldAlert,
+  LayoutGrid,
+  List
 } from "lucide-react";
 import { createOpportunityAction } from "@/lib/server-actions/crm";
 
@@ -54,6 +56,7 @@ export default function OportunidadesClient({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const currentView = searchParams.get("view") || "list";
 
   const [search, setSearch] = useState(initialQuery);
   const [filterProb, setFilterProb] = useState(initialProb);
@@ -371,8 +374,8 @@ export default function OportunidadesClient({
           </select>
         </div>
 
-        <div className="w-full md:w-72">
-          <div className="relative">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               type="text" 
@@ -381,6 +384,40 @@ export default function OportunidadesClient({
               onChange={e => handleSearchChange(e.target.value)}
               className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:outline-none focus:border-slate-400" 
             />
+          </div>
+
+          {/* View Switcher */}
+          <div className="flex items-center gap-1.5 border border-slate-200 rounded p-1 bg-slate-50 shrink-0 select-none">
+            <button
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("view", "list");
+                router.replace(`${pathname}?${params.toString()}`);
+              }}
+              title="Vista de Tabla"
+              className={`p-1 rounded transition-colors ${
+                currentView === "list"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-400 hover:text-slate-900"
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("view", "grid");
+                router.replace(`${pathname}?${params.toString()}`);
+              }}
+              title="Vista de Tarjetas"
+              className={`p-1 rounded transition-colors ${
+                currentView === "grid"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-400 hover:text-slate-900"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -405,185 +442,277 @@ export default function OportunidadesClient({
           </div>
         ) : (
           <div className="flex-1 md:overflow-y-auto overflow-visible">
-            {/* DESKTOP VIEW: high density table */}
-            <table className="hidden md:table w-full text-left border-collapse table-fixed">
-              <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-15">
-                <tr className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                  <th className="p-3 w-1/4">Código OP | Cliente / Proyecto</th>
-                  <th className="p-3 w-[15%]">Tipo Solución</th>
-                  <th className="p-3 w-[15%]">Probabilidad</th>
-                  <th className="p-3 w-[15%] text-right">Monto Estimado</th>
-                  <th className="p-3 w-[15%] text-right">Ponderado</th>
-                  <th className="p-3 w-[12%]">Límite Licitación</th>
-                  <th className="p-3 w-[8%] text-center">Detalle</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
+            {currentView === "list" ? (
+              <>
+                {/* DESKTOP VIEW: high density table */}
+                <table className="hidden md:table w-full text-left border-collapse table-fixed">
+                  <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-15">
+                    <tr className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                      <th className="p-3 w-1/4">Código OP | Cliente / Proyecto</th>
+                      <th className="p-3 w-[15%]">Tipo Solución</th>
+                      <th className="p-3 w-[15%]">Probabilidad</th>
+                      <th className="p-3 w-[15%] text-right">Monto Estimado</th>
+                      <th className="p-3 w-[15%] text-right">Ponderado</th>
+                      <th className="p-3 w-[12%]">Límite Licitación</th>
+                      <th className="p-3 w-[8%] text-center">Detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {filteredOpps.map(({ opportunity, lead, companyName, diagnosticReport }) => {
+                      const critical = isLicitacionCritica(opportunity.expectedCloseDate);
+                      return (
+                        <tr key={opportunity.id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="p-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-slate-850 text-sm uppercase truncate">
+                                {companyName || lead.companyName || "Desconocido"} | <span className="text-slate-500 font-medium normal-case">{lead.environmentType || "Planta General"}</span>
+                              </span>
+                              <span className="bg-slate-100 text-slate-600 font-mono text-[10px] font-bold px-2 py-0.5 rounded select-none shrink-0">
+                                OP-{opportunity.id.slice(0, 4).toUpperCase()}
+                              </span>
+                              {critical && (
+                                <span className="bg-red-100 text-red-700 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight shrink-0 border border-red-200">
+                                  Licitación Crítica
+                                </span>
+                              )}
+                              {(!diagnosticReport || !diagnosticReport.id) && (
+                                <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight shrink-0">
+                                  Telemetría Pendiente
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-slate-500 block truncate mt-1">{opportunity.title}</span>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-[10px] px-2 py-0.5 bg-slate-100 border border-slate-200 rounded font-semibold uppercase text-slate-600 block w-max">
+                              {opportunity.serviceType}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
+                                <div 
+                                  className={`h-full ${
+                                    opportunity.probability >= 70 
+                                      ? "bg-emerald-500" 
+                                      : opportunity.probability >= 30 
+                                      ? "bg-blue-500" 
+                                      : "bg-rose-500"
+                                  }`} 
+                                  style={{ width: `${opportunity.probability}%` }}
+                                ></div>
+                              </div>
+                              <span className={`text-[11px] font-bold ${
+                                opportunity.probability >= 70 
+                                  ? "text-emerald-600" 
+                                  : opportunity.probability >= 30 
+                                  ? "text-blue-600" 
+                                  : "text-rose-600"
+                              }`}>{opportunity.probability}%</span>
+                            </div>
+                          </td>
+                          <td className="p-3 text-right font-bold text-slate-800">
+                            {isTecnico ? "$0" : formatCOP(opportunity.estimatedValue)}
+                          </td>
+                          <td className="p-3 text-right font-bold text-slate-800">
+                            {isTecnico ? "$0" : formatCOP(opportunity.weightedValue)}
+                          </td>
+                          <td className="p-3 font-medium text-slate-500">
+                            {opportunity.expectedCloseDate 
+                              ? new Date(opportunity.expectedCloseDate).toLocaleDateString("es-CO", { day: '2-digit', month: 'short', year: '2-digit' })
+                              : "Por definir"}
+                          </td>
+                          <td className="p-3 text-center">
+                            <Link 
+                              href={`/crm/oportunidades/${opportunity.id}`}
+                              className="inline-flex items-center justify-center p-1.5 text-slate-600 hover:text-slate-950 hover:bg-slate-100 rounded transition-colors"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* MOBILE VIEW: Stacked Cards with LED Glow borders */}
+                <div className="md:hidden p-4 space-y-4">
+                  {filteredOpps.map(({ opportunity, lead, companyName, diagnosticReport }) => {
+                    const critical = isLicitacionCritica(opportunity.expectedCloseDate);
+                    
+                    // Color configuration for LED borders based on probability
+                    let ledClass = "";
+                    let indicatorColor = "";
+                    if (opportunity.probability >= 70) {
+                      ledClass = "border-l-4 border-l-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.15)]";
+                      indicatorColor = "bg-emerald-500";
+                    } else if (opportunity.probability >= 30) {
+                      ledClass = "border-l-4 border-l-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.15)]";
+                      indicatorColor = "bg-blue-500";
+                    } else {
+                      ledClass = "border-l-4 border-l-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]";
+                      indicatorColor = "bg-rose-500";
+                    }
+
+                    return (
+                      <div 
+                        key={opportunity.id} 
+                        className={`bg-white rounded-lg border border-slate-200 p-4 flex flex-col justify-between ${ledClass} relative`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                              <h4 className="font-bold text-slate-850 text-sm uppercase truncate">
+                                {companyName || lead.companyName || "Desconocido"} | <span className="text-slate-500 font-medium normal-case">{lead.environmentType || "Planta General"}</span>
+                              </h4>
+                              <span className="bg-slate-105 text-slate-600 font-mono text-[10px] font-bold px-2 py-0.5 rounded select-none shrink-0">
+                                OP-{opportunity.id.slice(0, 4).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                              {critical && (
+                                <span className="bg-red-50 text-red-700 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight border border-red-100">
+                                  Licitación Crítica
+                                </span>
+                              )}
+                              {(!diagnosticReport || !diagnosticReport.id) && (
+                                <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">
+                                  Telemetría Pendiente
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 truncate mt-0.5">{opportunity.title}</p>
+                          </div>
+                          <Link 
+                            href={`/crm/oportunidades/${opportunity.id}`}
+                            className="p-2 border border-slate-200 rounded-md hover:bg-slate-50 text-slate-700 shrink-0 self-center"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-[11px] py-2 border-t border-b border-slate-50 my-2">
+                          <div>
+                            <span className="text-slate-400 block">Tipo:</span>
+                            <span className="font-semibold text-slate-700 uppercase">{opportunity.serviceType}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-right">Cierre:</span>
+                            <span className="font-semibold text-slate-700 block text-right">
+                              {opportunity.expectedCloseDate 
+                                ? new Date(opportunity.expectedCloseDate).toLocaleDateString() 
+                                : "Definir"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full ${indicatorColor}`}></span>
+                            <span className="text-xs font-bold text-slate-700">{opportunity.probability}% Éxito</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 block">Monto Ponderado:</span>
+                            <span className="text-xs font-bold text-slate-900">
+                              {isTecnico ? "$0" : formatCOP(opportunity.weightedValue)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              /* Grid View: Cards Grid for all devices */
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 overflow-y-auto max-h-full">
                 {filteredOpps.map(({ opportunity, lead, companyName, diagnosticReport }) => {
                   const critical = isLicitacionCritica(opportunity.expectedCloseDate);
+                  
+                  // Color configuration for LED borders based on probability
+                  let ledClass = "";
+                  let indicatorColor = "";
+                  if (opportunity.probability >= 70) {
+                    ledClass = "border-l-4 border-l-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.15)]";
+                    indicatorColor = "bg-emerald-500";
+                  } else if (opportunity.probability >= 30) {
+                    ledClass = "border-l-4 border-l-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.15)]";
+                    indicatorColor = "bg-blue-500";
+                  } else {
+                    ledClass = "border-l-4 border-l-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]";
+                    indicatorColor = "bg-rose-500";
+                  }
+
                   return (
-                    <tr key={opportunity.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="p-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-slate-850 text-sm uppercase truncate">
-                            {companyName || lead.companyName || "Desconocido"} | <span className="text-slate-500 font-medium normal-case">{lead.environmentType || "Planta General"}</span>
-                          </span>
-                          <span className="bg-slate-100 text-slate-600 font-mono text-[10px] font-bold px-2 py-0.5 rounded select-none shrink-0">
-                            OP-{opportunity.id.slice(0, 4).toUpperCase()}
-                          </span>
-                          {critical && (
-                            <span className="bg-red-100 text-red-700 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight shrink-0 border border-red-200">
-                              Licitación Crítica
+                    <div 
+                      key={opportunity.id} 
+                      className={`bg-white rounded-lg border border-slate-200 p-4 flex flex-col justify-between ${ledClass} relative`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <h4 className="font-bold text-slate-855 text-sm uppercase truncate">
+                              {companyName || lead.companyName || "Desconocido"} | <span className="text-slate-500 font-medium normal-case">{lead.environmentType || "Planta General"}</span>
+                            </h4>
+                            <span className="bg-slate-100 text-slate-600 font-mono text-[10px] font-bold px-2 py-0.5 rounded select-none shrink-0">
+                              OP-{opportunity.id.slice(0, 4).toUpperCase()}
                             </span>
-                          )}
-                          {(!diagnosticReport || !diagnosticReport.id) && (
-                            <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight shrink-0">
-                              Telemetría Pendiente
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-slate-500 block truncate mt-1">{opportunity.title}</span>
-                      </td>
-                      <td className="p-3">
-                        <span className="text-[10px] px-2 py-0.5 bg-slate-100 border border-slate-200 rounded font-semibold uppercase text-slate-600 block w-max">
-                          {opportunity.serviceType}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
-                            <div 
-                              className={`h-full ${
-                                opportunity.probability >= 70 
-                                  ? "bg-emerald-500" 
-                                  : opportunity.probability >= 30 
-                                  ? "bg-blue-500" 
-                                  : "bg-rose-500"
-                              }`} 
-                              style={{ width: `${opportunity.probability}%` }}
-                            ></div>
                           </div>
-                          <span className={`text-[11px] font-bold ${
-                            opportunity.probability >= 70 
-                              ? "text-emerald-600" 
-                              : opportunity.probability >= 30 
-                              ? "text-blue-600" 
-                              : "text-rose-600"
-                          }`}>{opportunity.probability}%</span>
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                            {critical && (
+                              <span className="bg-red-50 text-red-700 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight border border-red-100">
+                                Licitación Crítica
+                              </span>
+                            )}
+                            {(!diagnosticReport || !diagnosticReport.id) && (
+                              <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">
+                                Telemetría Pendiente
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 truncate mt-0.5">{opportunity.title}</p>
                         </div>
-                      </td>
-                      <td className="p-3 text-right font-bold text-slate-800">
-                        {isTecnico ? "$0" : formatCOP(opportunity.estimatedValue)}
-                      </td>
-                      <td className="p-3 text-right font-bold text-slate-800">
-                        {isTecnico ? "$0" : formatCOP(opportunity.weightedValue)}
-                      </td>
-                      <td className="p-3 font-medium text-slate-500">
-                        {opportunity.expectedCloseDate 
-                          ? new Date(opportunity.expectedCloseDate).toLocaleDateString("es-CO", { day: '2-digit', month: 'short', year: '2-digit' })
-                          : "Por definir"}
-                      </td>
-                      <td className="p-3 text-center">
                         <Link 
                           href={`/crm/oportunidades/${opportunity.id}`}
-                          className="inline-flex items-center justify-center p-1.5 text-slate-600 hover:text-slate-950 hover:bg-slate-100 rounded transition-colors"
+                          className="p-2 border border-slate-200 rounded-md hover:bg-slate-50 text-slate-700 shrink-0 self-center"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
 
-            {/* MOBILE VIEW: Stacked Cards with LED Glow borders */}
-            <div className="md:hidden p-4 space-y-4">
-              {filteredOpps.map(({ opportunity, lead, companyName, diagnosticReport }) => {
-                const critical = isLicitacionCritica(opportunity.expectedCloseDate);
-                
-                // Color configuration for LED borders based on probability
-                let ledClass = "";
-                let indicatorColor = "";
-                if (opportunity.probability >= 70) {
-                  ledClass = "border-l-4 border-l-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.15)]";
-                  indicatorColor = "bg-emerald-500";
-                } else if (opportunity.probability >= 30) {
-                  ledClass = "border-l-4 border-l-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.15)]";
-                  indicatorColor = "bg-blue-500";
-                } else {
-                  ledClass = "border-l-4 border-l-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]";
-                  indicatorColor = "bg-rose-500";
-                }
-
-                return (
-                  <div 
-                    key={opportunity.id} 
-                    className={`bg-white rounded-lg border border-slate-200 p-4 flex flex-col justify-between ${ledClass} relative`}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                          <h4 className="font-bold text-slate-850 text-sm uppercase truncate">
-                            {companyName || lead.companyName || "Desconocido"} | <span className="text-slate-500 font-medium normal-case">{lead.environmentType || "Planta General"}</span>
-                          </h4>
-                          <span className="bg-slate-100 text-slate-600 font-mono text-[10px] font-bold px-2 py-0.5 rounded select-none shrink-0">
-                            OP-{opportunity.id.slice(0, 4).toUpperCase()}
+                      <div className="grid grid-cols-2 gap-2 text-[11px] py-2 border-t border-b border-slate-50 my-2">
+                        <div>
+                          <span className="text-slate-400 block">Tipo:</span>
+                          <span className="font-semibold text-slate-700 uppercase">{opportunity.serviceType}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-right">Cierre:</span>
+                          <span className="font-semibold text-slate-700 block text-right">
+                            {opportunity.expectedCloseDate 
+                              ? new Date(opportunity.expectedCloseDate).toLocaleDateString() 
+                              : "Definir"}
                           </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                          {critical && (
-                            <span className="bg-red-50 text-red-700 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight border border-red-100">
-                              Licitación Crítica
-                            </span>
-                          )}
-                          {(!diagnosticReport || !diagnosticReport.id) && (
-                            <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">
-                              Telemetría Pendiente
-                            </span>
-                          )}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${indicatorColor}`}></span>
+                          <span className="text-xs font-bold text-slate-700">{opportunity.probability}% Éxito</span>
                         </div>
-                        <p className="text-xs text-slate-500 truncate mt-0.5">{opportunity.title}</p>
-                      </div>
-                      <Link 
-                        href={`/crm/oportunidades/${opportunity.id}`}
-                        className="p-2 border border-slate-200 rounded-md hover:bg-slate-50 text-slate-700 shrink-0 self-center"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-[11px] py-2 border-t border-b border-slate-50 my-2">
-                      <div>
-                        <span className="text-slate-400 block">Tipo:</span>
-                        <span className="font-semibold text-slate-700 uppercase">{opportunity.serviceType}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-right">Cierre:</span>
-                        <span className="font-semibold text-slate-700 block text-right">
-                          {opportunity.expectedCloseDate 
-                            ? new Date(opportunity.expectedCloseDate).toLocaleDateString() 
-                            : "Definir"}
-                        </span>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block">Monto Ponderado:</span>
+                          <span className="text-xs font-bold text-slate-900">
+                            {isTecnico ? "$0" : formatCOP(opportunity.weightedValue)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between mt-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${indicatorColor}`}></span>
-                        <span className="text-xs font-bold text-slate-700">{opportunity.probability}% Éxito</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block">Monto Ponderado:</span>
-                        <span className="text-xs font-bold text-slate-900">
-                          {isTecnico ? "$0" : formatCOP(opportunity.weightedValue)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

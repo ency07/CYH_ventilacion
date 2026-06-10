@@ -21,6 +21,7 @@ import { createLeadAction } from "@/lib/server-actions/leads";
 import { createDiagnosticAction } from "@/lib/server-actions/diagnostics";
 import { createPipelineEntryAction, createActivityLogAction, createOpportunityAction, createProposalAction } from "@/lib/server-actions/crm";
 import { calculateDynamicPricing } from "@/lib/calculations/flow";
+import { normalizeCity } from "@/lib/utils/normalization";
 
 const USER_FRIENDLY_ERRORS: Record<string, string> = {
   INVALID_EMAIL: "El correo ingresado no parece válido. Verifica que esté escrito correctamente.",
@@ -47,13 +48,12 @@ function mapErrorToFriendly(errMessage: string): string {
   return USER_FRIENDLY_ERRORS.SERVER;
 }
 
-const COLOMBIAN_INDUSTRIAL_CITIES = [
-  "Barranquilla",
-  "Bogotá",
-  "Medellín",
-  "Cali",
-  "Cartagena",
-  "Montería"
+const COLOMBIAN_CITIES = [
+  "Barranquilla", "Bogotá", "Medellín", "Cali", "Cartagena", "Montería", 
+  "Bucaramanga", "Pereira", "Manizales", "Armenia", "Ibagué", "Neiva", 
+  "Pasto", "Popayán", "Villavicencio", "Santa Marta", "Valledupar", 
+  "Sincelejo", "Riohacha", "Quibdó", "Florencia", "Yopal", "Tunja", 
+  "Arauca", "Mocoa"
 ];
 
 const normalizeString = (str: string) => {
@@ -62,7 +62,7 @@ const normalizeString = (str: string) => {
 
 const findOfficialCity = (input: string): string | null => {
   const normInput = normalizeString(input);
-  for (const city of COLOMBIAN_INDUSTRIAL_CITIES) {
+  for (const city of COLOMBIAN_CITIES) {
     if (normalizeString(city) === normInput) {
       return city;
     }
@@ -99,16 +99,15 @@ export default function StepLead() {
   });
 
   const onSubmit = async (data: LeadInputs) => {
+    // Attempt to match with official cities. If not matched, normalize user input using normalizeCity
     const officialCity = findOfficialCity(data.ciudad);
-    if (!officialCity) {
-      setError("ciudad", {
-        type: "manual",
-        message: "Debe seleccionar una de las ciudades industriales oficiales (Barranquilla, Medellín, Bogotá, Cali, Cartagena, Montería)."
-      });
-      return;
+    if (officialCity) {
+      data.ciudad = officialCity;
+    } else {
+      // Use clean normalizeCity for non-strict custom input
+      const { normalizeCity } = await import("@/lib/utils/normalization");
+      data.ciudad = normalizeCity(data.ciudad);
     }
-    // Normalize casing and accents before submitting
-    data.ciudad = officialCity;
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -477,7 +476,7 @@ export default function StepLead() {
                 name="ciudad"
                 control={control}
                 render={({ field }) => {
-                  const suggestions = COLOMBIAN_INDUSTRIAL_CITIES.filter(c =>
+                  const suggestions = COLOMBIAN_CITIES.filter(c =>
                     normalizeString(c).includes(normalizeString(field.value || ""))
                   );
                   return (
@@ -491,8 +490,20 @@ export default function StepLead() {
                         placeholder="Ej. Barranquilla, Bogotá..."
                         onFocus={() => setIsCityDropdownOpen(true)}
                         onBlur={() => {
-                          // Allow click on suggestion list before hiding
-                          setTimeout(() => setIsCityDropdownOpen(false), 200);
+                          const val = field.value;
+                          setTimeout(() => {
+                            setIsCityDropdownOpen(false);
+                            field.onChange(normalizeCity(val));
+                          }, 200);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = (e.target as HTMLInputElement).value;
+                            field.onChange(normalizeCity(val));
+                            setIsCityDropdownOpen(false);
+                            (e.target as HTMLInputElement).blur();
+                          }
                         }}
                         onChange={(e) => {
                           field.onChange(e.target.value);

@@ -173,11 +173,11 @@ export default function ReportesClient({ initialData, currentUser }: { initialDa
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
             <div>
               <h2 className="text-lg font-bold text-text-primary">Tendencia de Volumen por Sector</h2>
-              <p className="text-xs text-text-secondary mt-1">Valor mensual ponderado de oportunidades abiertas vs ganadas</p>
+              <p className="text-xs text-text-secondary mt-1">Valor mensual real en etapa de licitación comercial frente a contratos ganados</p>
             </div>
             <div className="flex items-center gap-4 text-xs font-bold text-text-secondary">
-              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#8a9eb8]"></div> Abiertas</div>
-              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#0b1c30]"></div> Ganadas</div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#8a9eb8]"></div> Licitación</div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#0b1c30]"></div> Ganados</div>
             </div>
           </div>
           
@@ -198,11 +198,14 @@ export default function ReportesClient({ initialData, currentUser }: { initialDa
                     tickFormatter={(val) => val === 0 ? '$0 COP' : `$${(val / 1000000).toLocaleString('es-CO')}M`} 
                   />
                   <Tooltip 
-                    formatter={(value) => [`$${Number(value).toLocaleString('es-CO')} COP`, "Valor Ponderado"]}
+                    formatter={(value, name) => [
+                      `$${Number(value).toLocaleString('es-CO')} COP`,
+                      name === "abiertas" ? "Licitación" : "Ganados"
+                    ]}
                     contentStyle={{ borderRadius: '4px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
                   />
-                  <Bar dataKey="abiertas" name="Abiertas" fill="#8a9eb8" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="ganadas" name="Ganadas" fill="#0b1c30" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="abiertas" name="Licitación" fill="#8a9eb8" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="ganadas" name="Ganados" fill="#0b1c30" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -218,8 +221,8 @@ export default function ReportesClient({ initialData, currentUser }: { initialDa
           
           <div className="flex-1 flex flex-col gap-5 justify-center">
             {desgloseData.map((item: any, idx: number) => {
-              const displayVal = item.value !== null && item.value !== undefined ? item.value : 0;
-              const displayValStr = `$${Number(displayVal).toLocaleString('es-CO')} COP`;
+              const displayVal = item.value !== null && item.value !== undefined && item.value !== "" ? Number(item.value) : 0;
+              const displayValStr = displayVal > 0 ? `$${displayVal.toLocaleString('es-CO')} COP` : "$0 COP";
               
               return (
                 <div key={idx} className="flex flex-col gap-1.5">

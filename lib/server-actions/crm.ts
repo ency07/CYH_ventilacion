@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { leads, crmPipeline, crmActivityLogs, crmCompanies, crmContacts, crmTasks, crmOpportunities, crmProposals, diagnosticReports, crmUsers } from "@/lib/db/schema";
+import { leads, crmPipeline, crmActivityLogs, crmCompanies, crmContacts, crmTasks, crmOpportunities, crmProposals, diagnosticReports, crmUsers, crmCustomers, crmCustomerPlants, crmCustomerContacts } from "@/lib/db/schema";
 import { PipelineInsertSchema, ActivityLogInsertSchema } from "@/lib/validations/crm.schema";
 import { eq, desc, ne, and, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -219,6 +219,69 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
         });
       }
 
+      if (newStage === "ganado") {
+        // Cascade 3: update crmPipeline stage to ganado
+        await tx.update(crmPipeline)
+          .set({ stage: "ganado", probability: 100, updatedAt: new Date() })
+          .where(eq(crmPipeline.leadId, leadId));
+
+        // Cascade 4: Create B2B Customer entry in crm_customers if not already present
+        const [existingCustomer] = await tx.select().from(crmCustomers)
+          .where(eq(crmCustomers.name, updatedLead.companyName))
+          .limit(1);
+
+        if (!existingCustomer) {
+          const ltvVal = existingOpp ? (existingOpp.estimatedValue || 0) : estBudget;
+          const [newCust] = await tx.insert(crmCustomers).values({
+            name: updatedLead.companyName,
+            status: "activo",
+            ltv: ltvVal,
+            assignedTo: existingPipeline?.assignedTo || userEmail || "comercial@cyh.com",
+            recurrenceIndex: 80, // Default B2B recurrence index
+          }).returning();
+
+          // Also create a default B2B Plant
+          const [newPlant] = await tx.insert(crmCustomerPlants).values({
+            customerId: newCust.id,
+            name: `Planta Principal - ${updatedLead.companyName}`,
+            city: updatedLead.city,
+            airflowCfm: 0,
+          }).returning();
+
+          // Assign plantId to latest diagnostic report if exists
+          const [latestDiag] = await tx.select().from(diagnosticReports)
+            .where(eq(diagnosticReports.leadId, leadId))
+            .orderBy(desc(diagnosticReports.createdAt))
+            .limit(1);
+          if (latestDiag) {
+            await tx.update(diagnosticReports)
+              .set({ plantId: newPlant.id })
+              .where(eq(diagnosticReports.id, latestDiag.id));
+            
+            // Sync airflowCFM to plant
+            await tx.update(crmCustomerPlants)
+              .set({ airflowCfm: latestDiag.airflow || 0 })
+              .where(eq(crmCustomerPlants.id, newPlant.id));
+          }
+
+          // Create a primary contact
+          await tx.insert(crmCustomerContacts).values({
+            customerId: newCust.id,
+            fullName: updatedLead.fullName,
+            cargo: updatedLead.cargo || "Representante Técnico",
+            phone: updatedLead.phone,
+            email: updatedLead.email,
+          });
+        } else {
+          // Update LTV of existing customer
+          const currentLtv = existingCustomer.ltv || 0;
+          const delta = existingOpp ? (existingOpp.estimatedValue || 0) : estBudget;
+          await tx.update(crmCustomers)
+            .set({ ltv: currentLtv + delta, updatedAt: new Date() })
+            .where(eq(crmCustomers.id, existingCustomer.id));
+        }
+      }
+
       // 3. Register activity log
       await tx.insert(crmActivityLogs).values({
         leadId,
@@ -233,6 +296,7 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
     revalidatePath("/crm");
     revalidatePath("/crm/dashboard");
     revalidatePath("/crm/leads");
+    revalidatePath("/crm/clientes");
     revalidatePath("/crm/pipeline");
     revalidatePath(`/crm/${leadId}`);
     return { success: true, data: result };
@@ -828,15 +892,15 @@ export async function getReportsMetricsAction(periodo?: string): Promise<ActionR
       const date = new Date(opp.createdAt);
       const mName = months[date.getMonth()];
       if (monthlyData[mName]) {
+        // Show real value of opportunities in bidding stage ('licitacion', 'analisis', 'propuesta', 'negociacion') vs closed-won contracts ('cerrado_ganado')
+        const isLicitacion = opp.stage === "analisis" || opp.stage === "propuesta" || opp.stage === "negociacion" || opp.stage === "licitacion";
         const isWon = opp.stage === "cerrado_ganado";
-        const isLost = opp.stage === "cerrado_perdido";
-        if (!isLost) {
-          const weightedVal = (opp.estimatedValue || 0) * (opp.probability || 0) / 100;
-          if (isWon) {
-            monthlyData[mName].ganadas += weightedVal;
-          } else {
-            monthlyData[mName].abiertas += weightedVal;
-          }
+        const val = opp.estimatedValue || 0;
+        
+        if (isWon) {
+          monthlyData[mName].ganadas += val;
+        } else if (isLicitacion) {
+          monthlyData[mName].abiertas += val;
         }
       }
     });
@@ -970,6 +1034,62 @@ export async function updateProposalStatusAction(
         await tx.update(crmPipeline)
           .set({ stage: "ganado", probability: 100, updatedAt: new Date() })
           .where(eq(crmPipeline.leadId, u.leadId));
+
+        // Cascade 4: Create B2B Customer entry in crm_customers if not already present
+        const [leadRecord] = await tx.select().from(leads).where(eq(leads.id, u.leadId)).limit(1);
+        if (leadRecord) {
+          const [existingCustomer] = await tx.select().from(crmCustomers)
+            .where(eq(crmCustomers.name, leadRecord.companyName))
+            .limit(1);
+
+          if (!existingCustomer) {
+            const [newCust] = await tx.insert(crmCustomers).values({
+              name: leadRecord.companyName,
+              status: "activo",
+              ltv: u.totalValue || 0,
+              assignedTo: leadRecord.email || "comercial@cyh.com",
+              recurrenceIndex: 85,
+            }).returning();
+
+            // Also create a default B2B Plant
+            const [newPlant] = await tx.insert(crmCustomerPlants).values({
+              customerId: newCust.id,
+              name: `Planta Principal - ${leadRecord.companyName}`,
+              city: leadRecord.city,
+              airflowCfm: 0,
+            }).returning();
+
+            // Assign plantId to latest diagnostic report if exists
+            const [latestDiag] = await tx.select().from(diagnosticReports)
+              .where(eq(diagnosticReports.leadId, u.leadId))
+              .orderBy(desc(diagnosticReports.createdAt))
+              .limit(1);
+            if (latestDiag) {
+              await tx.update(diagnosticReports)
+                .set({ plantId: newPlant.id })
+                .where(eq(diagnosticReports.id, latestDiag.id));
+              
+              await tx.update(crmCustomerPlants)
+                .set({ airflowCfm: latestDiag.airflow || 0 })
+                .where(eq(crmCustomerPlants.id, newPlant.id));
+            }
+
+            // Create a primary contact
+            await tx.insert(crmCustomerContacts).values({
+              customerId: newCust.id,
+              fullName: leadRecord.fullName,
+              cargo: leadRecord.cargo || "Representante Técnico",
+              phone: leadRecord.phone,
+              email: leadRecord.email,
+            });
+          } else {
+            // Update LTV of existing customer
+            const currentLtv = existingCustomer.ltv || 0;
+            await tx.update(crmCustomers)
+              .set({ ltv: currentLtv + (u.totalValue || 0), updatedAt: new Date() })
+              .where(eq(crmCustomers.id, existingCustomer.id));
+          }
+        }
       }
 
       return [u];
@@ -980,6 +1100,7 @@ export async function updateProposalStatusAction(
     }
 
     revalidatePath("/crm");
+    revalidatePath("/crm/clientes");
     revalidatePath("/crm/propuestas");
     revalidatePath("/crm/oportunidades");
     revalidatePath("/crm/dashboard");
