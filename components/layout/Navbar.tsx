@@ -57,8 +57,8 @@ export default function Navbar() {
     { name: "Proyectos", path: "/proyectos" },
     { name: "Empresa", path: "/empresa" },
     { name: "Contacto", path: "/contacto" },
-    { name: "Portal Clientes", path: "/portal/inicio", icon: <User className="w-5.5 h-5.5" />, iconOnly: true },
-    { name: "CRM", path: "/crm", icon: <BriefcaseBusiness className="w-5.5 h-5.5" />, iconOnly: true },
+    { name: "Portal Clientes", path: "/portal/inicio", icon: <User className="w-5.5 h-5.5 text-emerald-500 dark:text-emerald-400" />, iconOnly: true },
+    { name: "CRM", path: "/crm", icon: <BriefcaseBusiness className="w-5.5 h-5.5 text-blue-500 dark:text-blue-400" />, iconOnly: true },
   ];
 
   return (
@@ -77,6 +77,7 @@ export default function Navbar() {
               <Link
                 key={link.name}
                 href={link.path}
+                title={link.name}
                 className={`text-base font-medium transition-colors relative py-1 flex items-center ${
                   isActive ? "text-accent-cyan font-semibold" : "text-text-secondary hover:text-text-primary"
                 }`}
@@ -137,8 +138,8 @@ export default function Navbar() {
                     pathname === link.path ? "text-accent-cyan" : "text-text-secondary"
                   }`}
                 >
-                  {link.icon}
-                  {!link.iconOnly && link.name}
+                  {link.icon && <span className="mr-3 flex items-center">{link.icon}</span>}
+                  {link.name}
                 </Link>
               ))}
             </div>

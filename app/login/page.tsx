@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { loginAction, signupAction, recoverPasswordAction } from "@/lib/server-actions/auth";
 import { ArrowRight, Loader2, Mail, Lock, User, Building, Briefcase } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
-export default function AuthPage() {
+function AuthForm() {
   const [mode, setMode] = useState<"login" | "register" | "recover">("login");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get("from");
 
   async function formAction(formData: FormData) {
     setIsLoading(true);
@@ -38,16 +42,54 @@ export default function AuthPage() {
     }
   }
 
+  // Configure theme variations based on portal origin
+  const isPortal = fromParam === "portal";
+  const isCrm = fromParam === "crm";
+
+  let title = "CYH OS";
+  let subtitle = "Acceso Corporativo";
+  let subtitleColor = "text-slate-400 border-slate-700/50 bg-slate-900/45";
+  let cardClass = "border-slate-700 shadow-2xl bg-slate-800";
+  let buttonClass = "bg-white hover:bg-slate-200 text-slate-900";
+  let IconComponent = null;
+
+  if (mode === "login") {
+    if (isPortal) {
+      title = "CYH PORTAL";
+      subtitle = "Acceso Clientes B2B";
+      subtitleColor = "text-emerald-400 border-emerald-500/30 bg-emerald-950/30";
+      cardClass = "border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.08)] bg-slate-800/95";
+      buttonClass = "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20";
+      IconComponent = Building;
+    } else if (isCrm) {
+      title = "CYH CRM";
+      subtitle = "CRM Operativo Interno";
+      subtitleColor = "text-blue-400 border-blue-500/30 bg-blue-950/30";
+      cardClass = "border-blue-500/20 shadow-[0_0_50px_rgba(59,130,246,0.08)] bg-slate-800/95";
+      buttonClass = "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20";
+      IconComponent = Briefcase;
+    }
+  } else if (mode === "register") {
+    subtitle = "Registro de Cuenta";
+  } else {
+    subtitle = "Recuperación";
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-sm shadow-2xl p-8">
+      <div className={`w-full max-w-md border rounded-sm p-8 transition-all duration-500 ${cardClass}`}>
         
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white uppercase tracking-wider font-display">
-            CYH <span className="text-slate-400">OS</span>
+        <div className="text-center mb-8 flex flex-col items-center">
+          {IconComponent && (
+            <div className={`mb-3 p-3 rounded-full border transition-all duration-500 ${isPortal ? 'border-emerald-500/20 bg-emerald-950/20 text-emerald-400' : 'border-blue-500/20 bg-blue-950/20 text-blue-400'}`}>
+              <IconComponent className="h-6 w-6" />
+            </div>
+          )}
+          <h1 className="text-2xl font-bold text-white uppercase tracking-wider font-display transition-all duration-500">
+            {title.split(' ')[0]} <span className="text-slate-400">{title.split(' ').slice(1).join(' ') || 'OS'}</span>
           </h1>
-          <p className="text-slate-400 text-sm mt-2 font-mono uppercase tracking-widest">
-            {mode === "login" ? "Acceso Corporativo" : mode === "register" ? "Registro de Cuenta" : "Recuperación"}
+          <p className={`text-xs mt-2 font-mono uppercase tracking-widest border py-1 px-3 rounded inline-block transition-all duration-500 ${subtitleColor}`}>
+            {subtitle}
           </p>
         </div>
 
@@ -112,7 +154,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-white hover:bg-slate-200 text-slate-900 font-bold text-xs tracking-wider uppercase py-3 rounded-sm transition-colors flex items-center justify-center gap-2 mt-6"
+            className={`w-full font-bold text-xs tracking-wider uppercase py-3 rounded-sm transition-all duration-300 flex items-center justify-center gap-2 mt-6 ${buttonClass}`}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -146,5 +188,17 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    }>
+      <AuthForm />
+    </Suspense>
   );
 }

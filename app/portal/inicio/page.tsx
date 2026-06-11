@@ -15,9 +15,10 @@ import {
   crmAuditLogs,
   diagnosticReports
 } from "@/lib/db/schema";
-import { eq, or, inArray, desc, and } from "drizzle-orm";
+import { eq, or, inArray, desc } from "drizzle-orm";
 import PortalClient from "./PortalClient";
 import { Building } from "lucide-react";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "Portal de Clientes - CYH",
@@ -26,12 +27,18 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function PortalInicioPage() {
+interface PageProps {
+  searchParams?: {
+    customerId?: string;
+  };
+}
+
+export default async function PortalInicioPage({ searchParams }: PageProps) {
   const supabase = getSupabaseServer();
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (!user || error) {
-    redirect("/login");
+    redirect("/login?from=portal");
   }
 
   // 1. Fetch user profile and validate role
@@ -43,69 +50,137 @@ export default async function PortalInicioPage() {
 
   const userRole = profile?.role || "cliente";
 
-  // Prevent root_dev from entering the client B2B portal (per requirements)
-  if (userRole === "root_dev") {
-    redirect("/crm/dashboard");
-  }
+  let customerId: string | null = null;
+  let customer: typeof crmCustomers.$inferSelect | null = null;
+  let isImpersonating = false;
 
-  // 2. Resolve customer contact (handling backward compatibility with user email)
-  let contact = await db.query.crmCustomerContacts.findFirst({
-    where: eq(crmCustomerContacts.userId, user.id),
-    with: {
-      customer: true,
+  const targetCustomerId = searchParams?.customerId;
+
+  if (targetCustomerId) {
+    // Check if user has permission to impersonate (admin or root_dev)
+    const canImpersonate = ["admin", "super_admin", "root_dev", "director_comercial", "director"].includes(userRole);
+    if (!canImpersonate) {
+      console.warn(`[AppSec Warning] Intento de impersonación no autorizado por usuario ${user.email}`);
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center font-sans px-6">
+          <div className="max-w-md w-full p-8 bg-slate-900 border border-slate-800 rounded-2xl text-center">
+            <h2 className="text-xl font-bold text-rose-500 mb-2">Acceso Denegado</h2>
+            <p className="text-xs text-slate-400">No tiene permisos para ver este portal en modo supervisión.</p>
+          </div>
+        </div>
+      );
     }
-  });
 
-  if (!contact && user.email) {
-    const emailContact = await db.query.crmCustomerContacts.findFirst({
-      where: eq(crmCustomerContacts.email, user.email),
+    // Verify customer exists
+    const impersonatedCustomer = await db.query.crmCustomers.findFirst({
+      where: eq(crmCustomers.id, targetCustomerId),
+    });
+
+    if (!impersonatedCustomer) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center font-sans px-6">
+          <div className="max-w-md w-full p-8 bg-slate-900 border border-slate-800 rounded-2xl text-center">
+            <h2 className="text-xl font-bold text-white mb-2">Cliente no encontrado</h2>
+            <p className="text-xs text-slate-400 font-mono">El ID de cliente solicitado ({targetCustomerId}) no existe.</p>
+          </div>
+        </div>
+      );
+    }
+
+    customerId = targetCustomerId;
+    customer = impersonatedCustomer;
+    isImpersonating = true;
+
+    // Log the impersonation action immediately (Pilar X)
+    const reqHeaders = headers();
+    const userAgent = reqHeaders.get("user-agent") || "Unknown";
+    const ipAddress = reqHeaders.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
+
+    await db.insert(crmAuditLogs).values({
+      actorId: user.id,
+      action: "portal_impersonation",
+      entityAffected: `crm_customers:${customerId}`,
+      ipAddress: ipAddress,
+      userAgent: userAgent,
+      metadata: {
+        userId: user.id,
+        email: user.email || "",
+        action: "impersonate",
+        origin: "portal_cliente",
+        impersonatedCustomerId: customerId,
+        customerName: impersonatedCustomer.name,
+      } as any,
+    });
+  } else {
+    // Prevent root_dev from entering the client B2B portal directly as client (per requirements)
+    if (userRole === "root_dev") {
+      redirect("/crm/dashboard");
+    }
+
+    const isCrmStaff = ["vendedor", "comercial", "tecnico", "ingeniero"].includes(userRole);
+    if (isCrmStaff) {
+      redirect("/crm/pipeline");
+    }
+
+    // 2. Resolve customer contact (handling backward compatibility with user email)
+    let contact = await db.query.crmCustomerContacts.findFirst({
+      where: eq(crmCustomerContacts.userId, user.id),
       with: {
         customer: true,
       }
     });
 
-    if (emailContact) {
-      // Establish direct relational userId mapping
-      await db.update(crmCustomerContacts)
-        .set({ userId: user.id })
-        .where(eq(crmCustomerContacts.id, emailContact.id));
-      contact = { ...emailContact, userId: user.id };
-    }
-  }
+    if (!contact && user.email) {
+      const emailContact = await db.query.crmCustomerContacts.findFirst({
+        where: eq(crmCustomerContacts.email, user.email),
+        with: {
+          customer: true,
+        }
+      });
 
-  // 3. Pending Association Block (Pilar IV - No Mock Data on Production)
-  if (!contact || !contact.customerId) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center font-sans selection:bg-emerald-500/30 selection:text-emerald-300 px-6">
-        <div className="max-w-md w-full p-8 bg-slate-900 border border-slate-800/80 rounded-2xl text-center shadow-2xl">
-          <div className="h-12 w-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
-            <Building className="h-6 w-6" />
+      if (emailContact) {
+        // Establish direct relational userId mapping
+        await db.update(crmCustomerContacts)
+          .set({ userId: user.id })
+          .where(eq(crmCustomerContacts.id, emailContact.id));
+        contact = { ...emailContact, userId: user.id };
+      }
+    }
+
+    // 3. Pending Association Block (Pilar IV - No Mock Data on Production)
+    if (!contact || !contact.customerId) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center font-sans selection:bg-emerald-500/30 selection:text-emerald-300 px-6">
+          <div className="max-w-md w-full p-8 bg-slate-900 border border-slate-800/80 rounded-2xl text-center shadow-2xl">
+            <div className="h-12 w-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
+              <Building className="h-6 w-6" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Vinculación Pendiente</h2>
+            <p className="text-xs text-slate-400 leading-relaxed mb-6">
+              Su usuario de acceso aún no ha sido asociado a una cuenta de cliente corporativo en nuestro sistema CRM.
+            </p>
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 mb-6">
+              <p className="text-[11px] text-slate-500 uppercase tracking-widest font-mono mb-1">Contacto de Soporte</p>
+              <span className="font-mono text-sm font-semibold text-emerald-400">soporte@empresa.com</span>
+            </div>
+            <form action={logoutAction}>
+              <button 
+                type="submit" 
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold tracking-wide transition-colors border border-slate-700/50"
+              >
+                Cerrar Sesión
+              </button>
+            </form>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Vinculación Pendiente</h2>
-          <p className="text-xs text-slate-400 leading-relaxed mb-6">
-            Su usuario de acceso aún no ha sido asociado a una cuenta de cliente corporativo en nuestro sistema CRM.
-          </p>
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 mb-6">
-            <p className="text-[11px] text-slate-500 uppercase tracking-widest font-mono mb-1">Contacto de Soporte</p>
-            <span className="font-mono text-sm font-semibold text-emerald-400">soporte@empresa.com</span>
-          </div>
-          <form action={logoutAction}>
-            <button 
-              type="submit" 
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold tracking-wide transition-colors border border-slate-700/50"
-            >
-              Cerrar Sesión
-            </button>
-          </form>
         </div>
-      </div>
-    );
+      );
+    }
+
+    customerId = contact.customerId;
+    customer = contact.customer;
   }
 
   // 4. Secure Data Fetching for customer company and assets
-  const customerId = contact.customerId;
-  const customer = contact.customer;
-
   // Plants
   const plants = await db.query.crmCustomerPlants.findMany({
     where: eq(crmCustomerPlants.customerId, customerId),
@@ -161,7 +236,7 @@ export default async function PortalInicioPage() {
     limit: 10,
   });
 
-  const userName = profile?.full_name || contact.fullName || user.email?.split("@")[0] || "Cliente CYH";
+  const userName = profile?.full_name || user.email?.split("@")[0] || "Cliente CYH";
 
   return (
     <PortalClient
@@ -175,6 +250,7 @@ export default async function PortalInicioPage() {
       activities={activities}
       audits={audits}
       user={{ id: user.id, email: user.email || "", fullName: userName, role: userRole }}
+      isImpersonating={isImpersonating}
     />
   );
 }

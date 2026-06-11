@@ -13,7 +13,7 @@ export default async function CrmLayout({
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (!user || error) {
-    redirect("/login");
+    redirect("/login?from=crm");
   }
 
   // Obtener datos del perfil del usuario

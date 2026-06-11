@@ -142,6 +142,7 @@ interface PortalClientProps {
     fullName: string;
     role: string;
   };
+  isImpersonating?: boolean;
 }
 
 export default function PortalClient({
@@ -155,6 +156,7 @@ export default function PortalClient({
   activities,
   audits,
   user,
+  isImpersonating = false,
 }: PortalClientProps) {
   const [activeTab, setActiveTab] = useState<"dashboard" | "requests" | "comercial" | "ingenieria" | "actividad">("dashboard");
   const [isPending, startTransition] = useTransition();
@@ -329,6 +331,12 @@ export default function PortalClient({
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+      {isImpersonating && (
+        <div className="bg-amber-950/70 text-amber-300 border-b border-amber-800/40 text-[11px] px-6 py-2 flex items-center gap-2 font-mono font-semibold">
+          <AlertTriangle className="h-4 w-4 text-amber-400 animate-pulse shrink-0" />
+          <span>MODO SUPERVISIÓN: Visualizando la plataforma exactamente como la ve el cliente. Todas las acciones técnicas y descargas quedan registradas bajo auditoría.</span>
+        </div>
+      )}
       {/* Siemens / ABB High density Header */}
       <header className="border-b border-slate-800 bg-slate-900/40 backdrop-blur-md sticky top-0 z-50 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
