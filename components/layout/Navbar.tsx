@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, BriefcaseBusiness, Menu, Moon, Sun, X } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Menu, Moon, Sun, X, User } from "lucide-react";
 import { useTheme } from "next-themes";
 
 function ThemeToggle() {
@@ -46,7 +46,7 @@ export default function Navbar() {
     };
   }, [isMobileMenuOpen]);
 
-  if (pathname?.startsWith("/crm")) {
+  if (pathname?.startsWith("/crm") || pathname?.startsWith("/portal")) {
     return null;
   }
 
@@ -57,7 +57,8 @@ export default function Navbar() {
     { name: "Proyectos", path: "/proyectos" },
     { name: "Empresa", path: "/empresa" },
     { name: "Contacto", path: "/contacto" },
-    { name: "CRM", path: "/crm", icon: <BriefcaseBusiness className="w-5 h-5" />, iconOnly: true },
+    { name: "Portal Clientes", path: "/portal/inicio", icon: <User className="w-5.5 h-5.5" />, iconOnly: true },
+    { name: "CRM", path: "/crm", icon: <BriefcaseBusiness className="w-5.5 h-5.5" />, iconOnly: true },
   ];
 
   return (
