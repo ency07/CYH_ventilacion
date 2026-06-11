@@ -7,6 +7,9 @@ export const RequestServiceSchema = z.object({
   plantId: z.string().uuid("ID de planta inválido.").optional().nullable(),
   newPlantName: z.string().optional().nullable(),
   city: z.string().optional().nullable(), // required only when newPlantName is supplied
+  serviceType: z.string().optional().nullable(),
+  operationalImpact: z.string().optional().nullable(),
+  affectedAsset: z.string().optional().nullable(),
 });
 
 export type RequestServiceInput = z.infer<typeof RequestServiceSchema>;
