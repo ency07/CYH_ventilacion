@@ -2,12 +2,29 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { logoutAction } from "@/lib/server-actions/auth";
-import { Briefcase, FileText, Settings, ShieldCheck, LogOut, Building, User } from "lucide-react";
+import { db } from "@/lib/db";
+import { 
+  crmCustomers, 
+  crmCustomerPlants, 
+  crmCustomerContacts, 
+  crmServiceRequests, 
+  leads, 
+  crmProposals, 
+  crmDocuments,
+  crmActivityLogs,
+  crmAuditLogs,
+  diagnosticReports
+} from "@/lib/db/schema";
+import { eq, or, inArray, desc, and } from "drizzle-orm";
+import PortalClient from "./PortalClient";
+import { Building } from "lucide-react";
 
 export const metadata = {
   title: "Portal de Clientes - CYH",
   description: "Acceso exclusivo para cuentas corporativas y clientes de CYH.",
 };
+
+export const dynamic = "force-dynamic";
 
 export default async function PortalInicioPage() {
   const supabase = getSupabaseServer();
@@ -17,163 +34,147 @@ export default async function PortalInicioPage() {
     redirect("/login");
   }
 
-  // Fetch the crm_users profile
+  // 1. Fetch user profile and validate role
   const { data: profile } = await supabase
     .from("crm_users")
     .select("full_name, role")
     .eq("id", user.id)
     .single();
 
-  const userName = profile?.full_name || user.email?.split("@")[0] || "Cliente CYH";
+  const userRole = profile?.role || "cliente";
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
-      {/* Premium Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">
-            <Building className="h-6 w-6 text-emerald-400" />
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-wider text-slate-100 uppercase">CYH</span>
-            <span className="text-emerald-400 text-xs font-semibold block uppercase tracking-widest leading-none">Portal Industrial</span>
-          </div>
-        </div>
+  // Prevent root_dev from entering the client B2B portal (per requirements)
+  if (userRole === "root_dev") {
+    redirect("/crm/dashboard");
+  }
 
-        <div className="flex items-center space-x-6">
-          <div className="hidden md:flex items-center space-x-2 bg-slate-800/40 px-3 py-1.5 rounded-full border border-slate-700/50">
-            <User className="h-4 w-4 text-emerald-400" />
-            <span className="text-xs font-medium text-slate-300">{userName}</span>
-            <span className="bg-emerald-950 text-emerald-400 text-[10px] uppercase px-2 py-0.5 rounded-full border border-emerald-800/30 font-mono">
-              Cliente
-            </span>
+  // 2. Resolve customer contact (handling backward compatibility with user email)
+  let contact = await db.query.crmCustomerContacts.findFirst({
+    where: eq(crmCustomerContacts.userId, user.id),
+    with: {
+      customer: true,
+    }
+  });
+
+  if (!contact && user.email) {
+    const emailContact = await db.query.crmCustomerContacts.findFirst({
+      where: eq(crmCustomerContacts.email, user.email),
+      with: {
+        customer: true,
+      }
+    });
+
+    if (emailContact) {
+      // Establish direct relational userId mapping
+      await db.update(crmCustomerContacts)
+        .set({ userId: user.id })
+        .where(eq(crmCustomerContacts.id, emailContact.id));
+      contact = { ...emailContact, userId: user.id };
+    }
+  }
+
+  // 3. Pending Association Block (Pilar IV - No Mock Data on Production)
+  if (!contact || !contact.customerId) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center font-sans selection:bg-emerald-500/30 selection:text-emerald-300 px-6">
+        <div className="max-w-md w-full p-8 bg-slate-900 border border-slate-800/80 rounded-2xl text-center shadow-2xl">
+          <div className="h-12 w-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
+            <Building className="h-6 w-6" />
           </div>
-          
+          <h2 className="text-xl font-bold text-white mb-2">Vinculación Pendiente</h2>
+          <p className="text-xs text-slate-400 leading-relaxed mb-6">
+            Su usuario de acceso aún no ha sido asociado a una cuenta de cliente corporativo en nuestro sistema CRM.
+          </p>
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 mb-6">
+            <p className="text-[11px] text-slate-500 uppercase tracking-widest font-mono mb-1">Contacto de Soporte</p>
+            <span className="font-mono text-sm font-semibold text-emerald-400">soporte@empresa.com</span>
+          </div>
           <form action={logoutAction}>
-            <button
-              type="submit"
-              className="flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-rose-400 bg-slate-800/30 hover:bg-rose-950/20 border border-slate-700/40 hover:border-rose-900/30 px-3 py-1.5 rounded-lg transition-all duration-300"
+            <button 
+              type="submit" 
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold tracking-wide transition-colors border border-slate-700/50"
             >
-              <LogOut className="h-4 w-4" />
-              <span>Cerrar Sesión</span>
+              Cerrar Sesión
             </button>
           </form>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-12 flex flex-col justify-center">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="inline-flex items-center space-x-2 bg-emerald-950/30 text-emerald-400 text-xs px-3 py-1 rounded-full border border-emerald-500/20 mb-6 font-mono">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Acceso Seguro Autorizado</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-            Bienvenido a tu <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">Portal Corporativo</span>
-          </h1>
-          <p className="text-slate-400 text-sm md:text-base leading-relaxed">
-            Consulte el estado de sus proyectos de ventilación mecánica, solicite asistencia técnica preventiva y acceda a la documentación autorizada para su cuenta.
-          </p>
-        </div>
+  // 4. Secure Data Fetching for customer company and assets
+  const customerId = contact.customerId;
+  const customer = contact.customer;
 
-        {/* Dynamic Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Card 1: Projects */}
-          <div className="group relative bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 hover:border-emerald-500/30 hover:bg-slate-900/90 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/5 flex flex-col justify-between">
-            <div>
-              <div className="bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-500/20 w-fit mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Briefcase className="h-6 w-6 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-100 mb-3">Proyectos Activos</h3>
-              <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                Visualice el estado de avance de sus sistemas de climatización e ingeniería de ventilación en tiempo real.
-              </p>
-              <ul className="space-y-2.5 text-xs text-slate-300 border-t border-slate-800/80 pt-4">
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span>Ingeniería Detallada - En ejecución</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span>Suministro de Equipos - Completado</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                  <span>Montaje y Puesta en Marcha - Pendiente</span>
-                </li>
-              </ul>
-            </div>
-            <button className="mt-8 w-full bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white text-xs font-semibold py-2.5 px-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/30 transition-all duration-300">
-              Ver Detalles
-            </button>
-          </div>
+  // Plants
+  const plants = await db.query.crmCustomerPlants.findMany({
+    where: eq(crmCustomerPlants.customerId, customerId),
+  });
+  const plantIds = plants.map(p => p.id);
 
-          {/* Card 2: Maintenance */}
-          <div className="group relative bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 hover:border-emerald-500/30 hover:bg-slate-900/90 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/5 flex flex-col justify-between">
-            <div>
-              <div className="bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-500/20 w-fit mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Settings className="h-6 w-6 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-100 mb-3">Mantenimiento y Soporte</h3>
-              <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                Programe visitas técnicas preventivas o reporte fallas operativas en sus sistemas industriales.
-              </p>
-              <ul className="space-y-2.5 text-xs text-slate-300 border-t border-slate-800/80 pt-4">
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  <span>Próximo preventivo: 15 de Julio, 2026</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span>Historial de visitas al día</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span>Reportes de calidad de aire descargables</span>
-                </li>
-              </ul>
-            </div>
-            <button className="mt-8 w-full bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white text-xs font-semibold py-2.5 px-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/30 transition-all duration-300">
-              Solicitar Asistencia
-            </button>
-          </div>
+  // Service requests
+  const serviceRequests = await db.query.crmServiceRequests.findMany({
+    where: eq(crmServiceRequests.customerId, customerId),
+    orderBy: [desc(crmServiceRequests.createdAt)],
+  });
 
-          {/* Card 3: Documentation */}
-          <div className="group relative bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 hover:border-emerald-500/30 hover:bg-slate-900/90 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/5 flex flex-col justify-between">
-            <div>
-              <div className="bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-500/20 w-fit mb-6 group-hover:scale-110 transition-transform duration-300">
-                <FileText className="h-6 w-6 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-100 mb-3">Planos y Fichas Técnicas</h3>
-              <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                Consulte y descargue planos de ingeniería (CAD/BIM), memorias de cálculo y fichas técnicas de los equipos instalados.
-              </p>
-              <ul className="space-y-2.5 text-xs text-slate-300 border-t border-slate-800/80 pt-4">
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                  <span>Planos As-Built - PDF / DWG</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                  <span>Fichas Técnicas Equipos de Climatización</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                  <span>Manuales de Operación y Mantenimiento</span>
-                </li>
-              </ul>
-            </div>
-            <button className="mt-8 w-full bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white text-xs font-semibold py-2.5 px-4 rounded-xl border border-slate-700/60 hover:border-emerald-500/30 transition-all duration-300">
-              Explorar Archivos
-            </button>
-          </div>
-        </div>
-      </main>
+  // Leads / Projects
+  const customerLeads = await db.query.leads.findMany({
+    where: or(
+      eq(leads.companyName, customer.name),
+      eq(leads.email, user.email || "")
+    ),
+  });
+  const leadIds = customerLeads.map(l => l.id);
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-6 py-6 text-center text-xs text-slate-500 font-mono">
-        © 2026 CYH - Ventilación Mecánica Industrial. Todos los derechos reservados.
-      </footer>
-    </div>
+  // Diagnostic Reports for Inspections
+  const customerDiagnostics = leadIds.length > 0 ? await db.query.diagnosticReports.findMany({
+    where: inArray(diagnosticReports.leadId, leadIds),
+    orderBy: [desc(diagnosticReports.createdAt)],
+  }) : [];
+
+  // Proposals (COP values)
+  const proposals = leadIds.length > 0 ? await db.query.crmProposals.findMany({
+    where: inArray(crmProposals.leadId, leadIds),
+    orderBy: [desc(crmProposals.createdAt)],
+  }) : [];
+
+  // Documents with cross-tenant double validation
+  const documents = await db.query.crmDocuments.findMany({
+    where: or(
+      eq(crmDocuments.customerId, customerId),
+      leadIds.length > 0 ? inArray(crmDocuments.leadId, leadIds) : undefined
+    ),
+    orderBy: [desc(crmDocuments.createdAt)],
+  });
+
+  // Recent Activity logs feed (Activity Logs + Audit Logs)
+  const activities = leadIds.length > 0 ? await db.query.crmActivityLogs.findMany({
+    where: inArray(crmActivityLogs.leadId, leadIds),
+    orderBy: [desc(crmActivityLogs.createdAt)],
+    limit: 10,
+  }) : [];
+
+  const audits = await db.query.crmAuditLogs.findMany({
+    where: eq(crmAuditLogs.actorId, user.id),
+    orderBy: [desc(crmAuditLogs.createdAt)],
+    limit: 10,
+  });
+
+  const userName = profile?.full_name || contact.fullName || user.email?.split("@")[0] || "Cliente CYH";
+
+  return (
+    <PortalClient
+      customer={customer}
+      plants={plants}
+      serviceRequests={serviceRequests}
+      leads={customerLeads}
+      proposals={proposals}
+      documents={documents}
+      diagnostics={customerDiagnostics}
+      activities={activities}
+      audits={audits}
+      user={{ id: user.id, email: user.email || "", fullName: userName, role: userRole }}
+    />
   );
 }

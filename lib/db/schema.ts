@@ -67,6 +67,7 @@ export const crmDocuments = pgTable("crm_documents", {
   fileName: varchar("file_name", { length: 255 }).notNull(),
   fileUrl: text("file_url").notNull(),
   fileType: varchar("file_type", { length: 50 }).notNull(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -212,6 +213,7 @@ export const crmContactsRelations = relations(crmContacts, ({ one, many }) => ({
 
 export const crmDocumentsRelations = relations(crmDocuments, ({ one }) => ({
   lead: one(leads, { fields: [crmDocuments.leadId], references: [leads.id] }),
+  customer: one(crmCustomers, { fields: [crmDocuments.customerId], references: [crmCustomers.id] }),
 }));
 
 export const crmProposals = pgTable("crm_proposals", {
@@ -291,21 +293,44 @@ export const crmCustomerContacts = pgTable("crm_customer_contacts", {
   cargo: varchar("cargo", { length: 100 }),
   phone: varchar("phone", { length: 50 }),
   email: varchar("email", { length: 255 }),
+  userId: uuid("user_id").references(() => crmUsers.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const crmCustomersRelations = relations(crmCustomers, ({ many }) => ({
   plants: many(crmCustomerPlants),
   contacts: many(crmCustomerContacts),
+  serviceRequests: many(crmServiceRequests),
 }));
 
 export const crmCustomerPlantsRelations = relations(crmCustomerPlants, ({ one, many }) => ({
   customer: one(crmCustomers, { fields: [crmCustomerPlants.customerId], references: [crmCustomers.id] }),
   diagnostics: many(diagnosticReports),
+  serviceRequests: many(crmServiceRequests),
 }));
 
 export const crmCustomerContactsRelations = relations(crmCustomerContacts, ({ one }) => ({
   customer: one(crmCustomers, { fields: [crmCustomerContacts.customerId], references: [crmCustomers.id] }),
+  user: one(crmUsers, { fields: [crmCustomerContacts.userId], references: [crmUsers.id] }),
+}));
+
+export const crmServiceRequests = pgTable("crm_service_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }).notNull(),
+  plantId: uuid("plant_id").references(() => crmCustomerPlants.id, { onDelete: "set null" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  urgency: varchar("urgency", { length: 50 }).notNull(), // baja, media, alta, critica
+  status: varchar("status", { length: 50 }).default("abierta").notNull(), // abierta, asignada, en_proceso, cerrada
+  createdBy: uuid("created_by").references(() => crmUsers.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmServiceRequestsRelations = relations(crmServiceRequests, ({ one }) => ({
+  customer: one(crmCustomers, { fields: [crmServiceRequests.customerId], references: [crmCustomers.id] }),
+  plant: one(crmCustomerPlants, { fields: [crmServiceRequests.plantId], references: [crmCustomerPlants.id] }),
+  creator: one(crmUsers, { fields: [crmServiceRequests.createdBy], references: [crmUsers.id] }),
 }));
 
 export type AuditLogMetadata = 

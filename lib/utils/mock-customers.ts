@@ -108,6 +108,7 @@ export function getMockContacts(): (typeof crmCustomerContacts.$inferSelect)[] {
       cargo: "Jefe de Planta",
       phone: "+573001234567",
       email: "jorge.perez@monomeros.co",
+      userId: null,
       createdAt: new Date("2026-01-03"),
     },
     {
@@ -117,6 +118,7 @@ export function getMockContacts(): (typeof crmCustomerContacts.$inferSelect)[] {
       cargo: "Compras",
       phone: "+573007654321",
       email: "clara.ines@monomeros.co",
+      userId: null,
       createdAt: new Date("2026-01-04"),
     },
     {
@@ -126,6 +128,7 @@ export function getMockContacts(): (typeof crmCustomerContacts.$inferSelect)[] {
       cargo: "Director de Proyectos",
       phone: "+573109876543",
       email: "carlos.muller@tecnoglass.com",
+      userId: null,
       createdAt: new Date("2026-02-03"),
     },
     {
@@ -135,6 +138,7 @@ export function getMockContacts(): (typeof crmCustomerContacts.$inferSelect)[] {
       cargo: "Gerente de Operaciones",
       phone: "+573201112222",
       email: "andres.restrepo@bavaria.co",
+      userId: null,
       createdAt: new Date("2026-03-04"),
     },
   ];
