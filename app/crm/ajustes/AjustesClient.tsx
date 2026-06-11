@@ -178,7 +178,7 @@ export default function AjustesClient({ currentUser, allUsers }: { currentUser: 
                           <select 
                             value={u.role} 
                             onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                            disabled={currentUser?.role !== 'super_admin'}
+                            disabled={!["super_admin", "root_dev"].includes(currentUser?.role)}
                             className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border outline-none cursor-pointer ${getRoleBadgeColor(u.role)}`}
                           >
                             <option value="super_admin" className="bg-bg-primary text-text-primary">Super Admin</option>
@@ -188,7 +188,7 @@ export default function AjustesClient({ currentUser, allUsers }: { currentUser: 
                           </select>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button className="p-1.5 text-text-muted hover:text-red-500 transition-colors ml-1" title="Revocar Acceso" disabled={currentUser?.role !== 'super_admin' || currentUser?.id === u.id}>
+                          <button className="p-1.5 text-text-muted hover:text-red-500 transition-colors ml-1" title="Revocar Acceso" disabled={!["super_admin", "root_dev"].includes(currentUser?.role) || currentUser?.id === u.id}>
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>

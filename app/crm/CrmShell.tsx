@@ -239,16 +239,16 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
   const isDetailRoute = pathname.match(/^\/crm\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   let allowedRoles = currentItem ? currentItem.roles : null;
   if (isDetailRoute) {
-    allowedRoles = ["admin", "super_admin", "director_comercial", "comercial", "ingeniero"];
+    allowedRoles = ["admin", "super_admin", "director_comercial", "comercial", "ingeniero", "root_dev"];
   }
 
-  const isAuthorized = !allowedRoles || userRole === "admin" || userRole === "super_admin" || allowedRoles.includes(userRole);
+  const isAuthorized = !allowedRoles || userRole === "admin" || userRole === "super_admin" || userRole === "root_dev" || allowedRoles.includes(userRole);
 
   const handleLogout = async () => {
     await logoutAction();
   };
 
-  const filteredGroups = userRole === "admin" || userRole === "super_admin"
+  const filteredGroups = userRole === "admin" || userRole === "super_admin" || userRole === "root_dev"
     ? menuGroups
     : menuGroups.map(g => ({
         ...g,

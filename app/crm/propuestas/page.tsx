@@ -65,7 +65,7 @@ export default async function PropuestasPage({
   const userEmail = dbUser?.email || user.email || "";
 
   // Normalize roles
-  const isAdmin = ["admin", "super_admin", "director_comercial", "director"].includes(userRole);
+  const isAdmin = ["admin", "super_admin", "director_comercial", "director", "root_dev"].includes(userRole);
   const isVendedor = ["vendedor", "comercial", "asesor_comercial"].includes(userRole);
   const isTecnico = ["tecnico", "ingeniero", "tecnico_preventa"].includes(userRole);
 

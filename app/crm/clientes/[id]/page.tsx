@@ -131,7 +131,7 @@ export default async function CustomerDetailPage({
       documents={documents}
       userRole={userRole}
       isTecnico={isTecnico}
-      isAdmin={["admin", "super_admin", "director_comercial", "director"].includes(userRole)}
+      isAdmin={["admin", "super_admin", "director_comercial", "director", "root_dev"].includes(userRole)}
     />
   );
 }

@@ -403,7 +403,7 @@ export default function DashboardClient({
 
   // Check role authorization to prevent unauthorized mutations (Simulation of RBAC/network response)
   const isAuthorized = () => {
-    return ["admin", "comercial", "director_comercial", "super_admin"].includes(currentUser.role);
+    return ["admin", "comercial", "director_comercial", "super_admin", "root_dev"].includes(currentUser.role);
   };
 
   // Dialog 1: Submit Technical Meeting
