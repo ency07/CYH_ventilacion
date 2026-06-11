@@ -39,7 +39,7 @@ export async function loginAction(formData: FormData) {
 
   revalidatePath("/", "layout");
 
-  if (role === "admin" || role === "super_admin" || role === "director" || role === "director_comercial") {
+  if (role === "root_dev" || role === "admin" || role === "super_admin" || role === "director" || role === "director_comercial") {
     redirect("/crm/dashboard");
   } else if (role === "vendedor" || role === "comercial") {
     redirect("/crm/pipeline");
