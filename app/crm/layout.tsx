@@ -19,13 +19,17 @@ export default async function CrmLayout({
   // Obtener datos del perfil del usuario
   const { data: profile } = await supabase
     .from("crm_users")
-    .select("full_name, role")
+    .select("full_name, role, is_active")
     .eq("id", user.id)
     .single();
 
-  const userName = profile?.full_name || user.email?.split("@")[0] || "Usuario";
+  if (!profile || !profile.is_active) {
+    redirect("/login?error=suspended");
+  }
+
+  const userName = profile.full_name || user.email?.split("@")[0] || "Usuario";
   const userEmail = user.email || "";
-  const userRole = profile?.role || "comercial";
+  const userRole = profile.role || "comercial";
 
   if (userRole === "cliente") {
     redirect("/portal/inicio");

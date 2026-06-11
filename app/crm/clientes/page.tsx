@@ -225,6 +225,9 @@ export default async function B2BCustomersPage({
         fullName: profile?.full_name || "Asesor Actual",
         role: userRole,
         avatarUrl: null,
+        isActive: true,
+        suspendedAt: null,
+        suspendedBy: null,
         createdAt: new Date(),
       }
     ];

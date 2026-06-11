@@ -1,4 +1,4 @@
-import { pgTable, uuid, timestamp, varchar, integer, text, jsonb, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, varchar, integer, text, jsonb, boolean, index, AnyPgColumn } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const crmCompanies = pgTable("crm_companies", {
@@ -159,6 +159,9 @@ export const crmUsers = pgTable("crm_users", {
   fullName: varchar("full_name", { length: 255 }),
   role: varchar("role", { length: 50 }).default("vendedor").notNull(), // admin | vendedor | tecnico
   avatarUrl: text("avatar_url"),
+  isActive: boolean("is_active").default(true).notNull(),
+  suspendedAt: timestamp("suspended_at"),
+  suspendedBy: uuid("suspended_by").references((): AnyPgColumn => crmUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -305,4 +308,40 @@ export const crmCustomerContactsRelations = relations(crmCustomerContacts, ({ on
   customer: one(crmCustomers, { fields: [crmCustomerContacts.customerId], references: [crmCustomers.id] }),
 }));
 
+export type AuditLogMetadata = 
+  | {
+      leadId: string;
+      companyName: string;
+      finalLtv: number;
+    }
+  | {
+      previousRole: string;
+      newRole: string;
+      userId: string;
+    }
+  | {
+      userId: string;
+      action: "suspend" | "reactivate";
+    }
+  | {
+      userId: string;
+      email: string;
+    };
 
+export const crmAuditLogs = pgTable("crm_audit_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  actorId: uuid("actor_id").references(() => crmUsers.id, { onDelete: "restrict" }).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  entityAffected: varchar("entity_affected", { length: 255 }).notNull(),
+  metadata: jsonb("metadata").$type<AuditLogMetadata>().notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }).notNull(),
+  userAgent: text("user_agent").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    actorIdIdx: index("crm_audit_logs_actor_id_idx").on(table.actorId),
+    actionIdx: index("crm_audit_logs_action_idx").on(table.action),
+    entityAffectedIdx: index("crm_audit_logs_entity_affected_idx").on(table.entityAffected),
+    createdAtIdx: index("crm_audit_logs_created_at_idx").on(table.createdAt),
+  };
+});

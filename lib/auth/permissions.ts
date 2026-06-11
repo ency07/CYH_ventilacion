@@ -15,6 +15,10 @@ export async function getCurrentUser() {
     throw new Error("Usuario no encontrado en la base de datos");
   }
 
+  if (!dbUser.isActive) {
+    throw new Error("Usuario suspendido");
+  }
+
   return dbUser;
 }
 
@@ -22,6 +26,7 @@ export async function requireRole(allowedRoles: string[]) {
   const user = await getCurrentUser();
 
   const validRoles = [
+    "root_dev",
     "admin",
     "super_admin",
     "director",
@@ -37,7 +42,7 @@ export async function requireRole(allowedRoles: string[]) {
     throw new Error("Acceso Denegado: Rol inválido");
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  if (user.role !== "root_dev" && !allowedRoles.includes(user.role)) {
     throw new Error("Acceso Denegado");
   }
 

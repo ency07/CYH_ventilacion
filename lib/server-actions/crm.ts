@@ -1,12 +1,14 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { leads, crmPipeline, crmActivityLogs, crmCompanies, crmContacts, crmTasks, crmOpportunities, crmProposals, diagnosticReports, crmUsers, crmCustomers, crmCustomerPlants, crmCustomerContacts } from "@/lib/db/schema";
+import { leads, crmPipeline, crmActivityLogs, crmCompanies, crmContacts, crmTasks, crmOpportunities, crmProposals, diagnosticReports, crmUsers, crmCustomers, crmCustomerPlants, crmCustomerContacts, crmAuditLogs } from "@/lib/db/schema";
 import { PipelineInsertSchema, ActivityLogInsertSchema } from "@/lib/validations/crm.schema";
 import { eq, desc, ne, and, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { normalizeCity } from "@/lib/utils/normalization";
+import { headers } from "next/headers";
+import { requireRole } from "@/lib/auth/permissions";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -107,14 +109,24 @@ export async function createActivityLogAction(rawInput: any): Promise<ActionResu
   }
 }
 
-export async function updateLeadStatusAction(leadId: string, newStage: any): Promise<ActionResult<any>> {
+export type LeadStage = "nuevo" | "contacto" | "reunion" | "diagnostico" | "propuesta_prep" | "propuesta_entregada" | "negociacion" | "ganado" | "perdido";
+
+export async function updateLeadStatusAction(
+  leadId: string,
+  newStage: string
+): Promise<ActionResult<typeof leads.$inferSelect>> {
   try {
     const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
     const userRole = dbUser.role;
     const userEmail = dbUser.email || "";
 
+    // Get client request info for immutable audit logs
+    const reqHeaders = headers();
+    const ipAddress = reqHeaders.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
+    const userAgent = reqHeaders.get("user-agent") || "unknown";
+
     // Stage enum validation check
-    const validStages = ["nuevo", "contacto", "reunion", "diagnostico", "propuesta_prep", "propuesta_entregada", "negociacion", "ganado", "perdido"];
+    const validStages: string[] = ["nuevo", "contacto", "reunion", "diagnostico", "propuesta_prep", "propuesta_entregada", "negociacion", "ganado", "perdido"];
     if (!validStages.includes(newStage)) {
       return { success: false, error: "Etapa comercial inválida." };
     }
@@ -216,6 +228,8 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
         });
       }
 
+      let finalLtv = 0;
+
       if (newStage === "ganado") {
         // Cascade 3: update crmPipeline stage to ganado
         await tx.update(crmPipeline)
@@ -229,6 +243,7 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
 
         if (!existingCustomer) {
           const ltvVal = existingOpp ? (existingOpp.estimatedValue || 0) : estBudget;
+          finalLtv = ltvVal;
           const [newCust] = await tx.insert(crmCustomers).values({
             name: updatedLead.companyName,
             status: "activo",
@@ -273,10 +288,25 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
           // Update LTV of existing customer
           const currentLtv = existingCustomer.ltv || 0;
           const delta = existingOpp ? (existingOpp.estimatedValue || 0) : estBudget;
+          finalLtv = currentLtv + delta;
           await tx.update(crmCustomers)
-            .set({ ltv: currentLtv + delta, updatedAt: new Date() })
+            .set({ ltv: finalLtv, updatedAt: new Date() })
             .where(eq(crmCustomers.id, existingCustomer.id));
         }
+
+        // Insert immutable audit log inside the same transaction
+        await tx.insert(crmAuditLogs).values({
+          actorId: dbUser.id,
+          action: "mark_lead_won",
+          entityAffected: `lead:${leadId}`,
+          metadata: {
+            leadId,
+            companyName: updatedLead.companyName,
+            finalLtv,
+          },
+          ipAddress,
+          userAgent,
+        });
       }
 
       // 3. Register activity log
@@ -297,9 +327,10 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
     revalidatePath("/crm/pipeline");
     revalidatePath(`/crm/${leadId}`);
     return { success: true, data: result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating lead status:", error);
-    return { success: false, error: error.message || "Error al actualizar la etapa comercial." };
+    const errorMessage = error instanceof Error ? error.message : "Error al actualizar la etapa comercial.";
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -640,7 +671,7 @@ export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
   }
 }
 
-import { requireRole } from "@/lib/auth/permissions";
+
 
 export async function createCompanyAction(data: { name: string; industry?: string; city?: string; website?: string }): Promise<ActionResult<typeof crmCompanies.$inferSelect>> {
   try {
