@@ -68,6 +68,8 @@ export const crmDocuments = pgTable("crm_documents", {
   fileUrl: text("file_url").notNull(),
   fileType: varchar("file_type", { length: 50 }).notNull(),
   customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "set null" }),
+  status: varchar("status", { length: 50 }).default("vigente").notNull(), // vigente, obsoleto, en_revision
+  revisionNumber: varchar("revision_number", { length: 50 }).default("Rev.01").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -272,6 +274,8 @@ export const crmCustomers = pgTable("crm_customers", {
   ltv: integer("ltv").default(0).notNull(), // Lifetime value in COP
   assignedTo: varchar("assigned_to", { length: 255 }), // assigned salesperson email
   recurrenceIndex: integer("recurrence_index").default(0).notNull(), // index of loyalty recurrence (0-100)
+  ownerId: uuid("owner_id").references((): AnyPgColumn => crmUsers.id, { onDelete: "set null" }),
+  backupId: uuid("backup_id").references((): AnyPgColumn => crmUsers.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -323,14 +327,17 @@ export const crmServiceRequests = pgTable("crm_service_requests", {
   urgency: varchar("urgency", { length: 50 }).notNull(), // baja, media, alta, critica
   status: varchar("status", { length: 50 }).default("abierta").notNull(), // abierta, asignada, en_proceso, cerrada
   createdBy: uuid("created_by").references(() => crmUsers.id).notNull(),
+  assignedTo: uuid("assigned_to").references(() => crmUsers.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const crmServiceRequestsRelations = relations(crmServiceRequests, ({ one }) => ({
+export const crmServiceRequestsRelations = relations(crmServiceRequests, ({ one, many }) => ({
   customer: one(crmCustomers, { fields: [crmServiceRequests.customerId], references: [crmCustomers.id] }),
   plant: one(crmCustomerPlants, { fields: [crmServiceRequests.plantId], references: [crmCustomerPlants.id] }),
   creator: one(crmUsers, { fields: [crmServiceRequests.createdBy], references: [crmUsers.id] }),
+  assigned: one(crmUsers, { fields: [crmServiceRequests.assignedTo], references: [crmUsers.id] }),
+  comments: many(crmTicketComments),
 }));
 
 export type AuditLogMetadata = 
@@ -351,6 +358,11 @@ export type AuditLogMetadata =
   | {
       userId: string;
       email: string;
+    }
+  | {
+      previousHours: number;
+      increment: number;
+      newHours: number;
     };
 
 export const crmAuditLogs = pgTable("crm_audit_logs", {
@@ -370,3 +382,307 @@ export const crmAuditLogs = pgTable("crm_audit_logs", {
     createdAtIdx: index("crm_audit_logs_created_at_idx").on(table.createdAt),
   };
 });
+
+export const crmNotificationEvents = pgTable("crm_notification_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  entityType: varchar("entity_type", { length: 50 }).notNull(),
+  entityId: uuid("entity_id").notNull(),
+  priority: varchar("priority", { length: 20 }).default("P4").notNull(),
+  channel: varchar("channel", { length: 50 }).notNull(),
+  status: varchar("status", { length: 50 }).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  sentAt: timestamp("sent_at"),
+});
+
+export const crmTicketComments = pgTable("crm_ticket_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestId: uuid("request_id").references(() => crmServiceRequests.id, { onDelete: "cascade" }).notNull(),
+  actorId: uuid("actor_id").references(() => crmUsers.id, { onDelete: "set null" }),
+  actorRole: varchar("actor_role", { length: 50 }).notNull(), // cliente | tecnico | comercial | admin
+  comment: text("comment").notNull(),
+  attachmentUrl: text("attachment_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmTicketCommentsRelations = relations(crmTicketComments, ({ one }) => ({
+  request: one(crmServiceRequests, { fields: [crmTicketComments.requestId], references: [crmServiceRequests.id] }),
+  actor: one(crmUsers, { fields: [crmTicketComments.actorId], references: [crmUsers.id] }),
+}));
+
+export const crmNotifications = pgTable("crm_notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => crmUsers.id, { onDelete: "set null" }),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  channel: varchar("channel", { length: 50 }).notNull(),
+  severity: varchar("severity", { length: 20 }).default("info").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmNotificationsRelations = relations(crmNotifications, ({ one }) => ({
+  user: one(crmUsers, { fields: [crmNotifications.userId], references: [crmUsers.id] }),
+  customer: one(crmCustomers, { fields: [crmNotifications.customerId], references: [crmCustomers.id] }),
+}));
+
+export const crmSlaPolicies = pgTable("crm_sla_policies", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  priority: varchar("priority", { length: 20 }).notNull().unique(),
+  responseTimeHours: integer("response_time_hours").notNull(),
+  resolutionTimeHours: integer("resolution_time_hours").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmSlaPoliciesRelations = relations(crmSlaPolicies, ({ many }) => ({
+  events: many(crmSlaEvents),
+  escalationRules: many(crmEscalationRules),
+}));
+
+export const crmSlaEvents = pgTable("crm_sla_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestId: uuid("request_id").references(() => crmServiceRequests.id, { onDelete: "cascade" }).notNull(),
+  policyId: uuid("policy_id").references(() => crmSlaPolicies.id, { onDelete: "restrict" }),
+  responseDeadline: timestamp("response_deadline").notNull(),
+  resolutionDeadline: timestamp("resolution_deadline").notNull(),
+  firstRespondedAt: timestamp("first_responded_at"),
+  resolvedAt: timestamp("resolved_at"),
+  responseSlaStatus: varchar("response_sla_status", { length: 50 }).default("pending").notNull(),
+  resolutionSlaStatus: varchar("resolution_sla_status", { length: 50 }).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmSlaEventsRelations = relations(crmSlaEvents, ({ one }) => ({
+  request: one(crmServiceRequests, { fields: [crmSlaEvents.requestId], references: [crmServiceRequests.id] }),
+  policy: one(crmSlaPolicies, { fields: [crmSlaEvents.policyId], references: [crmSlaPolicies.id] }),
+}));
+
+export const crmEscalationRules = pgTable("crm_escalation_rules", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  policyId: uuid("policy_id").references(() => crmSlaPolicies.id, { onDelete: "cascade" }).notNull(),
+  triggerAfterHours: integer("trigger_after_hours").notNull(),
+  escalateToRole: varchar("escalate_to_role", { length: 50 }).notNull(),
+  actionType: varchar("action_type", { length: 50 }).default("telegram").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmEscalationRulesRelations = relations(crmEscalationRules, ({ one }) => ({
+  policy: one(crmSlaPolicies, { fields: [crmEscalationRules.policyId], references: [crmSlaPolicies.id] }),
+}));
+
+export const crmContracts = pgTable("crm_contracts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  value: integer("value").notNull(),
+  status: varchar("status", { length: 50 }).default("active").notNull(),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmContractsRelations = relations(crmContracts, ({ one, many }) => ({
+  customer: one(crmCustomers, { fields: [crmContracts.customerId], references: [crmCustomers.id] }),
+  invoices: many(crmInvoices),
+}));
+
+export const crmInvoices = pgTable("crm_invoices", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }).notNull(),
+  contractId: uuid("contract_id").references(() => crmContracts.id, { onDelete: "set null" }),
+  invoiceNumber: varchar("invoice_number", { length: 100 }).notNull().unique(),
+  amount: integer("amount").notNull(),
+  status: varchar("status", { length: 50 }).default("pending").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  engineeringStatus: varchar("engineering_status", { length: 50 }).default("pending").notNull(),
+  engineeringApprovedBy: uuid("engineering_approved_by").references(() => crmUsers.id, { onDelete: "set null" }),
+  engineeringApprovedAt: timestamp("engineering_approved_at"),
+  procurementStatus: varchar("procurement_status", { length: 50 }).default("pending").notNull(),
+  procurementApprovedBy: uuid("procurement_approved_by").references(() => crmUsers.id, { onDelete: "set null" }),
+  procurementApprovedAt: timestamp("procurement_approved_at"),
+  financeStatus: varchar("finance_status", { length: 50 }).default("pending").notNull(),
+  financeApprovedBy: uuid("finance_approved_by").references(() => crmUsers.id, { onDelete: "set null" }),
+  financeApprovedAt: timestamp("finance_approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmInvoicesRelations = relations(crmInvoices, ({ one, many }) => ({
+  customer: one(crmCustomers, { fields: [crmInvoices.customerId], references: [crmCustomers.id] }),
+  contract: one(crmContracts, { fields: [crmInvoices.contractId], references: [crmContracts.id] }),
+  payments: many(crmPayments),
+  accountsReceivable: one(crmAccountsReceivable),
+}));
+
+export const crmAccountsReceivable = pgTable("crm_accounts_receivable", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }).notNull(),
+  invoiceId: uuid("invoice_id").references(() => crmInvoices.id, { onDelete: "cascade" }).notNull().unique(),
+  outstandingBalance: integer("outstanding_balance").notNull(),
+  daysPastDue: integer("days_past_due").default(0).notNull(),
+  collectionStatus: varchar("collection_status", { length: 50 }).default("normal").notNull(),
+  lastReminderSent: timestamp("last_reminder_sent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmAccountsReceivableRelations = relations(crmAccountsReceivable, ({ one }) => ({
+  customer: one(crmCustomers, { fields: [crmAccountsReceivable.customerId], references: [crmCustomers.id] }),
+  invoice: one(crmInvoices, { fields: [crmAccountsReceivable.invoiceId], references: [crmInvoices.id] }),
+}));
+
+export const crmPayments = pgTable("crm_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  invoiceId: uuid("invoice_id").references(() => crmInvoices.id, { onDelete: "cascade" }).notNull(),
+  amount: integer("amount").notNull(),
+  paymentMethod: varchar("payment_method", { length: 50 }).notNull(),
+  transactionId: varchar("transaction_id", { length: 255 }),
+  status: varchar("status", { length: 50 }).default("approved").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmPaymentsRelations = relations(crmPayments, ({ one }) => ({
+  invoice: one(crmInvoices, { fields: [crmPayments.invoiceId], references: [crmInvoices.id] }),
+}));
+
+// 1. Skill Matrix & Availability
+export const crmSkillMatrix = pgTable("crm_skill_matrix", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => crmUsers.id, { onDelete: "cascade" }).notNull(),
+  skill: varchar("skill", { length: 100 }).notNull(),
+  certificationLevel: varchar("certification_level", { length: 50 }).default("basico").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmSkillMatrixRelations = relations(crmSkillMatrix, ({ one }) => ({
+  user: one(crmUsers, { fields: [crmSkillMatrix.userId], references: [crmUsers.id] }),
+}));
+
+export const crmTechnicianAvailability = pgTable("crm_technician_availability", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => crmUsers.id, { onDelete: "cascade" }).notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  isAvailable: boolean("is_available").default(true).notNull(),
+  lastActiveAt: timestamp("last_active_at").defaultNow().notNull(),
+});
+
+export const crmTechnicianAvailabilityRelations = relations(crmTechnicianAvailability, ({ one }) => ({
+  user: one(crmUsers, { fields: [crmTechnicianAvailability.userId], references: [crmUsers.id] }),
+}));
+
+// 2. Emergency War Rooms & Timelines
+export const crmEmergencyWarRooms = pgTable("crm_emergency_war_rooms", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestId: uuid("request_id").references(() => crmServiceRequests.id, { onDelete: "cascade" }).notNull(),
+  incidentCode: varchar("incident_code", { length: 100 }).notNull().unique(),
+  status: varchar("status", { length: 50 }).default("activo").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  leaderId: uuid("leader_id").references(() => crmUsers.id, { onDelete: "set null" }),
+  responsibleId: uuid("responsible_id").references(() => crmUsers.id, { onDelete: "set null" }),
+  approverId: uuid("approver_id").references(() => crmUsers.id, { onDelete: "set null" }),
+  consultedId: uuid("consulted_id").references(() => crmUsers.id, { onDelete: "set null" }),
+  informedId: uuid("informed_id").references(() => crmUsers.id, { onDelete: "set null" }),
+});
+
+export const crmEmergencyWarRoomsRelations = relations(crmEmergencyWarRooms, ({ one, many }) => ({
+  request: one(crmServiceRequests, { fields: [crmEmergencyWarRooms.requestId], references: [crmServiceRequests.id] }),
+  leader: one(crmUsers, { fields: [crmEmergencyWarRooms.leaderId], references: [crmUsers.id] }),
+  responsible: one(crmUsers, { fields: [crmEmergencyWarRooms.responsibleId], references: [crmUsers.id] }),
+  approver: one(crmUsers, { fields: [crmEmergencyWarRooms.approverId], references: [crmUsers.id] }),
+  consulted: one(crmUsers, { fields: [crmEmergencyWarRooms.consultedId], references: [crmUsers.id] }),
+  informed: one(crmUsers, { fields: [crmEmergencyWarRooms.informedId], references: [crmUsers.id] }),
+  timeline: many(crmWarRoomTimeline),
+}));
+
+export const crmWarRoomTimeline = pgTable("crm_war_room_timeline", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  warRoomId: uuid("war_room_id").references(() => crmEmergencyWarRooms.id, { onDelete: "cascade" }).notNull(),
+  actorId: uuid("actor_id").references(() => crmUsers.id, { onDelete: "set null" }),
+  actorName: varchar("actor_name", { length: 255 }).notNull(),
+  eventType: varchar("event_type", { length: 50 }).notNull(), // evidencia | decision | hito | comunicado
+  description: text("description").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmWarRoomTimelineRelations = relations(crmWarRoomTimeline, ({ one }) => ({
+  warRoom: one(crmEmergencyWarRooms, { fields: [crmWarRoomTimeline.warRoomId], references: [crmEmergencyWarRooms.id] }),
+  actor: one(crmUsers, { fields: [crmWarRoomTimeline.actorId], references: [crmUsers.id] }),
+}));
+
+// 3. CMMS Tables
+export const crmAssets = pgTable("crm_assets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  plantId: uuid("plant_id").references(() => crmCustomerPlants.id, { onDelete: "cascade" }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 100 }).notNull().unique(),
+  operatingHours: integer("operating_hours").default(0).notNull(),
+  lastMaintenanceAt: timestamp("last_maintenance_at"),
+  status: varchar("status", { length: 50 }).default("operativo").notNull(), // operativo | mantenimiento | parado
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmAssetsRelations = relations(crmAssets, ({ one, many }) => ({
+  plant: one(crmCustomerPlants, { fields: [crmAssets.plantId], references: [crmCustomerPlants.id] }),
+  plans: many(crmMaintenancePlans),
+  workOrders: many(crmWorkOrders),
+}));
+
+export const crmMaintenancePlans = pgTable("crm_maintenance_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  assetId: uuid("asset_id").references(() => crmAssets.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  intervalHours: integer("interval_hours").notNull(),
+  description: text("description"),
+  nextMaintenanceDate: timestamp("next_maintenance_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmMaintenancePlansRelations = relations(crmMaintenancePlans, ({ one, many }) => ({
+  asset: one(crmAssets, { fields: [crmMaintenancePlans.assetId], references: [crmAssets.id] }),
+  workOrders: many(crmWorkOrders),
+}));
+
+export const crmWorkOrders = pgTable("crm_work_orders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  assetId: uuid("asset_id").references(() => crmAssets.id, { onDelete: "cascade" }).notNull(),
+  planId: uuid("plan_id").references(() => crmMaintenancePlans.id, { onDelete: "set null" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  assignedTo: uuid("assigned_to").references(() => crmUsers.id, { onDelete: "set null" }),
+  status: varchar("status", { length: 50 }).default("programado").notNull(), // programado | en_progreso | completado | retrasado
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmWorkOrdersRelations = relations(crmWorkOrders, ({ one }) => ({
+  asset: one(crmAssets, { fields: [crmWorkOrders.assetId], references: [crmAssets.id] }),
+  plan: one(crmMaintenancePlans, { fields: [crmWorkOrders.planId], references: [crmMaintenancePlans.id] }),
+  assignee: one(crmUsers, { fields: [crmWorkOrders.assignedTo], references: [crmUsers.id] }),
+}));
+
+// 4. Governance & Audit Tables
+export const crmBusinessEvents = pgTable("crm_business_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  entityType: varchar("entity_type", { length: 50 }).notNull(),
+  entityId: uuid("entity_id").notNull(),
+  status: varchar("status", { length: 50 }).default("success").notNull(),
+  metadata: jsonb("metadata").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmElectronicSignatures = pgTable("crm_electronic_signatures", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  entityType: varchar("entity_type", { length: 50 }).notNull(), // proposal | contract | sat_act | fat_act | work_order
+  entityId: uuid("entity_id").notNull(),
+  signerEmail: varchar("signer_email", { length: 255 }).notNull(),
+  signerRole: varchar("signer_role", { length: 100 }).notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }).notNull(),
+  userAgent: text("user_agent").notNull(),
+  signedAt: timestamp("signed_at").defaultNow().notNull(),
+  signatureHash: varchar("signature_hash", { length: 255 }).notNull(),
+});
+
+

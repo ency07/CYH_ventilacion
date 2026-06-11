@@ -16,6 +16,7 @@ import { revalidatePath } from "next/cache";
 import { headers, cookies } from "next/headers";
 import { requireRole } from "@/lib/auth/permissions";
 import { RequestServiceSchema } from "@/lib/validations/portal.schema";
+import { sendNotificationActionInternal } from "./notifications";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -131,6 +132,23 @@ ${validated.description}`;
           createdBy: userId,
         })
         .returning();
+
+      // Trigger persistent notification dispatch (Fase 11.2)
+      let severity: "info" | "warning" | "critical" = "info";
+      if (validated.urgency === "critica") {
+        severity = "critical";
+      } else if (validated.urgency === "alta") {
+        severity = "warning";
+      }
+
+      await sendNotificationActionInternal(tx, {
+        customerId: customer.id,
+        userId: userId,
+        eventType: "request_created",
+        title: `Nueva Solicitud: ${validated.title}`,
+        message: `Se ha registrado un ticket de asistencia técnica con prioridad ${validated.urgency.toUpperCase()} para la planta ${validated.newPlantName || "principal"}.`,
+        severity,
+      });
 
       // Find latest lead of this customer to attach activity log
       const [associatedLead] = await tx
@@ -265,6 +283,16 @@ export async function acceptProposalAction(proposalId: string): Promise<ActionRe
         description: `Propuesta "${proposal.title}" (V${proposal.version}) ACEPTADA por el cliente via portal B2B.`,
       });
 
+      // Trigger persistent notification dispatch (Fase 11.2)
+      await sendNotificationActionInternal(tx, {
+        customerId: contact.customerId,
+        userId: userId,
+        eventType: "proposal_accepted",
+        title: `Propuesta Aceptada: ${proposal.title}`,
+        message: `El cliente ha aceptado comercialmente la propuesta ${proposal.title} (V${proposal.version}) por un valor de $${new Intl.NumberFormat("es-CO").format(proposal.totalValue)} COP.`,
+        severity: "warning", // Priority P2
+      });
+
       // Forensic Audit Log (Pilar X)
       await tx.insert(crmAuditLogs).values({
         actorId: userId,
@@ -355,6 +383,16 @@ export async function requestCommercialMeetingAction(proposalId: string): Promis
         leadId: proposal.leadId,
         activityType: "commercial",
         description: `Reunión comercial solicitada para la propuesta "${proposal.title}" (V${proposal.version}) via portal B2B.`,
+      });
+
+      // Trigger persistent notification dispatch (Fase 11.2)
+      await sendNotificationActionInternal(tx, {
+        customerId: contact.customerId,
+        userId: userId,
+        eventType: "meeting_requested",
+        title: `Reunión Comercial Solicitada`,
+        message: `El cliente ha solicitado una reunión de alineación comercial para la propuesta "${proposal.title}" (V${proposal.version}).`,
+        severity: "warning", // Priority P2
       });
 
       // Audit Log

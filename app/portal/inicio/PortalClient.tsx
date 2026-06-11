@@ -1,13 +1,20 @@
 "use client";
 
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition, useEffect, useRef } from "react";
 import { logoutAction } from "@/lib/server-actions/auth";
 import { 
   requestTechnicalServiceAction, 
   acceptProposalAction, 
   requestCommercialMeetingAction 
 } from "@/lib/server-actions/portal";
+import { markNotificationAsReadAction } from "@/lib/server-actions/notifications";
+import { addTicketCommentAction } from "@/lib/server-actions/comments";
+import { simulateInvoicePaymentAction } from "@/lib/server-actions/financials";
 import { mapCrmStageToPortal } from "@/lib/utils/portal-mapper";
+import { approveInvoiceStepAction } from "@/lib/server-actions/approvals";
+import { signElectronicDocumentAction } from "@/lib/server-actions/signatures";
+import { incrementAssetHoursAction, completeWorkOrderAction } from "@/lib/server-actions/cmms";
+import { createWarRoomAction } from "@/lib/server-actions/war-room";
 import { 
   Briefcase, 
   FileText, 
@@ -36,7 +43,12 @@ import {
   HelpCircle,
   AlertOctagon,
   ChevronRight,
-  Hammer
+  Hammer,
+  Bell,
+  MessageSquare,
+  Send,
+  ChevronDown,
+  CreditCard
 } from "lucide-react";
 
 // Types from schema definitions
@@ -73,6 +85,7 @@ interface ServiceRequest {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  comments?: any[];
 }
 
 interface Lead {
@@ -138,6 +151,87 @@ interface AuditLog {
   createdAt: Date;
 }
 
+interface Notification {
+  id: string;
+  customerId: string | null;
+  userId: string | null;
+  title: string;
+  message: string;
+  channel: string;
+  severity: string;
+  isRead: boolean;
+  createdAt: Date;
+}
+
+interface Contract {
+  id: string;
+  customerId: string;
+  title: string;
+  value: number;
+  status: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  createdAt: Date;
+}
+
+interface Invoice {
+  id: string;
+  customerId: string;
+  contractId: string | null;
+  invoiceNumber: string;
+  amount: number;
+  status: string;
+  dueDate: Date;
+  engineeringStatus: string;
+  engineeringApprovedBy: string | null;
+  engineeringApprovedAt: Date | null;
+  procurementStatus: string;
+  procurementApprovedBy: string | null;
+  procurementApprovedAt: Date | null;
+  financeStatus: string;
+  financeApprovedBy: string | null;
+  financeApprovedAt: Date | null;
+  createdAt: Date;
+  accountsReceivable?: {
+    outstandingBalance: number;
+    daysPastDue: number;
+    collectionStatus: string;
+  } | null;
+}
+
+interface Asset {
+  id: string;
+  plantId: string;
+  name: string;
+  code: string;
+  operatingHours: number;
+  lastMaintenanceAt: Date | null;
+  status: string;
+  createdAt: Date;
+}
+
+interface MaintenancePlan {
+  id: string;
+  assetId: string;
+  title: string;
+  intervalHours: number;
+  description: string | null;
+  nextMaintenanceDate: Date | null;
+  createdAt: Date;
+}
+
+interface WorkOrder {
+  id: string;
+  assetId: string;
+  planId: string | null;
+  title: string;
+  assignedTo: string | null;
+  status: string;
+  scheduledDate: Date;
+  completedAt: Date | null;
+  createdAt: Date;
+}
+
 interface PortalClientProps {
   customer: Customer;
   plants: Plant[];
@@ -148,6 +242,12 @@ interface PortalClientProps {
   diagnostics: Diagnostic[];
   activities: ActivityLog[];
   audits: AuditLog[];
+  notifications: Notification[];
+  contracts: Contract[];
+  invoices: Invoice[];
+  assets: Asset[];
+  maintenancePlans: MaintenancePlan[];
+  workOrders: WorkOrder[];
   user: {
     id: string;
     email: string;
@@ -167,11 +267,62 @@ export default function PortalClient({
   diagnostics,
   activities,
   audits,
+  notifications,
+  contracts,
+  invoices,
+  assets,
+  maintenancePlans,
+  workOrders,
   user,
   isImpersonating = false,
 }: PortalClientProps) {
-  const [activeTab, setActiveTab] = useState<"control" | "equipos" | "proyectos" | "requests" | "comercial" | "ingenieria" | "actividad" | "auditoria">("control");
+  const [activeTab, setActiveTab] = useState<"control" | "equipos" | "proyectos" | "requests" | "comercial" | "ingenieria" | "financials" | "actividad" | "auditoria">("control");
   const [isPending, startTransition] = useTransition();
+
+  // Notifications state (Fase 11.3)
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    setUnreadCount(notifications ? notifications.filter(n => !n.isRead && n.channel === "bell").length : 0);
+  }, [notifications]);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    const handleOutsideClick = () => setShowNotifications(false);
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, [showNotifications]);
+
+  const handleMarkRead = async (notificationId: string) => {
+    startTransition(async () => {
+      await markNotificationAsReadAction(notificationId);
+    });
+  };
+
+  // Comment Thread states (Fase 11.4)
+  const [openChatRequestId, setOpenChatRequestId] = useState<string | null>(null);
+  const [newCommentTexts, setNewCommentTexts] = useState<Record<string, string>>({});
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+
+  const handleAddComment = async (requestId: string) => {
+    const text = newCommentTexts[requestId]?.trim();
+    if (!text) return;
+    
+    setCommentError(null);
+    setSubmittingComment(true);
+    
+    startTransition(async () => {
+      const res = await addTicketCommentAction(requestId, text);
+      setSubmittingComment(false);
+      if (res.success) {
+        setNewCommentTexts(prev => ({ ...prev, [requestId]: "" }));
+      } else {
+        setCommentError(res.error);
+      }
+    });
+  };
 
   // Technical Document Center category state
   const [docCategory, setDocCategory] = useState<string>("todos");
@@ -199,6 +350,27 @@ export default function PortalClient({
 
   const [proposalActionError, setProposalActionError] = useState<string | null>(null);
   const [proposalActionSuccess, setProposalActionSuccess] = useState<string | null>(null);
+
+  // Payment Simulation states
+  const [paymentPendingInvoiceId, setPaymentPendingInvoiceId] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  const handleSimulatePayment = (invoiceId: string) => {
+    setPaymentPendingInvoiceId(invoiceId);
+    setPaymentSuccess(null);
+    setPaymentError(null);
+    
+    startTransition(async () => {
+      const res = await simulateInvoicePaymentAction(invoiceId, "PSE");
+      setPaymentPendingInvoiceId(null);
+      if (res.success) {
+        setPaymentSuccess(`Pago PSE de Factura procesado correctamente. Transacción: ${res.data.transactionId}`);
+      } else {
+        setPaymentError(res.error);
+      }
+    });
+  };
 
   // Reset helper
   const resetForm = () => {
@@ -538,6 +710,68 @@ export default function PortalClient({
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Notification Bell Dropdown (Fase 11.3) */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 transition-colors"
+              title="Notificaciones"
+            >
+              <Bell className="h-4.5 w-4.5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-emerald-600 dark:bg-emerald-500 text-white text-[9px] font-bold h-4.5 w-4.5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 mt-2.5 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-xl py-2 z-50 text-left">
+                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Centro de Notificaciones</span>
+                  <span className="text-[10px] text-slate-400 font-mono uppercase font-bold">{unreadCount} pendientes</span>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {notifications && notifications.filter(n => n.channel === "bell").length > 0 ? (
+                    notifications
+                      .filter(n => n.channel === "bell")
+                      .map((notif) => (
+                        <div
+                          key={notif.id}
+                          className={`px-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-none flex flex-col gap-1 transition-all ${
+                            notif.isRead ? "opacity-60" : "bg-emerald-500/[0.03] dark:bg-emerald-500/[0.01]"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{notif.title}</span>
+                            {!notif.isRead && (
+                              <button
+                                onClick={() => handleMarkRead(notif.id)}
+                                className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+                              >
+                                Marcar leído
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">{notif.message}</p>
+                          <span className="text-[9px] text-slate-400 font-mono mt-1">
+                            {new Date(notif.createdAt).toLocaleDateString("es-CO", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      ))
+                  ) : (
+                    <div className="px-4 py-6 text-center text-xs text-slate-400 font-semibold">
+                      No tienes notificaciones
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="hidden lg:flex items-center space-x-2 bg-slate-100 dark:bg-slate-950/80 px-3 py-1 rounded border border-slate-200 dark:border-slate-800">
             <User className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{user.fullName}</span>
@@ -583,6 +817,7 @@ export default function PortalClient({
             { id: "proyectos", label: "Proyectos" },
             { id: "requests", label: "Solicitudes" },
             { id: "comercial", label: "Comercial" },
+            { id: "financials", label: "Finanzas & Cartera" },
             { id: "ingenieria", label: "Ingeniería" },
             { id: "actividad", label: "Actividad" },
             { id: "auditoria", label: "Auditoría Cliente" },
@@ -792,45 +1027,138 @@ export default function PortalClient({
 
           {/* TAB 2: EQUIPOS INSTALADOS */}
           {activeTab === "equipos" && (
-            <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 rounded p-5 shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider font-mono border-b border-slate-200 dark:border-slate-800 pb-3 text-slate-800 dark:text-slate-200 mb-4 flex items-center justify-between">
-                <span>Centro de Equipos e Inventariado</span>
-                <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded font-mono">6 activos</span>
-              </h3>
-              <div className="overflow-x-auto text-xs">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                      <th className="pb-2 font-semibold">Código</th>
-                      <th className="pb-2 font-semibold">Nombre del Equipo</th>
-                      <th className="pb-2 font-semibold">Capacidad Diseñada</th>
-                      <th className="pb-2 font-semibold">Tipo de Activo</th>
-                      <th className="pb-2 font-semibold text-right">Estado Operativo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { code: "EX-AX-125", name: "Extractor Axial AX-125", cap: "45.000 CFM", type: "Extracción", status: "Operativo", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25" },
-                      { code: "EX-AX-140", name: "Extractor Axial AX-140", cap: "50.000 CFM", type: "Extracción", status: "Operativo", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25" },
-                      { code: "VT-VF-200", name: "Ventilador VF-200", cap: "30.000 CFM", type: "Inyección", status: "Mantenimiento Programado", color: "text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/25" },
-                      { code: "IN-AX-200", name: "Inyector de Aire IN-200", cap: "25.000 CFM", type: "Inyección", status: "Operativo", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25" },
-                      { code: "CA-HD-030", name: "Campana Industrial CA-030", cap: "N/A", type: "Captación", status: "Operativo", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25" },
-                      { code: "FL-HM-100", name: "Filtro de Humos FL-100", cap: "N/A", type: "Filtración", status: "Operativo", color: "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25" }
-                    ].map((eqp, idx) => (
-                      <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/20">
-                        <td className="py-3 font-mono text-slate-500 dark:text-slate-400">{eqp.code}</td>
-                        <td className="py-3 font-bold text-slate-800 dark:text-white">{eqp.name}</td>
-                        <td className="py-3 font-mono text-slate-600 dark:text-slate-300">{eqp.cap}</td>
-                        <td className="py-3 text-slate-500 dark:text-slate-400">{eqp.type}</td>
-                        <td className="py-3 text-right">
-                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase ${eqp.color}`}>
-                            {eqp.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="space-y-6">
+              <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 rounded p-5 shadow-sm">
+                <h3 className="text-sm font-bold uppercase tracking-wider font-mono border-b border-slate-200 dark:border-slate-800 pb-3 text-slate-800 dark:text-slate-200 mb-4 flex items-center justify-between">
+                  <span>Inventario de Activos y Telemetría de Operaciones</span>
+                  <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded font-mono">{assets.length} activos</span>
+                </h3>
+
+                {assets.length === 0 ? (
+                  <div className="text-center py-12 text-xs text-slate-500 font-mono">
+                    No se encontraron activos instalados para esta planta industrial.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6">
+                    {assets.map((asset) => {
+                      const plans = maintenancePlans.filter(p => p.assetId === asset.id);
+                      const orders = workOrders.filter(o => o.assetId === asset.id);
+
+                      return (
+                        <div key={asset.id} className="border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 p-5 rounded-sm flex flex-col lg:flex-row justify-between gap-6">
+                          <div className="space-y-4 flex-1">
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700/50">
+                                {asset.code}
+                              </span>
+                              <h4 className="text-sm font-bold text-slate-950 dark:text-white">{asset.name}</h4>
+                              <span className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase ${
+                                asset.status === "operativo" 
+                                  ? "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25"
+                                  : "text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/25"
+                              }`}>
+                                {asset.status}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                              <div>
+                                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-mono">Horas de Operación</span>
+                                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{asset.operatingHours.toLocaleString("es-CO")} hrs</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-mono">Último Mantenimiento</span>
+                                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                                  {asset.lastMaintenanceAt ? formatDate(asset.lastMaintenanceAt) : "Sin registros"}
+                                </span>
+                              </div>
+                              <div className="col-span-2 sm:col-span-1">
+                                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-mono">Acción de Telemetría</span>
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => {
+                                    startTransition(async () => {
+                                      const res = await incrementAssetHoursAction(asset.id, 100);
+                                      if (res.success && res.data.workOrderGenerated) {
+                                        alert("¡Alerta de Telemetría! El límite del plan de mantenimiento preventivo fue superado y se generó una orden de trabajo preventiva.");
+                                      }
+                                    });
+                                  }}
+                                  className="mt-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase font-mono rounded transition-colors animate-pulse"
+                                >
+                                  Simular Uso (+100 hrs)
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Plan details */}
+                            {plans.length > 0 && (
+                              <div className="border-t border-slate-200 dark:border-slate-800/80 pt-3">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-mono font-bold block mb-2">Planes de Mantenimiento Preventivo</span>
+                                <div className="space-y-2">
+                                  {plans.map(plan => (
+                                    <div key={plan.id} className="bg-white dark:bg-slate-900/60 p-2.5 rounded border border-slate-200 dark:border-slate-800/50 flex justify-between text-xs">
+                                      <div>
+                                        <span className="font-bold text-slate-800 dark:text-slate-200">{plan.title}</span>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{plan.description || "Inspección periódica del ventilador."}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="font-mono text-slate-600 dark:text-slate-400 block">Intervalo: {plan.intervalHours} hrs</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Work orders sidebar inside asset */}
+                          <div className="w-full lg:w-72 bg-white dark:bg-slate-900/40 p-4 rounded border border-slate-200 dark:border-slate-800/80">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-mono font-bold block mb-3 border-b border-slate-100 dark:border-slate-800/60 pb-1.5">
+                              Órdenes de Trabajo (OT)
+                            </span>
+                            {orders.length === 0 ? (
+                              <span className="text-[10px] text-slate-400 font-mono block text-center py-4">No hay órdenes programadas.</span>
+                            ) : (
+                              <div className="space-y-2.5">
+                                {orders.map(order => (
+                                  <div key={order.id} className="p-2.5 rounded border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 text-xs">
+                                    <div className="flex justify-between items-start mb-1">
+                                      <span className="font-bold text-slate-800 dark:text-slate-200 block max-w-[150px] truncate">{order.title}</span>
+                                      <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border uppercase ${
+                                        order.status === "completado"
+                                          ? "text-emerald-700 dark:text-emerald-400 bg-emerald-150/20 border-emerald-500/20"
+                                          : "text-amber-700 dark:text-amber-400 bg-amber-150/20 border-amber-500/20"
+                                      }`}>
+                                        {order.status}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-1.5">
+                                      <span>Prog: {formatDate(order.scheduledDate)}</span>
+                                      {order.status !== "completado" && (
+                                        <button
+                                          disabled={isPending}
+                                          onClick={() => {
+                                            startTransition(async () => {
+                                              await completeWorkOrderAction(order.id);
+                                            });
+                                          }}
+                                          className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+                                        >
+                                          Completar OT
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1126,8 +1454,8 @@ export default function PortalClient({
                       const slaTarget = getUrgencyBadge(req.urgency).props.children === "Crítica" ? "24h" : getUrgencyBadge(req.urgency).props.children === "Alta" ? "48h" : "72h";
 
                       return (
-                        <div key={req.id} className="bg-slate-100 dark:bg-slate-950 p-4 rounded border border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
-                          <div className="space-y-1 flex-1">
+                        <div key={req.id} className="bg-slate-100 dark:bg-slate-950 p-4 rounded border border-slate-200 dark:border-slate-800/80 flex flex-col gap-4 items-stretch">
+                          <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-bold text-slate-900 dark:text-white">{req.title}</span>
                               {getUrgencyBadge(req.urgency)}
@@ -1137,12 +1465,96 @@ export default function PortalClient({
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">{cleanDesc}</p>
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono pt-2">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono pt-2 border-b border-slate-200 dark:border-slate-800/60 pb-2.5">
                               <span>Planta: <strong className="text-slate-700 dark:text-slate-300">{plantName}</strong></span>
                               <span>Equipo: <strong className="text-slate-700 dark:text-slate-300 capitalize">{assetText}</strong></span>
                               <span>Tipo: <strong className="text-slate-700 dark:text-slate-300 capitalize">{typeText}</strong></span>
                               <span>Impacto: <strong className="text-slate-700 dark:text-slate-300 uppercase">{impactText}</strong></span>
                               <span>Registrado: <strong className="text-slate-700 dark:text-slate-300">{formatDate(req.createdAt)}</strong></span>
+                            </div>
+
+                            {/* Chat Thread Toggle & Messages Balloon */}
+                            <div className="pt-2">
+                              <button
+                                onClick={() => setOpenChatRequestId(openChatRequestId === req.id ? null : req.id)}
+                                className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors"
+                              >
+                                <MessageSquare className="h-3.5 w-3.5" />
+                                <span>
+                                  {openChatRequestId === req.id ? "Ocultar Hilo Técnico" : "Ver Hilo Técnico & Conversación"} 
+                                  ({req.comments ? req.comments.length : 0})
+                                </span>
+                              </button>
+
+                              {openChatRequestId === req.id && (
+                                <div className="mt-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded p-4 flex flex-col gap-3">
+                                  {/* Comments Feed */}
+                                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                                    {req.comments && req.comments.length > 0 ? (
+                                      req.comments.map((c: any) => (
+                                        <div
+                                          key={c.id}
+                                          className={`p-2.5 rounded text-[11px] leading-relaxed max-w-[85%] ${
+                                            c.actorRole === "cliente"
+                                              ? "bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 self-end border border-slate-200/50 dark:border-slate-800/30"
+                                              : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 self-start border border-emerald-100/50 dark:border-emerald-900/10"
+                                          }`}
+                                        >
+                                          <div className="flex justify-between items-center gap-4 mb-1">
+                                            <span className="font-bold text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                              {c.actor?.fullName || "CYH Soporte"} [{c.actorRole}]
+                                            </span>
+                                            <span className="text-[8px] text-slate-400 font-mono">
+                                              {new Date(c.createdAt).toLocaleDateString("es-CO", {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              })}
+                                            </span>
+                                          </div>
+                                          <p className="whitespace-pre-wrap">{c.comment}</p>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="text-center py-4 text-[11px] text-slate-400 font-medium">
+                                        No hay mensajes en esta conversación operativa.
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Error panel */}
+                                  {commentError && (
+                                    <div className="p-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/20 text-rose-800 dark:text-rose-400 text-[10px] font-semibold rounded">
+                                      {commentError}
+                                    </div>
+                                  )}
+
+                                  {/* Send comment form */}
+                                  <div className="flex gap-2 items-center mt-1">
+                                    <input
+                                      type="text"
+                                      value={newCommentTexts[req.id] || ""}
+                                      onChange={(e) => setNewCommentTexts(prev => ({ ...prev, [req.id]: e.target.value }))}
+                                      placeholder="Escriba un mensaje para el técnico asignado..."
+                                      disabled={submittingComment}
+                                      className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-850 rounded px-2.5 py-1.5 text-[11px] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-700 focus:outline-none disabled:opacity-50"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                          e.preventDefault();
+                                          handleAddComment(req.id);
+                                        }
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => handleAddComment(req.id)}
+                                      disabled={submittingComment || !newCommentTexts[req.id]?.trim()}
+                                      className="bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-850 text-white disabled:text-slate-400 dark:disabled:text-slate-700 p-1.5 rounded transition-all duration-150 shadow-sm shrink-0 flex items-center justify-center"
+                                      title="Enviar mensaje"
+                                    >
+                                      <Send className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1289,6 +1701,363 @@ export default function PortalClient({
                   </table>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB 5.5: FINANZAS Y CARTERA */}
+          {activeTab === "financials" && (
+            <div className="space-y-6">
+              {/* Alertas de transacciones */}
+              {paymentSuccess && (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-400 rounded-sm text-xs font-semibold flex items-center gap-2">
+                  <Check className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{paymentSuccess}</span>
+                </div>
+              )}
+              {paymentError && (
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-400 rounded-sm text-xs font-semibold flex items-center gap-2">
+                  <AlertOctagon className="h-4.5 w-4.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <span>{paymentError}</span>
+                </div>
+              )}
+
+              {/* Tarjetas de Resumen Financiero */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 rounded p-5 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-500 dark:text-slate-400">Contratos Activos</span>
+                    <span className="block text-2xl font-bold text-slate-800 dark:text-white mt-1 font-mono">
+                      {contracts ? contracts.filter(c => c.status === "activo").length : 0}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-mono">
+                    Valor: <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(
+                        contracts ? contracts.reduce((acc, c) => acc + Number(c.value), 0) : 0
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 rounded p-5 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-500 dark:text-slate-400">Facturación Total</span>
+                    <span className="block text-2xl font-bold text-slate-800 dark:text-white mt-1 font-mono">
+                      {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(
+                        invoices ? invoices.reduce((acc, inv) => acc + Number(inv.amount), 0) : 0
+                      )}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                    Emitidas a esta cuenta
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 rounded p-5 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-500 dark:text-slate-400">Saldo Pendiente</span>
+                    <span className="block text-2xl font-bold text-slate-800 dark:text-white mt-1 font-mono">
+                      {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(
+                        invoices ? invoices.reduce((acc, inv) => acc + (inv.accountsReceivable ? Number(inv.accountsReceivable.outstandingBalance) : 0), 0) : 0
+                      )}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                    Pendiente de pago
+                  </div>
+                </div>
+
+                <div className="border border-rose-200 dark:border-rose-950 bg-rose-50/20 dark:bg-rose-950/10 rounded p-5 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-rose-600 dark:text-rose-455">Facturas Vencidas</span>
+                    <span className="block text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1 font-mono font-bold">
+                      {invoices ? invoices.filter(inv => inv.status === "overdue").length : 0}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-rose-500 dark:text-rose-400 mt-2 font-mono">
+                    Valor: <span className="font-semibold">
+                      {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(
+                        invoices ? invoices.filter(inv => inv.status === "overdue").reduce((acc, inv) => acc + (inv.accountsReceivable ? Number(inv.accountsReceivable.outstandingBalance) : Number(inv.amount)), 0) : 0
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seccion de Contratos */}
+              <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 rounded p-5 shadow-sm">
+                <h3 className="text-sm font-bold uppercase tracking-wider font-mono border-b border-slate-200 dark:border-slate-800 pb-3 text-slate-800 dark:text-slate-200 mb-4 flex items-center justify-between">
+                  <span>Contratos Comerciales Vigentes</span>
+                  <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded font-mono">
+                    {contracts ? contracts.length : 0} contratos
+                  </span>
+                </h3>
+                
+                {!contracts || contracts.length === 0 ? (
+                  <div className="text-center py-8 text-xs text-slate-500">
+                    No se registran contratos comerciales para esta cuenta corporativa.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                          <th className="pb-2 font-semibold">Objeto / Título del Contrato</th>
+                          <th className="pb-2 font-semibold">Fecha Inicio</th>
+                          <th className="pb-2 font-semibold">Fecha Fin</th>
+                          <th className="pb-2 font-semibold text-right">Valor Total</th>
+                          <th className="pb-2 font-semibold text-right">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contracts.map((contract) => (
+                          <tr key={contract.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/20">
+                            <td className="py-3 font-bold text-slate-800 dark:text-white">{contract.title}</td>
+                            <td className="py-3 text-slate-500 dark:text-slate-400 font-mono">
+                              {contract.startDate ? new Date(contract.startDate).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="py-3 text-slate-500 dark:text-slate-400 font-mono">
+                              {contract.endDate ? new Date(contract.endDate).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="py-3 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
+                              {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(contract.value)}
+                            </td>
+                            <td className="py-3 text-right">
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase ${
+                                contract.status === "activo"
+                                  ? "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25"
+                                  : "text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                              }`}>
+                                {contract.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Seccion de Facturas y Cartera */}
+              <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 rounded p-5 shadow-sm">
+                <h3 className="text-sm font-bold uppercase tracking-wider font-mono border-b border-slate-200 dark:border-slate-800 pb-3 text-slate-800 dark:text-slate-200 mb-4 flex items-center justify-between">
+                  <span>Facturación y Estado de Cartera</span>
+                  <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded font-mono">
+                    {invoices ? invoices.length : 0} facturas
+                  </span>
+                </h3>
+
+                {!invoices || invoices.length === 0 ? (
+                  <div className="text-center py-8 text-xs text-slate-500">
+                    No se registran facturas emitidas para esta cuenta corporativa.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                          <th className="pb-2 font-semibold">No. Factura</th>
+                          <th className="pb-2 font-semibold">Vencimiento</th>
+                          <th className="pb-2 font-semibold text-right">Valor Facturado</th>
+                          <th className="pb-2 font-semibold text-right">Saldo Pendiente</th>
+                          <th className="pb-2 font-semibold text-center">Estado</th>
+                          <th className="pb-2 font-semibold text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoices.map((inv) => {
+                          const isOutstanding = inv.accountsReceivable && Number(inv.accountsReceivable.outstandingBalance) > 0;
+                          const outstandingVal = inv.accountsReceivable ? Number(inv.accountsReceivable.outstandingBalance) : 0;
+                          
+                          return (
+                            <React.Fragment key={inv.id}>
+                              <tr className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/20">
+                                <td className="py-3 font-mono font-bold text-slate-800 dark:text-white">{inv.invoiceNumber}</td>
+                                <td className="py-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                                  {new Date(inv.dueDate).toLocaleDateString()}
+                                  {inv.status === "overdue" && (
+                                    <span className="ml-2 text-[9px] font-semibold text-rose-600 dark:text-rose-400 font-mono uppercase bg-rose-100 dark:bg-rose-950/20 px-1 py-0.5 rounded border border-rose-200 dark:border-rose-900/30">
+                                      Vencido
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 text-right font-mono font-semibold text-slate-850 dark:text-white">
+                                  {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(inv.amount)}
+                                </td>
+                                <td className="py-3 text-right font-mono font-bold text-slate-700 dark:text-slate-350">
+                                  {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(outstandingVal)}
+                                </td>
+                                <td className="py-3 text-center">
+                                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase ${
+                                    inv.status === "paid"
+                                      ? "text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/25"
+                                      : inv.status === "overdue"
+                                      ? "text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/25"
+                                      : "text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/25"
+                                  }`}>
+                                    {inv.status === "paid" ? "Pagada" : inv.status === "overdue" ? "Vencida" : "Pendiente"}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-right">
+                                  {(inv.status === "pending" || inv.status === "overdue" || isOutstanding) ? (
+                                    <button
+                                      onClick={() => handleSimulatePayment(inv.id)}
+                                      disabled={paymentPendingInvoiceId !== null}
+                                      className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded transition-colors shadow-sm flex items-center gap-1.5 ml-auto"
+                                    >
+                                      {paymentPendingInvoiceId === inv.id ? (
+                                        <>
+                                          <RefreshCw className="h-3 w-3 animate-spin" />
+                                          Procesando...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CreditCard className="h-3 w-3" />
+                                          Simular Pago PSE
+                                        </>
+                                      )}
+                                    </button>
+                                  ) : (
+                                    <span className="text-slate-400 dark:text-slate-500 text-[10px] font-mono italic">Sin Acciones</span>
+                                  )}
+                                </td>
+                              </tr>
+
+                              {/* Approval Workflow Stepper Row */}
+                              <tr className="bg-slate-50/50 dark:bg-slate-900/10">
+                                <td colSpan={6} className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800/80">
+                                  <div className="grid grid-grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* STEP 1: ENGINEERING */}
+                                    <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded p-3 text-xs flex flex-col justify-between gap-2">
+                                      <div>
+                                        <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 block uppercase font-semibold">Paso 1: Diseño Técnico / Ingeniería</span>
+                                        {inv.engineeringStatus === "approved" ? (
+                                          <div className="mt-1.5 flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                            <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                            <div>
+                                              <span className="font-bold">Aprobado</span>
+                                              <span className="block text-[9px] text-slate-500 dark:text-slate-400">Por: {inv.engineeringApprovedBy}</span>
+                                              <span className="block text-[8px] text-slate-400 font-mono">{formatDate(inv.engineeringApprovedAt)}</span>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="mt-1.5 flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                            <Clock className="h-4 w-4 shrink-0" />
+                                            <div>
+                                              <span className="font-bold">Pendiente de Aprobación</span>
+                                              <span className="block text-[9px] text-slate-500 dark:text-slate-400 font-mono">Requiere: Ing. Diseñador CYH</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {inv.engineeringStatus !== "approved" && (
+                                        <button
+                                          disabled={isPending}
+                                          onClick={() => {
+                                            startTransition(async () => {
+                                              const res = await approveInvoiceStepAction(inv.id, "engineering");
+                                              if (res.success) alert("Paso de Ingeniería aprobado con éxito.");
+                                              else alert(`Error: ${res.error}`);
+                                            });
+                                          }}
+                                          className="mt-2 w-full text-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold font-mono text-[9px] py-1 uppercase rounded border border-slate-350 dark:border-slate-700 transition-colors"
+                                        >
+                                          Aprobar Ingeniería (Demo)
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* STEP 2: PROCUREMENT */}
+                                    <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded p-3 text-xs flex flex-col justify-between gap-2">
+                                      <div>
+                                        <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 block uppercase font-semibold">Paso 2: Compras / Aprovisionamiento</span>
+                                        {inv.procurementStatus === "approved" ? (
+                                          <div className="mt-1.5 flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                            <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                            <div>
+                                              <span className="font-bold">Aprobado</span>
+                                              <span className="block text-[9px] text-slate-500 dark:text-slate-400">Por: {inv.procurementApprovedBy}</span>
+                                              <span className="block text-[8px] text-slate-400 font-mono">{formatDate(inv.procurementApprovedAt)}</span>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="mt-1.5 flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                            <Clock className="h-4 w-4 shrink-0" />
+                                            <div>
+                                              <span className="font-bold">Pendiente de Aprobación</span>
+                                              <span className="block text-[9px] text-slate-500 dark:text-slate-400 font-mono">Requiere: Compras Cliente / CYH</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {inv.procurementStatus !== "approved" && (
+                                        <button
+                                          disabled={isPending}
+                                          onClick={() => {
+                                            startTransition(async () => {
+                                              const res = await approveInvoiceStepAction(inv.id, "procurement");
+                                              if (res.success) alert("Paso de Compras aprobado con éxito.");
+                                              else alert(`Error: ${res.error}`);
+                                            });
+                                          }}
+                                          className="mt-2 w-full text-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold font-mono text-[9px] py-1 uppercase rounded border border-slate-355 dark:border-slate-700 transition-colors"
+                                        >
+                                          Aprobar Compras (Demo)
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* STEP 3: FINANCE */}
+                                    <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded p-3 text-xs flex flex-col justify-between gap-2">
+                                      <div>
+                                        <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 block uppercase font-semibold">Paso 3: Finanzas / Tesorería</span>
+                                        {inv.financeStatus === "approved" ? (
+                                          <div className="mt-1.5 flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                            <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                            <div>
+                                              <span className="font-bold">Aprobado</span>
+                                              <span className="block text-[9px] text-slate-500 dark:text-slate-400">Por: {inv.financeApprovedBy}</span>
+                                              <span className="block text-[8px] text-slate-400 font-mono">{formatDate(inv.financeApprovedAt)}</span>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="mt-1.5 flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                            <Clock className="h-4 w-4 shrink-0" />
+                                            <div>
+                                              <span className="font-bold">Pendiente de Aprobación</span>
+                                              <span className="block text-[9px] text-slate-500 dark:text-slate-400 font-mono">Requiere: Director Financiero CYH</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {inv.financeStatus !== "approved" && (
+                                        <button
+                                          disabled={isPending}
+                                          onClick={() => {
+                                            startTransition(async () => {
+                                              const res = await approveInvoiceStepAction(inv.id, "finance");
+                                              if (res.success) alert("Paso de Finanzas aprobado con éxito.");
+                                              else alert(`Error: ${res.error}`);
+                                            });
+                                          }}
+                                          className="mt-2 w-full text-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold font-mono text-[9px] py-1 uppercase rounded border border-slate-355 dark:border-slate-700 transition-colors"
+                                        >
+                                          Aprobar Finanzas (Demo)
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

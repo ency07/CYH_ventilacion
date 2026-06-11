@@ -13,9 +13,16 @@ import {
   crmDocuments,
   crmActivityLogs,
   crmAuditLogs,
-  diagnosticReports
+  diagnosticReports,
+  crmTicketComments,
+  crmNotifications,
+  crmContracts,
+  crmInvoices,
+  crmAssets,
+  crmMaintenancePlans,
+  crmWorkOrders
 } from "@/lib/db/schema";
-import { eq, or, inArray, desc } from "drizzle-orm";
+import { eq, or, inArray, desc, and } from "drizzle-orm";
 import PortalClient from "./PortalClient";
 import { Building } from "lucide-react";
 import { headers } from "next/headers";
@@ -187,10 +194,44 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
   });
   const plantIds = plants.map(p => p.id);
 
-  // Service requests
+  // CMMS Data Fetching
+  const assets = plantIds.length > 0 ? await db.query.crmAssets.findMany({
+    where: inArray(crmAssets.plantId, plantIds),
+    orderBy: [desc(crmAssets.createdAt)],
+  }) : [];
+
+  const assetIds = assets.map(a => a.id);
+  const maintenancePlans = assetIds.length > 0 ? await db.query.crmMaintenancePlans.findMany({
+    where: inArray(crmMaintenancePlans.assetId, assetIds),
+  }) : [];
+
+  const workOrders = assetIds.length > 0 ? await db.query.crmWorkOrders.findMany({
+    where: inArray(crmWorkOrders.assetId, assetIds),
+    orderBy: [desc(crmWorkOrders.createdAt)],
+  }) : [];
+
+  // Service requests with technical comments
   const serviceRequests = await db.query.crmServiceRequests.findMany({
     where: eq(crmServiceRequests.customerId, customerId),
+    with: {
+      comments: {
+        with: {
+          actor: true,
+        },
+        orderBy: [desc(crmTicketComments.createdAt)],
+      },
+    },
     orderBy: [desc(crmServiceRequests.createdAt)],
+  });
+
+  // Bell Notifications for customer portal header
+  const notifications = await db.query.crmNotifications.findMany({
+    where: and(
+      eq(crmNotifications.customerId, customerId),
+      eq(crmNotifications.channel, "bell")
+    ),
+    orderBy: [desc(crmNotifications.createdAt)],
+    limit: 30,
   });
 
   // Leads / Projects
@@ -236,6 +277,21 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
     limit: 10,
   });
 
+  // Fetch Contracts
+  const contracts = await db.query.crmContracts.findMany({
+    where: eq(crmContracts.customerId, customerId),
+    orderBy: [desc(crmContracts.createdAt)],
+  });
+
+  // Fetch Invoices with Accounts Receivable relationship
+  const invoices = await db.query.crmInvoices.findMany({
+    where: eq(crmInvoices.customerId, customerId),
+    with: {
+      accountsReceivable: true,
+    },
+    orderBy: [desc(crmInvoices.createdAt)],
+  });
+
   const userName = profile?.full_name || user.email?.split("@")[0] || "Cliente CYH";
 
   return (
@@ -249,6 +305,12 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
       diagnostics={customerDiagnostics}
       activities={activities}
       audits={audits}
+      notifications={notifications}
+      contracts={contracts}
+      invoices={invoices}
+      assets={assets}
+      maintenancePlans={maintenancePlans}
+      workOrders={workOrders}
       user={{ id: user.id, email: user.email || "", fullName: userName, role: userRole }}
       isImpersonating={isImpersonating}
     />
