@@ -12,11 +12,9 @@ export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
 
-export async function createPipelineEntryAction(rawInput: any): Promise<ActionResult<any>> {
+export async function createPipelineEntryAction(rawInput: any): Promise<ActionResult<typeof crmPipeline.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
+    await requireRole(["admin", "comercial", "director_comercial"]);
 
     const validated = PipelineInsertSchema.parse(rawInput);
 
@@ -76,11 +74,9 @@ function sanitizeActivityType(input: string): typeof crmActivityLogs.$inferInser
   return "call" as typeof crmActivityLogs.$inferInsert['activityType']; // Fallback defensivo
 }
 
-export async function createActivityLogAction(rawInput: any): Promise<ActionResult<any>> {
+export async function createActivityLogAction(rawInput: any): Promise<ActionResult<typeof crmActivityLogs.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
+    const dbUser = await requireRole(["admin", "comercial", "director_comercial"]);
 
     // Clean and sanitize activity type before parsing
     const rawActivityType = typeof rawInput === "object" && rawInput !== null ? String(rawInput.activityType || "") : "";
@@ -95,7 +91,7 @@ export async function createActivityLogAction(rawInput: any): Promise<ActionResu
       leadId: validated.leadId,
       activityType: validated.activityType,
       description: validated.description,
-      userId: user.id,
+      userId: dbUser.id,
     }).returning();
 
     // Atomic cascade revalidation
@@ -113,9 +109,9 @@ export async function createActivityLogAction(rawInput: any): Promise<ActionResu
 
 export async function updateLeadStatusAction(leadId: string, newStage: any): Promise<ActionResult<any>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
+    const userRole = dbUser.role;
+    const userEmail = dbUser.email || "";
 
     // Stage enum validation check
     const validStages = ["nuevo", "contacto", "reunion", "diagnostico", "propuesta_prep", "propuesta_entregada", "negociacion", "ganado", "perdido"];
@@ -123,31 +119,32 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
       return { success: false, error: "Etapa comercial inválida." };
     }
 
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const userRole = dbUser?.role || "vendedor";
-    const userEmail = dbUser?.email || user.email || "";
-
     // Ownership check for commercial users
     if (userRole === "vendedor" || userRole === "comercial") {
       const [existingPipe] = await db.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
       if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
         return { success: false, error: "Acceso denegado: No tiene permisos para modificar este lead." };
       }
-    } else if (userRole === "tecnico" || userRole === "ingeniero") {
-      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar la etapa comercial." };
     }
 
     // Wrap everything in a database transaction to guarantee full atomic operations!
     const result = await db.transaction(async (tx) => {
-      // 1. Update status in leads table
-      const [updatedLead] = await tx.update(leads)
-        .set({ status: newStage, updatedAt: new Date(), updatedBy: user.id })
-        .where(eq(leads.id, leadId))
-        .returning();
+      // 1. Lock lead row to prevent concurrent updates to the same lead
+      const [updatedLead] = await tx.select().from(leads).where(eq(leads.id, leadId)).for("update");
 
       if (!updatedLead) {
         throw new Error("No se pudo encontrar o actualizar el lead.");
       }
+
+      // If transitioning to "ganado", acquire a transaction-level advisory lock on the normalized company name hash
+      if (newStage === "ganado") {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(lower(trim(${updatedLead.companyName}))))`);
+      }
+
+      // Update status in leads table
+      await tx.update(leads)
+        .set({ status: newStage, updatedAt: new Date(), updatedBy: dbUser.id })
+        .where(eq(leads.id, leadId));
 
       // 2. Update stage in crm_pipeline table (or create if not present)
       const [existingPipeline] = await tx.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
@@ -287,7 +284,7 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
         leadId,
         activityType: "status_changed",
         description: `Etapa comercial modificada a: ${newStage.toUpperCase()}`,
-        userId: user.id,
+        userId: dbUser.id,
       });
 
       return updatedLead;
@@ -308,13 +305,9 @@ export async function updateLeadStatusAction(leadId: string, newStage: any): Pro
 
 export async function updateLeadRiskLevelAction(leadId: string, newRiskLevel: string): Promise<ActionResult<any>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
-
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const userRole = dbUser?.role || "vendedor";
-    const userEmail = dbUser?.email || user.email || "";
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
+    const userRole = dbUser.role;
+    const userEmail = dbUser.email || "";
 
     // Ownership check for commercial users
     if (userRole === "vendedor" || userRole === "comercial") {
@@ -322,8 +315,6 @@ export async function updateLeadRiskLevelAction(leadId: string, newRiskLevel: st
       if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
         return { success: false, error: "Acceso denegado: No tiene permisos para modificar este lead." };
       }
-    } else if (userRole === "tecnico" || userRole === "ingeniero") {
-      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar datos comerciales." };
     }
 
     const validRiskLevels = ["HOT", "WARM", "LOW", "SPAM"];
@@ -342,7 +333,7 @@ export async function updateLeadRiskLevelAction(leadId: string, newRiskLevel: st
         riskLevel: newRiskLevel, 
         leadScore: targetScore,
         updatedAt: new Date(), 
-        updatedBy: user.id 
+        updatedBy: dbUser.id 
       })
       .where(eq(leads.id, leadId))
       .returning();
@@ -352,7 +343,7 @@ export async function updateLeadRiskLevelAction(leadId: string, newRiskLevel: st
       leadId,
       activityType: "status_changed",
       description: `Temperatura comercial modificada a: ${newRiskLevel}`,
-      userId: user.id,
+      userId: dbUser.id,
     });
 
     revalidatePath("/crm");
@@ -368,11 +359,9 @@ export async function updateLeadRiskLevelAction(leadId: string, newRiskLevel: st
   }
 }
 
-export async function getPipelineByLeadIdAction(leadId: string): Promise<ActionResult<any>> {
+export async function getPipelineByLeadIdAction(leadId: string): Promise<ActionResult<typeof crmPipeline.$inferSelect | null>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
+    await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
 
     const [entry] = await db.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
     return { success: true, data: entry || null };
@@ -473,15 +462,15 @@ export async function getAllLeadsWithCrmDataAction(): Promise<ActionResult<any[]
           ...row.pipeline,
           id: row.lead.id,
           pipelineId: row.pipeline?.id,
-          airflow: row.diagnostic?.airflow || null,
+          airflow: row.diagnostic?.airflow != null ? `${row.diagnostic.airflow} CFM` : "0 CFM",
           opportunityId: row.opportunity?.id || null,
-          opportunityValue: row.opportunity?.estimatedValue || null,
+          opportunityValue: row.opportunity?.estimatedValue != null ? `$${row.opportunity.estimatedValue} COP` : "$0 COP",
           opportunityStage: row.opportunity?.stage || null,
         });
       } else {
         // If there's a diagnostic report with airflow, keep the latest one
-        if (row.diagnostic?.airflow && !existing.airflow) {
-          existing.airflow = row.diagnostic.airflow;
+        if (row.diagnostic?.airflow && (existing.airflow === "0 CFM" || !existing.airflow)) {
+          existing.airflow = `${row.diagnostic.airflow} CFM`;
         }
       }
     }
@@ -502,13 +491,9 @@ export async function updateCommercialDataAction(
   nextTask?: string | null
 ): Promise<ActionResult<any>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
-
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const userRole = dbUser?.role || "vendedor";
-    const userEmail = dbUser?.email || user.email || "";
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
+    const userRole = dbUser.role;
+    const userEmail = dbUser.email || "";
 
     // If commercial user, prevent modifying leads assigned to others
     if (userRole === "vendedor" || userRole === "comercial") {
@@ -516,8 +501,6 @@ export async function updateCommercialDataAction(
       if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
         return { success: false, error: "Acceso denegado: No tiene permisos para modificar la asignación de este lead." };
       }
-    } else if (userRole === "tecnico" || userRole === "ingeniero") {
-      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar datos comerciales." };
     }
 
     const updated = await db.transaction(async (tx) => {
@@ -657,11 +640,11 @@ export async function getDashboardMetricsAction(): Promise<ActionResult<any>> {
   }
 }
 
-export async function createCompanyAction(data: { name: string; industry?: string; city?: string; website?: string }): Promise<ActionResult<any>> {
+import { requireRole } from "@/lib/auth/permissions";
+
+export async function createCompanyAction(data: { name: string; industry?: string; city?: string; website?: string }): Promise<ActionResult<typeof crmCompanies.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "comercial", "director_comercial"]);
 
     const [newCompany] = await db.insert(crmCompanies).values({
       name: data.name,
@@ -676,11 +659,9 @@ export async function createCompanyAction(data: { name: string; industry?: strin
   }
 }
 
-export async function createContactAction(data: { companyId: string; fullName: string; cargo?: string; email?: string; phone?: string }): Promise<ActionResult<any>> {
+export async function createContactAction(data: { companyId: string; fullName: string; cargo?: string; email?: string; phone?: string }): Promise<ActionResult<typeof crmContacts.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "comercial", "director_comercial"]);
 
     const [newContact] = await db.insert(crmContacts).values({
       companyId: data.companyId,
@@ -697,11 +678,10 @@ export async function createContactAction(data: { companyId: string; fullName: s
 }
 
 
-export async function createTaskAction(data: { leadId: string; taskType: string; dueDate: string; assignedTo?: string; notes?: string }): Promise<ActionResult<any>> {
+export async function createTaskAction(data: { leadId: string; taskType: string; dueDate: string; assignedTo?: string; notes?: string }): Promise<ActionResult<typeof crmTasks.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
+    await requireRole(["admin", "comercial", "director_comercial"]);
+
     const [newTask] = await db.insert(crmTasks).values({
       leadId: data.leadId,
       taskType: data.taskType,
@@ -735,11 +715,9 @@ export async function createOpportunityAction(data: {
   probability: number;
   stage: string;
   assignedTo?: string;
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<typeof crmOpportunities.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "comercial", "director_comercial"]);
 
     const [newOpp] = await db.insert(crmOpportunities).values({
       leadId: data.leadId,
@@ -770,17 +748,15 @@ export async function createProposalAction(data: {
   totalValue: number;
   pdfUrl?: string | null;
   status?: string;
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<typeof crmProposals.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "comercial", "director_comercial"]);
 
     const [newProp] = await db.insert(crmProposals).values({
       leadId: data.leadId,
       diagnosticId: data.diagnosticId || null,
       title: data.title,
-      totalValue: data.totalValue,
+      totalValue: data.totalValue ?? 0,
       currency: "COP",
       status: data.status || "borrador",
       pdfUrl: data.pdfUrl || null,
@@ -798,9 +774,7 @@ export async function createProposalAction(data: {
 
 export async function getReportsMetricsAction(periodo?: string): Promise<ActionResult<any>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "super_admin", "director", "director_comercial"]);
 
     const [allLeads, allDiagnostics, allProposals, allOpportunities] = await Promise.all([
       db.select().from(leads),
@@ -975,14 +949,10 @@ export async function updateProposalStatusAction(
   proposalId: string,
   newStatus: string
 ): Promise<ActionResult<any>> {
-  const supabase = getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
-
   try {
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const userRole = dbUser?.role || "comercial";
-    const userEmail = dbUser?.email || user.email || "";
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
+    const userRole = dbUser.role;
+    const userEmail = dbUser.email || "";
 
     if (newStatus === "aceptada" && !["admin", "super_admin", "director_comercial", "director"].includes(userRole)) {
       return { success: false, error: "Permisos insuficientes para aprobar propuestas comerciales." };
@@ -1005,7 +975,7 @@ export async function updateProposalStatusAction(
         .set({ 
           status: newStatus, 
           updatedAt: new Date(), 
-          approvedBy: newStatus === "aceptada" ? user.id : null, 
+          approvedBy: newStatus === "aceptada" ? dbUser.id : null, 
           approvedAt: newStatus === "aceptada" ? new Date() : null 
         })
         .where(eq(crmProposals.id, proposalId))
@@ -1122,16 +1092,14 @@ export async function updateTaskStatusAction(
   newStatus: string
 ): Promise<ActionResult<any>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial", "tecnico", "ingeniero"]);
 
     const [updated] = await db
       .update(crmTasks)
       .set({ 
         status: newStatus, 
         updatedAt: new Date(),
-        completedBy: newStatus === 'completado' ? user.id : null,
+        completedBy: newStatus === 'completado' ? dbUser.id : null,
         completedAt: newStatus === 'completado' ? new Date() : null
       })
       .where(eq(crmTasks.id, taskId))
@@ -1159,30 +1127,24 @@ export async function updateTaskStatusAction(
 
 export async function updateLeadCityAction(leadId: string, newCity: string): Promise<ActionResult<any>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
-
     if (!newCity || newCity.trim() === "") {
       return { success: false, error: "La ciudad no puede estar vacía." };
     }
 
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const userRole = dbUser?.role || "vendedor";
-    const userEmail = dbUser?.email || user.email || "";
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
+    const userRole = dbUser.role;
+    const userEmail = dbUser.email || "";
 
     if (userRole === "vendedor" || userRole === "comercial") {
       const [existingPipe] = await db.select().from(crmPipeline).where(eq(crmPipeline.leadId, leadId));
       if (existingPipe && existingPipe.assignedTo && existingPipe.assignedTo.toLowerCase() !== userEmail.toLowerCase()) {
         return { success: false, error: "Acceso denegado: No tiene asignado este lead." };
       }
-    } else if (userRole === "tecnico" || userRole === "ingeniero") {
-      return { success: false, error: "Acceso denegado: Los técnicos no tienen permisos para modificar la ciudad del lead." };
     }
 
     const normalizedCity = normalizeCity(newCity);
     const [updatedLead] = await db.update(leads)
-      .set({ city: normalizedCity, updatedAt: new Date(), updatedBy: user.id })
+      .set({ city: normalizedCity, updatedAt: new Date(), updatedBy: dbUser.id })
       .where(eq(leads.id, leadId))
       .returning();
 
@@ -1208,11 +1170,9 @@ export async function updateOpportunityAction(
     assignedTo?: string;
     diagnosticId?: string | null;
   }
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<typeof crmOpportunities.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial"]);
 
     const [existingOpp] = await db.select().from(crmOpportunities).where(eq(crmOpportunities.id, oppId));
     if (!existingOpp) {
@@ -1260,11 +1220,9 @@ export async function updateOpportunityAction(
 export async function updateTaskAction(
   taskId: string,
   data: { status?: string; notes?: string }
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<typeof crmTasks.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial", "tecnico", "ingeniero"]);
 
     const updateFields: any = {
       updatedAt: new Date(),
@@ -1272,7 +1230,7 @@ export async function updateTaskAction(
     if (data.status !== undefined) {
       updateFields.status = data.status;
       if (data.status === 'completado') {
-        updateFields.completedBy = user.id;
+        updateFields.completedBy = dbUser.id;
         updateFields.completedAt = new Date();
       } else {
         updateFields.completedBy = null;
@@ -1325,18 +1283,9 @@ export type LeadSelectItem = {
  */
 export async function getLeadsForSelectAction(): Promise<ActionResult<LeadSelectItem[]>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
-
-    const userRecord = await db
-      .select({ role: crmUsers.role, fullName: crmUsers.fullName })
-      .from(crmUsers)
-      .where(eq(crmUsers.id, user.id))
-      .limit(1);
-
-    const role = userRecord[0]?.role ?? "vendedor";
-    const fullName = userRecord[0]?.fullName ?? "";
+    const dbUser = await requireRole(["admin", "super_admin", "director_comercial", "vendedor", "comercial", "tecnico", "ingeniero"]);
+    const role = dbUser.role;
+    const fullName = dbUser.fullName ?? "";
 
     const rows = await db
       .select({
@@ -1391,9 +1340,7 @@ export type CreateTaskInput = {
  */
 export async function createTaskFullAction(data: CreateTaskInput): Promise<ActionResult<typeof crmTasks.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "comercial", "director_comercial"]);
 
     if (!data.leadId || !data.taskType || !data.priority || !data.dueDate) {
       return { success: false, error: "Todos los campos obligatorios deben ser completados." };
@@ -1410,11 +1357,13 @@ export async function createTaskFullAction(data: CreateTaskInput): Promise<Actio
     }).returning();
 
     // Log de actividad
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
     await db.insert(crmActivityLogs).values({
       leadId: data.leadId,
       activityType: "technical",
       description: `Nueva tarea [${data.priority.toUpperCase()}]: ${data.taskType}`,
-      userId: user.id,
+      userId: user!.id,
     });
 
     // Revalidación en cascada total
@@ -1444,9 +1393,7 @@ export type CreateActivityInput = {
  */
 export async function createActivityFullAction(data: CreateActivityInput): Promise<ActionResult<typeof crmTasks.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "comercial", "director_comercial"]);
 
     if (!data.leadId || !data.taskType || !data.dueDate || !data.notes.trim()) {
       return { success: false, error: "Todos los campos obligatorios deben ser completados." };
@@ -1462,11 +1409,13 @@ export async function createActivityFullAction(data: CreateActivityInput): Promi
       status: "pendiente",
     }).returning();
 
+    const supabase = getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
     await db.insert(crmActivityLogs).values({
       leadId: data.leadId,
       activityType: sanitizeActivityType(data.taskType),
       description: data.notes.substring(0, 200),
-      userId: user.id,
+      userId: user!.id,
     });
 
     revalidatePath("/crm/actividades");

@@ -30,7 +30,12 @@ export async function loginAction(formData: FormData) {
     .eq("id", data.user.id)
     .single();
 
-  const role = profile?.role || "cliente";
+  if (!profile) {
+    await supabase.auth.signOut();
+    return { error: "Acceso Denegado: Su usuario no está registrado en el sistema." };
+  }
+
+  const role = profile.role || "cliente";
 
   revalidatePath("/", "layout");
 
@@ -44,6 +49,10 @@ export async function loginAction(formData: FormData) {
     redirect("/portal/inicio");
   }
 }
+
+import { db } from "@/lib/db";
+import { leads } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function signupAction(formData: FormData) {
   const email = formData.get("email") as string;
@@ -78,8 +87,13 @@ export async function signupAction(formData: FormData) {
       id: data.user.id,
       email: email,
       full_name: fullName,
-      role: 'vendedor' // Default role in active schema
+      role: 'cliente' // Default restricted role instead of vendedor
     });
+
+    // Link existing leads with this email to the new user ID in drizzle db
+    await db.update(leads)
+      .set({ createdBy: data.user.id })
+      .where(eq(leads.email, email.toLowerCase()));
   }
 
   return { success: "Revisa tu correo para confirmar tu cuenta." };

@@ -17,17 +17,16 @@ export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
 
+import { getCurrentUser } from "@/lib/auth/permissions";
+
 // Helper to check user roles and permissions
 async function getAuthenticatedUser() {
-  const supabase = getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado");
-
-  const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-  const role = dbUser?.role || "vendedor";
-  const email = dbUser?.email || user.email || "";
-  
-  return { user, role, email };
+  const dbUser = await getCurrentUser();
+  return { 
+    user: { id: dbUser.id, email: dbUser.email }, 
+    role: dbUser.role, 
+    email: dbUser.email 
+  };
 }
 
 export async function createCustomerAction(data: {

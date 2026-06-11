@@ -110,6 +110,20 @@ export default async function OportunidadDetailPage({
     );
   }
 
+  // IDOR Access Restriction for Clients: cannot view opportunities belonging to another client account
+  if (userRole === "cliente" && opportunityDetail.lead?.createdBy !== dbUser.id) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#F8FAFC] p-8 text-center min-h-[500px]">
+        <div className="p-6 bg-white border border-slate-200 rounded-lg shadow-sm">
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest text-red-500">Acceso Denegado</h2>
+          <p className="text-xs text-slate-500 max-w-sm mt-2 font-semibold">
+            Esta oportunidad comercial pertenece a otra cuenta corporativa y no está autorizada para su visualización.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // TECNICO SECURITY MASKING: mask estimatedValue and weightedValue to 0
   if (isTecnico) {
     opportunityDetail = {

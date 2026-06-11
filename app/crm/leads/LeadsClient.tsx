@@ -1094,6 +1094,7 @@ export default function LeadsClient({
                   <input 
                     required 
                     type="text"
+                    name="fullName"
                     value={newLeadForm.fullName} 
                     onChange={e => setNewLeadForm({...newLeadForm, fullName: e.target.value})} 
                     className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
@@ -1104,6 +1105,7 @@ export default function LeadsClient({
                   <input 
                     required 
                     type="text"
+                    name="companyName"
                     value={newLeadForm.companyName} 
                     onChange={e => setNewLeadForm({...newLeadForm, companyName: e.target.value})} 
                     className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
@@ -1117,6 +1119,7 @@ export default function LeadsClient({
                   <input 
                     required 
                     type="email"
+                    name="email"
                     value={newLeadForm.email} 
                     onChange={e => setNewLeadForm({...newLeadForm, email: e.target.value})} 
                     className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
@@ -1127,6 +1130,7 @@ export default function LeadsClient({
                   <input 
                     required 
                     type="text"
+                    name="phone"
                     value={newLeadForm.phone} 
                     onChange={e => setNewLeadForm({...newLeadForm, phone: e.target.value})} 
                     className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
@@ -1139,6 +1143,7 @@ export default function LeadsClient({
                   <label className="font-bold text-slate-500 uppercase tracking-wider block">Cargo / Puesto</label>
                   <input 
                     type="text"
+                    name="cargo"
                     value={newLeadForm.cargo} 
                     onChange={e => setNewLeadForm({...newLeadForm, cargo: e.target.value})} 
                     className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
@@ -1149,6 +1154,7 @@ export default function LeadsClient({
                   <input 
                     required
                     type="text"
+                    name="city"
                     value={newLeadForm.city} 
                     onChange={e => setNewLeadForm({...newLeadForm, city: e.target.value})} 
                     className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
@@ -1160,6 +1166,7 @@ export default function LeadsClient({
                 <div className="space-y-1.5">
                   <label className="font-bold text-slate-500 uppercase tracking-wider block">Servicio *</label>
                   <select 
+                    name="serviceType"
                     value={newLeadForm.serviceType} 
                     onChange={e => setNewLeadForm({...newLeadForm, serviceType: e.target.value as any})}
                     className="w-full bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 font-medium focus:outline-none focus:border-slate-500"
@@ -1178,6 +1185,7 @@ export default function LeadsClient({
                   <input 
                     required 
                     type="text"
+                    name="environmentType"
                     value={newLeadForm.environmentType} 
                     onChange={e => setNewLeadForm({...newLeadForm, environmentType: e.target.value})} 
                     className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500" 
@@ -1186,6 +1194,7 @@ export default function LeadsClient({
                 <div className="space-y-1.5">
                   <label className="font-bold text-slate-500 uppercase tracking-wider block">Urgencia *</label>
                   <select 
+                    name="urgencyLevel"
                     value={newLeadForm.urgencyLevel} 
                     onChange={e => setNewLeadForm({...newLeadForm, urgencyLevel: e.target.value as any})}
                     className="w-full bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 font-medium focus:outline-none focus:border-slate-500"
@@ -1201,6 +1210,7 @@ export default function LeadsClient({
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-500 uppercase tracking-wider block">Notas Comerciales</label>
                 <textarea 
+                  name="notes"
                   value={newLeadForm.notes} 
                   onChange={e => setNewLeadForm({...newLeadForm, notes: e.target.value})} 
                   className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-500 h-20 resize-none"

@@ -80,7 +80,7 @@ function NotificationBell() {
     setLoading(true);
     try {
       const res = await getNotificationAlertsAction();
-      if (res.success) setAlerts(res.data);
+      if (res?.success) setAlerts(res.data);
     } finally {
       setLoading(false);
       setFetched(true);
@@ -91,7 +91,7 @@ function NotificationBell() {
   useEffect(() => {
     let cancelled = false;
     getNotificationAlertsAction().then(res => {
-      if (!cancelled && res.success) setAlerts(res.data);
+      if (!cancelled && res?.success) setAlerts(res.data);
     });
     return () => { cancelled = true; };
   }, []);

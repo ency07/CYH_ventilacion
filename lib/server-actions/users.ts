@@ -6,12 +6,13 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth/permissions";
 
 export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
 
-export async function getCurrentUserAction(): Promise<ActionResult<any>> {
+export async function getCurrentUserAction(): Promise<ActionResult<typeof crmUsers.$inferSelect>> {
   try {
     const cookieStore = cookies();
     const token = cookieStore.get("cyh-crm-session")?.value;
@@ -28,44 +29,33 @@ export async function getCurrentUserAction(): Promise<ActionResult<any>> {
     const [profile] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
     
     if (!profile) {
-      // Auto-create profile if missing
-      const [newProfile] = await db.insert(crmUsers).values({
-        id: user.id,
-        email: user.email!,
-        fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || "Usuario",
-        role: "asesor_comercial",
-      }).returning();
-      return { success: true, data: newProfile };
+      console.warn(`[AppSec Warning] Intento de acceso sin perfil registrado en crm_users: ${user.email}`);
+      return { success: false, error: "Acceso Denegado: Usuario no registrado." };
     }
     
     return { success: true, data: profile };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    return { success: false, error: err.message || "Error al obtener usuario actual." };
   }
 }
 
-export async function getAllCrmUsersAction(): Promise<ActionResult<any[]>> {
+export async function getAllCrmUsersAction(): Promise<ActionResult<typeof crmUsers.$inferSelect[]>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "super_admin", "director_comercial"]);
 
     const users = await db.select().from(crmUsers);
     return { success: true, data: users };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    return { success: false, error: err.message || "Error al obtener lista de usuarios." };
   }
 }
 
-export async function updateCrmUserAction(userId: string, data: { fullName?: string; role?: string }): Promise<ActionResult<any>> {
+export async function updateCrmUserAction(userId: string, data: { fullName?: string; role?: string }): Promise<ActionResult<typeof crmUsers.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    const currentUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial", "tecnico", "ingeniero"]);
 
-    const isSelf = user.id === userId;
-    const [currentUserProfile] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const isAuthorizedAdmin = currentUserProfile && ["admin", "super_admin"].includes(currentUserProfile.role);
+    const isSelf = currentUser.id === userId;
+    const isAuthorizedAdmin = ["admin", "super_admin"].includes(currentUser.role);
 
     if (!isSelf && !isAuthorizedAdmin) {
       return { success: false, error: "Acceso denegado. No tienes permisos para modificar otros usuarios." };
@@ -86,6 +76,6 @@ export async function updateCrmUserAction(userId: string, data: { fullName?: str
     revalidatePath("/crm/ajustes");
     return { success: true, data: updated };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    return { success: false, error: err.message || "Error al actualizar usuario." };
   }
 }

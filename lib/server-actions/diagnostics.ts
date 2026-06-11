@@ -3,19 +3,18 @@
 import { db } from "@/lib/db";
 import { diagnosticReports, crmUsers, crmActivityLogs, leads } from "@/lib/db/schema";
 import { DiagnosticInsertSchema } from "@/lib/validations/crm.schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth/permissions";
 
 export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
 
-export async function createDiagnosticAction(rawInput: any): Promise<ActionResult<any>> {
+export async function createDiagnosticAction(rawInput: any): Promise<ActionResult<typeof diagnosticReports.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "super_admin", "director_comercial", "ingeniero", "tecnico"]);
 
     const validated = DiagnosticInsertSchema.parse(rawInput);
 
@@ -40,16 +39,24 @@ export async function createDiagnosticAction(rawInput: any): Promise<ActionResul
   }
 }
 
-export async function getDiagnosticByLeadIdAction(leadId: string): Promise<ActionResult<any>> {
+export async function getDiagnosticByLeadIdAction(leadId: string): Promise<ActionResult<typeof diagnosticReports.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial", "tecnico", "ingeniero", "cliente"]);
 
     const [report] = await db.select().from(diagnosticReports).where(eq(diagnosticReports.leadId, leadId));
     if (!report) {
       return { success: false, error: "Reporte no encontrado." };
     }
+
+    // IDOR / Tenant scope validation check for clients
+    if (dbUser.role === "cliente") {
+      const [leadRecord] = await db.select().from(leads).where(eq(leads.id, leadId));
+      if (!leadRecord || leadRecord.createdBy !== dbUser.id) {
+        console.warn(`[AppSec Warning] IDOR detectado! Cliente ${dbUser.email} (ID: ${dbUser.id}) intentó acceder al diagnóstico de lead ${leadId} (Owner ID: ${leadRecord?.createdBy})`);
+        return { success: false, error: "Acceso denegado: Recurso no pertenece a su cuenta." };
+      }
+    }
+
     return { success: true, data: report };
   } catch (error: any) {
     console.error(`Error fetching diagnostic for lead ${leadId}:`, error);
@@ -59,9 +66,9 @@ export async function getDiagnosticByLeadIdAction(leadId: string): Promise<Actio
 
 export async function uploadPdfAction(leadId: string, pdfBase64: string): Promise<ActionResult<string>> {
   try {
+    await requireRole(["admin", "super_admin", "director_comercial", "ingeniero", "tecnico"]);
+    
     const supabaseServer = getSupabaseServer();
-    const { data: { user } } = await supabaseServer.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
     
     // Ensure the pdfs bucket exists
     try {
@@ -110,19 +117,9 @@ export async function upsertDiagnosticAction(rawInput: {
   materialSuggestions?: string | null;
   status?: string | null;
   verdictNotes?: string | null;
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<typeof diagnosticReports.$inferSelect>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
-
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const userRole = dbUser?.role || "vendedor";
-
-    // Block Vendedor / Comercial from editing/writing
-    if (userRole === "vendedor" || userRole === "comercial") {
-      return { success: false, error: "Acceso denegado: El panel de Preingeniería es Solo Lectura para asesores comerciales." };
-    }
+    const dbUser = await requireRole(["admin", "super_admin", "director_comercial", "ingeniero", "tecnico"]);
 
     const leadId = rawInput.leadId;
     if (!leadId) return { success: false, error: "leadId es requerido." };
@@ -143,8 +140,8 @@ export async function upsertDiagnosticAction(rawInput: {
           materialSuggestions: rawInput.materialSuggestions !== undefined ? rawInput.materialSuggestions : existingReport.materialSuggestions,
           status: rawInput.status !== undefined && rawInput.status !== null ? rawInput.status : existingReport.status,
           verdictNotes: rawInput.verdictNotes !== undefined ? rawInput.verdictNotes : existingReport.verdictNotes,
-          updatedBy: user.id,
-          approvedBy: rawInput.status === "aprobado" ? user.id : existingReport.approvedBy,
+          updatedBy: dbUser.id,
+          approvedBy: rawInput.status === "aprobado" ? dbUser.id : existingReport.approvedBy,
           approvedAt: rawInput.status === "aprobado" ? new Date() : existingReport.approvedAt,
         })
         .where(eq(diagnosticReports.id, existingReport.id))
@@ -161,8 +158,8 @@ export async function upsertDiagnosticAction(rawInput: {
         materialSuggestions: rawInput.materialSuggestions || null,
         status: rawInput.status || "pendiente",
         verdictNotes: rawInput.verdictNotes || null,
-        createdBy: user.id,
-        approvedBy: rawInput.status === "aprobado" ? user.id : null,
+        createdBy: dbUser.id,
+        approvedBy: rawInput.status === "aprobado" ? dbUser.id : null,
         approvedAt: rawInput.status === "aprobado" ? new Date() : null,
       }).returning();
       resultReport = inserted;
@@ -173,7 +170,7 @@ export async function upsertDiagnosticAction(rawInput: {
       leadId,
       activityType: "diagnostic_updated",
       description: `Reporte de Preingeniería y Veredicto Técnico actualizados.`,
-      userId: user.id,
+      userId: dbUser.id,
     });
 
     revalidatePath("/crm");
@@ -192,32 +189,16 @@ export async function emitirVeredictoAction(
   notes: string
 ): Promise<ActionResult<any>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
-
-    // Fetch user details from DB
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    if (!dbUser) return { success: false, error: "Usuario no registrado en la base de datos." };
-
-    const userRole = dbUser.role;
-
-    // Strict RBAC checks: tecnico and ingeniero are blocked from signing/approving
-    if (userRole === "tecnico" || userRole === "ingeniero") {
-      return { 
-        success: false, 
-        error: `Acceso Denegado: Su rol de ${userRole.toUpperCase()} no tiene privilegios para firmar digitalmente o aprobar veredictos técnicos.` 
-      };
-    }
+    const dbUser = await requireRole(["admin", "super_admin", "director_comercial", "director"]);
 
     // Update diagnostic report status, verdictNotes, and approvals
     await db.update(diagnosticReports)
       .set({ 
         status, 
         verdictNotes: notes,
-        approvedBy: status === "aprobado" ? user.id : null,
+        approvedBy: status === "aprobado" ? dbUser.id : null,
         approvedAt: status === "aprobado" ? new Date() : null,
-        updatedBy: user.id
+        updatedBy: dbUser.id
       })
       .where(eq(diagnosticReports.id, diagId));
 
@@ -226,7 +207,7 @@ export async function emitirVeredictoAction(
       leadId,
       activityType: "veredicto_tecnico",
       description: `El diagnóstico técnico fue marcado como: ${status.toUpperCase()}. Notas/Veredicto: ${notes}`,
-      userId: user.id
+      userId: dbUser.id
     });
 
     // Update lead stage in cascade

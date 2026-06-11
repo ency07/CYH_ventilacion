@@ -5,8 +5,8 @@ import { crmCompanies, crmContacts, leads, crmUsers, crmPipeline, crmOpportuniti
 import { LeadInsertSchema } from "@/lib/validations/crm.schema";
 import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { getSupabaseServer } from "@/lib/supabase/server";
 import { normalizeCity } from "@/lib/utils/normalization";
+import { requireRole, getCurrentUser } from "@/lib/auth/permissions";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -66,6 +66,16 @@ function calculateLeadScore(lead: {
 export async function createLeadAction(rawInput: any): Promise<ActionResult<any>> {
   try {
     const validated = LeadInsertSchema.parse(rawInput);
+
+    let authenticatedUserId = null;
+    try {
+      const dbUser = await getCurrentUser();
+      if (dbUser) {
+        authenticatedUserId = dbUser.id;
+      }
+    } catch (e) {
+      // Anonymous submission
+    }
 
     const normalizedCity = normalizeCity(validated.city);
     const { score, risk } = calculateLeadScore({
@@ -135,6 +145,7 @@ export async function createLeadAction(rawInput: any): Promise<ActionResult<any>
       leadScore: score,
       riskLevel: risk,
       isVerified: validated.isVerified || false,
+      createdBy: authenticatedUserId,
     }).returning();
 
     // Auto-create crmPipeline entry
@@ -186,15 +197,9 @@ export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> 
       return { success: false, error: "Formato de ID inválido." };
     }
 
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "No autenticado." };
-    }
-
-    const [dbUser] = await db.select().from(crmUsers).where(eq(crmUsers.id, user.id));
-    const userRole = dbUser?.role || "vendedor";
-    const userEmail = dbUser?.email || user.email || "";
+    const dbUser = await requireRole(["admin", "super_admin", "director", "director_comercial", "vendedor", "comercial", "tecnico", "ingeniero", "cliente"]);
+    const userRole = dbUser.role;
+    const userEmail = dbUser.email || "";
 
     const lead = await db.query.leads.findFirst({
       where: eq(leads.id, id),
@@ -228,6 +233,14 @@ export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> 
       }
     }
 
+    // IDOR / Tenant isolation check for customers
+    if (userRole === "cliente") {
+      if (lead.createdBy !== dbUser.id) {
+        console.warn(`[AppSec Warning] IDOR detectado! Cliente ${userEmail} (ID: ${dbUser.id}) intentó acceder al lead ${id} (Owner ID: ${lead.createdBy})`);
+        return { success: false, error: "Acceso denegado. Este lead pertenece a otro cliente." };
+      }
+    }
+
     return { success: true, data: lead };
   } catch (error: any) {
     console.error(`Error fetching lead by id ${id}:`, error);
@@ -237,9 +250,7 @@ export async function getLeadByIdAction(id: string): Promise<ActionResult<any>> 
 
 export async function getRecentLeadsAction(limit = 10): Promise<ActionResult<any[]>> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No autenticado" };
+    await requireRole(["admin", "super_admin", "director_comercial", "comercial", "vendedor"]);
 
     const recent = await db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit);
     return { success: true, data: recent };
