@@ -56,7 +56,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${bebasNeue.variable} ${jetbrainsMono.variable} font-sans bg-background text-text-primary antialiased min-h-screen flex flex-col justify-between transition-colors duration-300`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem themes={["light", "dark", "industrial", "siemens", "abb", "high-contrast"]}>
           {/* Schema.org IndustrialBusiness JSON-LD microdata */}
           <script
             type="application/ld+json"

@@ -2,6 +2,8 @@
 
 import React, { useState, useTransition, useEffect, useRef } from "react";
 import { logoutAction } from "@/lib/server-actions/auth";
+import { useTheme } from "next-themes";
+import { updateThemePreferenceAction } from "@/lib/server-actions/profile";
 import { getTenantBrandingAction } from "@/lib/server-actions/config";
 import { 
   requestTechnicalServiceAction, 
@@ -283,7 +285,13 @@ export default function PortalClient({
   allCustomers = [],
 }: PortalClientProps) {
   const [activeTab, setActiveTab] = useState<"control" | "equipos" | "proyectos" | "requests" | "comercial" | "ingenieria" | "financials" | "actividad" | "auditoria">("control");
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [brandingConfig, setBrandingConfig] = useState<{
     companyName: string;
     logoUrl: string | null;
@@ -756,6 +764,9 @@ export default function PortalClient({
       {brandingConfig && (
         <style dangerouslySetInnerHTML={{ __html: `
           :root {
+            --brand-primary: ${brandingConfig.primaryColor};
+            --brand-secondary: ${brandingConfig.secondaryColor};
+            --brand-logo: url('${brandingConfig.logoUrl || '/logo-text.png'}');
             --primary-color: ${brandingConfig.primaryColor};
             --secondary-color: ${brandingConfig.secondaryColor};
             --btn-color: ${brandingConfig.btnColor};
@@ -828,6 +839,31 @@ export default function PortalClient({
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Theme Selector Dropdown */}
+          {!mounted ? (
+            <div className="w-24 h-8 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-sm opacity-50 animate-pulse shrink-0" />
+          ) : (
+            <select
+              id="portal-theme-selector"
+              value={theme}
+              onChange={async (e) => {
+                const next = e.target.value as any;
+                setTheme(next);
+                // Persist theme to DB
+                updateThemePreferenceAction(next).catch(() => {});
+              }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-accent-cyan cursor-pointer font-sans"
+              aria-label="Selector de tema"
+            >
+              <option value="light">Claro</option>
+              <option value="dark">Oscuro</option>
+              <option value="industrial">Industrial</option>
+              <option value="siemens">Siemens</option>
+              <option value="abb">ABB</option>
+              <option value="high-contrast">Alto Contraste</option>
+            </select>
+          )}
+
           {/* Notification Bell Dropdown (Fase 11.3) */}
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button

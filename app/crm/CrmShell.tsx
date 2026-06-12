@@ -315,6 +315,9 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
       {brandingConfig && (
         <style dangerouslySetInnerHTML={{ __html: `
           :root {
+            --brand-primary: ${brandingConfig.primaryColor};
+            --brand-secondary: ${brandingConfig.secondaryColor};
+            --brand-logo: url('${brandingConfig.logoUrl || '/logo-text.png'}');
             --primary-color: ${brandingConfig.primaryColor};
             --secondary-color: ${brandingConfig.secondaryColor};
             --btn-color: ${brandingConfig.btnColor};
@@ -452,23 +455,29 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Theme Toggle */}
+              {/* Theme Selector Dropdown */}
               {!mounted ? (
-                <div className="w-8 h-8 rounded-full bg-bg-secondary border border-border-subtle opacity-50 animate-pulse" />
+                <div className="w-24 h-8 bg-bg-secondary border border-border-subtle rounded-sm opacity-50 animate-pulse" />
               ) : (
-                <button
-                  id="crm-theme-toggle"
-                  onClick={async () => {
-                    const next = resolvedTheme === "dark" ? "light" : "dark";
+                <select
+                  id="crm-theme-selector"
+                  value={theme}
+                  onChange={async (e) => {
+                    const next = e.target.value as any;
                     setTheme(next);
-                    // Persist to DB (fire-and-forget)
+                    // Persist to DB
                     updateThemePreferenceAction(next).catch(() => {});
                   }}
-                  className="p-2 text-text-secondary hover:text-text-primary transition-colors bg-bg-secondary rounded-full border border-border-subtle"
-                  aria-label="Alternar tema"
+                  className="bg-bg-secondary border border-border-subtle text-text-secondary hover:text-text-primary text-xs rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-accent-cyan cursor-pointer font-sans"
+                  aria-label="Selector de tema"
                 >
-                  {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
+                  <option value="light">Claro</option>
+                  <option value="dark">Oscuro</option>
+                  <option value="industrial">Industrial</option>
+                  <option value="siemens">Siemens</option>
+                  <option value="abb">ABB</option>
+                  <option value="high-contrast">Alto Contraste</option>
+                </select>
               )}
 
               {/* 🔔 Notification Bell — Interactive Popover */}

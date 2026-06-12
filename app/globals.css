@@ -3,50 +3,40 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: #FFFFFF;
-    --bg-primary: #FFFFFF;
-    --bg-secondary: #F3F4F6;
-    --bg-tertiary: #E5E7EB;
-    
-    /* Azul petróleo / Technical Teal */
-    --accent-cyan: #0F766E;
-    --accent-cyan-soft: rgba(15, 118, 110, 0.08);
-    
-    /* Gris grafito */
-    --text-primary: #1F2937;
+  :root, .light {
+    --bg: #FFFFFF;
+    --surface: #F3F4F6;
+    --card: #E5E7EB;
+    --text: #1F2937;
     --text-secondary: #4B5563;
     --text-muted: #9CA3AF;
-    
-    /* Acero */
-    --border-subtle: #E5E7EB;
+    --border: #E5E7EB;
     --border-medium: #D1D5DB;
     --border-active: #9CA3AF;
     
     --success: #16A34A;
     --success-subtle: #DCFCE7;
-    --warning: #EA580C; /* Naranja técnico */
+    --warning: #EA580C;
     --warning-subtle: #FFEDD5;
     --danger: #DC2626;
     --danger-subtle: #FEE2E2;
     --info: #0284C7;
     --info-subtle: #E0F2FE;
+
+    /* Independent Branding Defaults */
+    --brand-primary: #0F766E;
+    --brand-secondary: rgba(15, 118, 110, 0.08);
+    --brand-logo: url('/logo-text.png');
   }
 
   .dark {
-    --background: #111827;
-    --bg-primary: #111827;
-    --bg-secondary: #1F2937;
-    --bg-tertiary: #374151;
-    
-    --accent-cyan: #14B8A6;
-    --accent-cyan-soft: rgba(20, 184, 166, 0.15);
-    
-    --text-primary: #F9FAFB;
+    --bg: #111827;
+    --surface: #1F2937;
+    --card: #374151;
+    --text: #F9FAFB;
     --text-secondary: #D1D5DB;
     --text-muted: #9CA3AF;
-    
-    --border-subtle: #374151;
+    --border: #374151;
     --border-medium: #4B5563;
     --border-active: #6B7280;
     
@@ -59,11 +49,95 @@
     --info: #0EA5E9;
     --info-subtle: rgba(14, 165, 233, 0.1);
   }
+
+  .industrial {
+    --bg: #1A202C;
+    --surface: #2D3748;
+    --card: #4A5568;
+    --text: #EDF2F7;
+    --text-secondary: #CBD5E0;
+    --text-muted: #718096;
+    --border: #2D3748;
+    --border-medium: #4A5568;
+    --border-active: #DD6B20; /* Technical Amber */
+    
+    --success: #38A169;
+    --success-subtle: rgba(56, 161, 105, 0.1);
+    --warning: #DD6B20;
+    --warning-subtle: rgba(221, 107, 32, 0.1);
+    --danger: #E53E3E;
+    --danger-subtle: rgba(229, 62, 62, 0.1);
+    --info: #3182CE;
+    --info-subtle: rgba(49, 130, 206, 0.1);
+  }
+
+  .siemens {
+    --bg: #0A1118;
+    --surface: #101F30;
+    --card: #162E45;
+    --text: #E2F1FF;
+    --text-secondary: #93C5FD;
+    --text-muted: #475569;
+    --border: #1E3A8A;
+    --border-medium: #2563EB;
+    --border-active: #38BDF8;
+    
+    --success: #10B981;
+    --success-subtle: rgba(16, 185, 129, 0.1);
+    --warning: #F59E0B;
+    --warning-subtle: rgba(245, 158, 11, 0.1);
+    --danger: #EF4444;
+    --danger-subtle: rgba(239, 68, 68, 0.1);
+    --info: #0EA5E9;
+    --info-subtle: rgba(14, 165, 233, 0.1);
+  }
+
+  .abb {
+    --bg: #FAFAFA;
+    --surface: #F4F4F5;
+    --card: #E4E4E7;
+    --text: #18181B;
+    --text-secondary: #71717A;
+    --text-muted: #A1A1AA;
+    --border: #E4E4E7;
+    --border-medium: #D4D4D8;
+    --border-active: #FF0000; /* ABB Corporate Red */
+    
+    --success: #16A34A;
+    --success-subtle: #DCFCE7;
+    --warning: #EA580C;
+    --warning-subtle: #FFEDD5;
+    --danger: #DC2626;
+    --danger-subtle: #FEE2E2;
+    --info: #0284C7;
+    --info-subtle: #E0F2FE;
+  }
+
+  .high-contrast {
+    --bg: #000000;
+    --surface: #000000;
+    --card: #121212;
+    --text: #FFFFFF;
+    --text-secondary: #FFFF00; /* High Contrast Yellow */
+    --text-muted: #FFFFFF;
+    --border: #FFFFFF;
+    --border-medium: #FFFFFF;
+    --border-active: #FFFF00;
+    
+    --success: #00FF00;
+    --success-subtle: rgba(0, 255, 0, 0.15);
+    --warning: #FFFF00;
+    --warning-subtle: rgba(255, 255, 0, 0.15);
+    --danger: #FF0000;
+    --danger-subtle: rgba(255, 0, 0, 0.15);
+    --info: #00FFFF;
+    --info-subtle: rgba(0, 255, 255, 0.15);
+  }
 }
 
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: var(--bg);
+  color: var(--text);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   overflow-x: hidden;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -74,20 +148,20 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-medium);
   border-radius: 3px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-active);
 }
 
 .glass-panel {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  background: var(--surface);
+  border: 1px solid var(--border);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .glass-panel:hover {
@@ -97,8 +171,8 @@ body {
 .industrial-grid {
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, var(--border-subtle) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px);
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
 }
 
 @media print {
