@@ -247,47 +247,25 @@ export default function ContactoPage() {
               </ul>
             </div>
 
-            {/* Custom Interactive SVG/SCADA Map of Barranquilla (Highly Premium) */}
+            {/* Ubi Geográfica B2B */}
             <div className="border border-border-subtle bg-bg-secondary/20 p-6 rounded-sm space-y-4">
               <div className="flex items-center justify-between font-mono text-[9px]">
-                <span className="text-text-muted uppercase">NODO GEOGRÁFICO DE OPERACIÓN</span>
-                <span className="text-success font-bold flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 bg-success rounded-full animate-ping"></span> ONLINE
+                <span className="text-text-muted uppercase">UBICACIÓN GEOGRÁFICA</span>
+                <span className="text-text-muted font-bold flex items-center gap-1">
+                  SEDE CARIBE
                 </span>
               </div>
 
-              {/* Custom SVG SCADA Map */}
-              <div className="h-44 w-full bg-bg-primary border border-border-subtle/80 rounded-sm relative overflow-hidden flex items-center justify-center">
-                <svg className="absolute w-full h-full text-border-subtle/20" viewBox="0 0 200 120" preserveAspectRatio="none">
-                  {/* Rivers / Coastline mock */}
-                  <path d="M 0 10 Q 50 30, 90 20 T 200 40" fill="none" stroke="#1e293b" strokeWidth="6" />
-                  
-                  {/* Grid layout */}
-                  <line x1="30" y1="0" x2="30" y2="120" stroke="currentColor" strokeWidth="0.5" strokeDasharray="1" />
-                  <line x1="90" y1="0" x2="90" y2="120" stroke="currentColor" strokeWidth="0.5" strokeDasharray="1" />
-                  <line x1="150" y1="0" x2="150" y2="120" stroke="currentColor" strokeWidth="0.5" strokeDasharray="1" />
-                  <line x1="0" y1="40" x2="200" y2="40" stroke="currentColor" strokeWidth="0.5" strokeDasharray="1" />
-                  <line x1="0" y1="80" x2="200" y2="80" stroke="currentColor" strokeWidth="0.5" strokeDasharray="1" />
-                  
-                  {/* Coasts and cities node dots */}
-                  <circle cx="45" cy="55" r="2.5" className="fill-border-medium" /> {/* Cartagena */}
-                  <circle cx="160" cy="25" r="2.5" className="fill-border-medium" /> {/* Santa Marta */}
-                  
-                  {/* Barranquilla Core active node */}
-                  <circle cx="95" cy="35" r="5" className="fill-accent-cyan/20 stroke-accent-cyan stroke-2 animate-pulse" />
-                  <circle cx="95" cy="35" r="1.5" className="fill-accent-cyan" />
-                  
-                  <path d="M 95 35 L 140 75" stroke="#00d4ff" strokeWidth="1" strokeDasharray="2" className="opacity-80" />
-                </svg>
-
-                {/* SCADA Telemetry Labels */}
-                <div className="absolute bottom-2 left-2 font-mono text-[8px] text-text-muted bg-bg-secondary/90 px-1.5 py-0.5 rounded-sm border border-border-subtle">
-                  BARRANQUILLA CORE: 10.9639° N, 74.7964° W
-                </div>
-                
-                <div className="absolute top-2 right-2 font-mono text-[8px] text-accent-cyan bg-accent-cyan-soft px-1.5 py-0.5 rounded-sm border border-accent-cyan/20 uppercase font-bold">
-                  Planta Principal Vía 40
-                </div>
+              {/* Interactive Grayscale Map */}
+              <div className="h-44 w-full bg-bg-primary border border-border-subtle/80 rounded-sm relative overflow-hidden">
+                <iframe
+                  src="https://maps.google.com/maps?q=V%C3%ADa%2040%20%23%2073-290%2C%20Zona%20Industrial%2C%20Barranquilla%2C%20Colombia&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                  className="w-full h-full border-0 grayscale opacity-85 contrast-[1.1] dark:invert-[0.9] dark:hue-rotate-[180deg]"
+                  allowFullScreen={false}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Sede Principal Vía 40"
+                />
               </div>
 
               {/* Cobertura list */}

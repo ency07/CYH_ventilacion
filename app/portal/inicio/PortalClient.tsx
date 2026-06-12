@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition, useEffect, useRef } from "react";
 import { logoutAction } from "@/lib/server-actions/auth";
+import { getTenantBrandingAction } from "@/lib/server-actions/config";
 import { 
   requestTechnicalServiceAction, 
   acceptProposalAction, 
@@ -15,6 +16,7 @@ import { approveInvoiceStepAction } from "@/lib/server-actions/approvals";
 import { signElectronicDocumentAction } from "@/lib/server-actions/signatures";
 import { incrementAssetHoursAction, completeWorkOrderAction } from "@/lib/server-actions/cmms";
 import { createWarRoomAction } from "@/lib/server-actions/war-room";
+import { logReadAuditAction } from "@/lib/server-actions/audit";
 import { 
   Briefcase, 
   FileText, 
@@ -48,7 +50,8 @@ import {
   MessageSquare,
   Send,
   ChevronDown,
-  CreditCard
+  CreditCard,
+  X
 } from "lucide-react";
 
 // Types from schema definitions
@@ -78,6 +81,7 @@ interface ServiceRequest {
   id: string;
   customerId: string;
   plantId: string | null;
+  assetId: string | null;
   title: string;
   description: string;
   urgency: string;
@@ -278,10 +282,31 @@ export default function PortalClient({
 }: PortalClientProps) {
   const [activeTab, setActiveTab] = useState<"control" | "equipos" | "proyectos" | "requests" | "comercial" | "ingenieria" | "financials" | "actividad" | "auditoria">("control");
   const [isPending, startTransition] = useTransition();
+  const [brandingConfig, setBrandingConfig] = useState<{
+    companyName: string;
+    logoUrl: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+  } | null>(null);
 
   // Notifications state (Fase 11.3)
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    async function loadBranding() {
+      const res = await getTenantBrandingAction();
+      if (res.success && res.data) {
+        setBrandingConfig({
+          companyName: res.data.config.companyName,
+          logoUrl: res.data.branding.logoUrl,
+          primaryColor: res.data.branding.primaryColor,
+          secondaryColor: res.data.branding.secondaryColor,
+        });
+      }
+    }
+    loadBranding();
+  }, []);
 
   useEffect(() => {
     setUnreadCount(notifications ? notifications.filter(n => !n.isRead && n.channel === "bell").length : 0);
@@ -338,6 +363,35 @@ export default function PortalClient({
   const [newPlantName, setNewPlantName] = useState("");
   const [city, setCity] = useState("");
 
+  // Read auditing detail views
+  const [selectedProposalForView, setSelectedProposalForView] = useState<Proposal | null>(null);
+  const [selectedContractForView, setSelectedContractForView] = useState<Contract | null>(null);
+  const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<Invoice | null>(null);
+
+  // Asset history modal
+  const [selectedAssetForHistory, setSelectedAssetForHistory] = useState<Asset | null>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>("");
+
+  const handleViewProposal = (proposal: Proposal) => {
+    setSelectedProposalForView(proposal);
+    logReadAuditAction("VIEW_PROPOSAL", `crm_proposals:${proposal.id}`, proposal.title);
+  };
+
+  const handleViewContract = (contract: Contract) => {
+    setSelectedContractForView(contract);
+    logReadAuditAction("VIEW_CONTRACT", `crm_contracts:${contract.id}`, contract.title);
+  };
+
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoiceForView(invoice);
+    logReadAuditAction("VIEW_INVOICE", `crm_invoices:${invoice.id}`, invoice.invoiceNumber);
+  };
+
+  const handleDownloadPdfAudit = (entityType: string, entityId: string, docTitle: string) => {
+    logReadAuditAction("DOWNLOAD_PDF", `${entityType}:${entityId}`, docTitle);
+  };
+
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [offlineCachedData, setOfflineCachedData] = useState<any>(null);
@@ -383,6 +437,7 @@ export default function PortalClient({
     setPlantId("");
     setNewPlantName("");
     setCity("");
+    setSelectedAssetId("");
   };
 
   // Format Helpers (Pilar IV / Defensividad)
@@ -452,6 +507,7 @@ export default function PortalClient({
       serviceType,
       operationalImpact,
       affectedAsset,
+      assetId: selectedAssetId || null,
     };
 
     // Check online status
@@ -684,7 +740,16 @@ export default function PortalClient({
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-950 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-800 dark:selection:text-emerald-300 transition-colors duration-300">
+    <>
+      {brandingConfig && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --primary-color: ${brandingConfig.primaryColor};
+            --secondary-color: ${brandingConfig.secondaryColor};
+          }
+        `}} />
+      )}
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-950 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-800 dark:selection:text-emerald-300 transition-colors duration-300">
       {isImpersonating && (
         <div className="bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-b border-amber-200 dark:border-amber-800/40 text-[11px] px-6 py-2 flex items-center gap-2 font-mono font-semibold">
           <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-pulse shrink-0" />
@@ -700,7 +765,14 @@ export default function PortalClient({
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-md font-bold tracking-wider text-slate-900 dark:text-slate-100 uppercase font-mono">CYH OS</span>
+              {brandingConfig?.logoUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={brandingConfig.logoUrl} alt="Logo" className="h-6 w-auto object-contain shrink-0" />
+              ) : (
+                <span className="text-md font-bold tracking-wider text-slate-900 dark:text-slate-100 uppercase font-mono">
+                  {brandingConfig ? brandingConfig.companyName : "CYH OS"}
+                </span>
+              )}
               <span className="text-[10px] bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono font-semibold">PORTAL INDUSTRIAL</span>
             </div>
             <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold block uppercase tracking-wider leading-none mt-1">
@@ -1047,7 +1119,7 @@ export default function PortalClient({
                       return (
                         <div key={asset.id} className="border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 p-5 rounded-sm flex flex-col lg:flex-row justify-between gap-6">
                           <div className="space-y-4 flex-1">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center flex-wrap gap-3">
                               <span className="font-mono text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700/50">
                                 {asset.code}
                               </span>
@@ -1059,6 +1131,16 @@ export default function PortalClient({
                               }`}>
                                 {asset.status}
                               </span>
+                              
+                              <button
+                                onClick={() => {
+                                  setSelectedAssetForHistory(asset);
+                                  setIsHistoryModalOpen(true);
+                                }}
+                                className="text-[10px] font-bold uppercase font-mono text-cyan-600 dark:text-cyan-405 hover:text-cyan-500 flex items-center gap-1 border border-cyan-500/20 px-2 py-0.5 rounded-sm bg-cyan-950/10 hover:bg-cyan-950/20 transition-colors"
+                              >
+                                <Activity className="w-3.5 h-3.5" /> Ficha Histórica ({serviceRequests.filter(r => r.assetId === asset.id).length + workOrders.filter(o => o.assetId === asset.id).length})
+                              </button>
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
@@ -1079,8 +1161,12 @@ export default function PortalClient({
                                   onClick={() => {
                                     startTransition(async () => {
                                       const res = await incrementAssetHoursAction(asset.id, 100);
-                                      if (res.success && res.data.workOrderGenerated) {
-                                        alert("¡Alerta de Telemetría! El límite del plan de mantenimiento preventivo fue superado y se generó una orden de trabajo preventiva.");
+                                      if (res.success) {
+                                        if (res.data.workOrderGenerated) {
+                                          alert("¡Alerta de Telemetría! El límite del plan de mantenimiento preventivo fue superado y se generó una orden de trabajo preventiva.");
+                                        }
+                                      } else {
+                                        alert(`Error de Telemetría: ${res.error}`);
                                       }
                                     });
                                   }}
@@ -1336,19 +1422,21 @@ export default function PortalClient({
                     </div>
 
                     <div>
-                      <label className="block text-slate-500 dark:text-slate-400 font-mono mb-1 uppercase font-bold text-[10px]">Equipo Afectado</label>
+                      <label className="block text-slate-500 dark:text-slate-400 font-mono mb-1 uppercase font-bold text-[10px]">Equipo Afectado (CMMS)</label>
                       <select
-                        value={affectedAsset}
-                        onChange={(e) => setAffectedAsset(e.target.value)}
+                        value={selectedAssetId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedAssetId(val);
+                          const found = assets.find(a => a.id === val);
+                          setAffectedAsset(found ? found.name : "general");
+                        }}
                         className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-850 rounded px-3 py-2 text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-slate-700 focus:outline-none"
                       >
-                        <option value="general">General / Varios</option>
-                        <option value="AX-125">Extractor Axial AX-125</option>
-                        <option value="AX-140">Extractor Axial AX-140</option>
-                        <option value="VF-200">Ventilador VF-200</option>
-                        <option value="IN-200">Inyector IN-200</option>
-                        <option value="CA-030">Campana CA-030</option>
-                        <option value="FL-100">Filtro FL-100</option>
+                        <option value="">General / Varios</option>
+                        {assets.map((a) => (
+                          <option key={a.id} value={a.id}>{a.name} ({a.code})</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -1616,7 +1704,12 @@ export default function PortalClient({
 
                         return (
                           <tr key={prop.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/20">
-                            <td className="py-3 font-bold text-slate-850 dark:text-white">{prop.title}</td>
+                            <td 
+                              className="py-3 font-bold text-slate-850 dark:text-white hover:underline cursor-pointer"
+                              onClick={() => handleViewProposal(prop)}
+                            >
+                              {prop.title}
+                            </td>
                             <td className="py-3 font-mono text-slate-500 dark:text-slate-400">V{prop.version}</td>
                             <td className="py-3 text-slate-600 dark:text-slate-400">{formatDate(prop.createdAt)}</td>
                             <td className="py-3">
@@ -1642,6 +1735,7 @@ export default function PortalClient({
                                     href={prop.pdfUrl}
                                     target="_blank"
                                     rel="noreferrer"
+                                    onClick={() => handleDownloadPdfAudit("crm_proposals", prop.id, prop.title)}
                                     title="Descargar PDF contractual"
                                     className="inline-flex items-center space-x-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-1.5 transition-colors"
                                   >
@@ -1812,7 +1906,12 @@ export default function PortalClient({
                       <tbody>
                         {contracts.map((contract) => (
                           <tr key={contract.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/20">
-                            <td className="py-3 font-bold text-slate-800 dark:text-white">{contract.title}</td>
+                            <td 
+                              className="py-3 font-bold text-slate-800 dark:text-white hover:underline cursor-pointer"
+                              onClick={() => handleViewContract(contract)}
+                            >
+                              {contract.title}
+                            </td>
                             <td className="py-3 text-slate-500 dark:text-slate-400 font-mono">
                               {contract.startDate ? new Date(contract.startDate).toLocaleDateString() : 'N/A'}
                             </td>
@@ -1873,7 +1972,12 @@ export default function PortalClient({
                           return (
                             <React.Fragment key={inv.id}>
                               <tr className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/20">
-                                <td className="py-3 font-mono font-bold text-slate-800 dark:text-white">{inv.invoiceNumber}</td>
+                                <td 
+                                  className="py-3 font-mono font-bold text-slate-800 dark:text-white hover:underline cursor-pointer"
+                                  onClick={() => handleViewInvoice(inv)}
+                                >
+                                  {inv.invoiceNumber}
+                                </td>
                                 <td className="py-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                                   {new Date(inv.dueDate).toLocaleDateString()}
                                   {inv.status === "overdue" && (
@@ -2133,6 +2237,7 @@ export default function PortalClient({
                               href={doc.fileUrl}
                               target="_blank"
                               rel="noreferrer"
+                              onClick={() => handleDownloadPdfAudit("crm_documents", doc.id, doc.fileName)}
                               className="inline-flex items-center space-x-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded px-2.5 py-1.5 transition-colors font-mono font-bold"
                             >
                               <Download className="h-3 w-3 shrink-0" />
@@ -2322,10 +2427,339 @@ export default function PortalClient({
         </div>
       )}
 
+      {/* DETAIL MODALS (READ AUDITING) */}
+      {selectedProposalForView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded shadow-2xl space-y-4 text-xs">
+            <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase bg-slate-100 dark:bg-slate-850 px-2 py-0.5 rounded text-slate-500 font-bold">
+                  PROPUESTA V{selectedProposalForView.version}
+                </span>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5 uppercase font-mono">
+                  {selectedProposalForView.title}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setSelectedProposalForView(null)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950/45 p-4 border border-slate-150 dark:border-slate-850/80 rounded-sm font-mono text-[11px]">
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block uppercase text-[9px] mb-0.5 font-bold">Fecha Generada</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200">{formatDate(selectedProposalForView.createdAt)}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block uppercase text-[9px] mb-0.5 font-bold">Vencimiento</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200">{formatDate(selectedProposalForView.validUntil)}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block uppercase text-[9px] mb-0.5 font-bold">Valor Neto (Fijo)</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-450 text-xs">{formatCOP(selectedProposalForView.totalValue)}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block uppercase text-[9px] mb-0.5 font-bold">Estado Comercial</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200 uppercase">{selectedProposalForView.status}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="block font-bold text-slate-700 dark:text-slate-300 uppercase font-mono text-[9px]">Especificación Comercial</span>
+              <p className="text-slate-600 dark:text-slate-450 leading-relaxed text-[11px]">
+                Esta propuesta representa el pliego de condiciones técnicas para la optimización de los sistemas de ventilación industrial contratados. Incluye suministro de equipos CYH-AX y servicios asociados de puesta en marcha.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              {selectedProposalForView.pdfUrl && (
+                <a
+                  href={selectedProposalForView.pdfUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => handleDownloadPdfAudit("crm_proposals", selectedProposalForView.id, selectedProposalForView.title)}
+                  className="flex-1 py-2 bg-slate-850 hover:bg-slate-700 text-white rounded text-center font-mono font-bold transition-all flex items-center justify-center gap-1"
+                >
+                  <Download className="w-3.5 h-3.5" /> Descargar PDF
+                </a>
+              )}
+              <button 
+                onClick={() => setSelectedProposalForView(null)}
+                className="flex-1 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-350 rounded font-mono font-bold transition-all"
+              >
+                Cerrar Vista
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedContractForView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded shadow-2xl space-y-4 text-xs">
+            <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase bg-slate-100 dark:bg-slate-850 px-2 py-0.5 rounded text-slate-500 font-bold">
+                  CONTRATO COMERCIAL
+                </span>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5 uppercase font-mono">
+                  {selectedContractForView.title}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setSelectedContractForView(null)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-850/80 rounded-sm font-mono text-[11px]">
+              <div>
+                <span className="text-slate-550 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Fecha Inicio</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200">{formatDate(selectedContractForView.startDate)}</span>
+              </div>
+              <div>
+                <span className="text-slate-550 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Fecha Fin</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200">{formatDate(selectedContractForView.endDate)}</span>
+              </div>
+              <div>
+                <span className="text-slate-555 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Valor Contratado</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-450 text-xs">{formatCOP(selectedContractForView.value)}</span>
+              </div>
+              <div>
+                <span className="text-slate-555 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Estado Contrato</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200 uppercase">{selectedContractForView.status}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="block font-bold text-slate-700 dark:text-slate-300 uppercase font-mono text-[9px]">Términos & Condiciones Generales</span>
+              <p className="text-slate-600 dark:text-slate-450 leading-relaxed text-[11px]">
+                Este contrato establece el acuerdo bilateral de mantenimiento predictivo, preventivo y correctivo para los equipos industriales de ventilación y caudal de aire suministrados por CYH.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => setSelectedContractForView(null)}
+                className="w-full py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-350 rounded font-mono font-bold transition-all"
+              >
+                Cerrar Vista
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedInvoiceForView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded shadow-2xl space-y-4 text-xs">
+            <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase bg-slate-100 dark:bg-slate-850 px-2 py-0.5 rounded text-slate-500 font-bold">
+                  DETALLE DE FACTURACIÓN
+                </span>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5 uppercase font-mono">
+                  Factura {selectedInvoiceForView.invoiceNumber}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setSelectedInvoiceForView(null)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-850/80 rounded-sm font-mono text-[11px]">
+              <div>
+                <span className="text-slate-550 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Fecha Emisión</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200">{formatDate(selectedInvoiceForView.createdAt)}</span>
+              </div>
+              <div>
+                <span className="text-slate-550 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Fecha Vencimiento</span>
+                <span className="font-bold text-slate-850 dark:text-slate-200">{formatDate(selectedInvoiceForView.dueDate)}</span>
+              </div>
+              <div>
+                <span className="text-slate-555 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Valor Total Facturado</span>
+                <span className="font-bold text-slate-900 dark:text-white text-xs">{formatCOP(selectedInvoiceForView.amount)}</span>
+              </div>
+              <div>
+                <span className="text-slate-555 block uppercase text-[9px] mb-0.5 font-bold text-slate-500">Saldo Pendiente (Cartera)</span>
+                <span className="font-bold text-rose-600 dark:text-rose-450 text-xs">
+                  {formatCOP(selectedInvoiceForView.accountsReceivable ? selectedInvoiceForView.accountsReceivable.outstandingBalance : 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Approval pipeline */}
+            <div className="border border-slate-150 dark:border-slate-800 p-3 rounded-sm space-y-2">
+              <span className="block font-bold text-slate-700 dark:text-slate-300 uppercase font-mono text-[9px]">Pipeline de Aprobaciones Internas</span>
+              <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono font-bold uppercase">
+                <div className={`p-2 rounded border ${selectedInvoiceForView.engineeringStatus === "approved" ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-400" : "bg-slate-950/10 border-slate-800 text-slate-500"}`}>
+                  Ingeniería
+                </div>
+                <div className={`p-2 rounded border ${selectedInvoiceForView.procurementStatus === "approved" ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-400" : "bg-slate-950/10 border-slate-800 text-slate-500"}`}>
+                  Compras
+                </div>
+                <div className={`p-2 rounded border ${selectedInvoiceForView.financeStatus === "approved" ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-400" : "bg-slate-950/10 border-slate-800 text-slate-500"}`}>
+                  Finanzas
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              {selectedInvoiceForView.status !== "paid" && (
+                <button
+                  onClick={() => {
+                    handleSimulatePayment(selectedInvoiceForView.id);
+                    setSelectedInvoiceForView(null);
+                  }}
+                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-mono font-bold transition-all flex items-center justify-center gap-1"
+                >
+                  <CreditCard className="w-3.5 h-3.5" /> Pagar Factura
+                </button>
+              )}
+              <button 
+                onClick={() => setSelectedInvoiceForView(null)}
+                className="flex-1 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-350 rounded font-mono font-bold transition-all"
+              >
+                Cerrar Vista
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isHistoryModalOpen && selectedAssetForHistory && (() => {
+        const assetRequests = serviceRequests.filter(r => r.assetId === selectedAssetForHistory.id);
+        const assetWorkOrders = workOrders.filter(o => o.assetId === selectedAssetForHistory.id);
+        
+        // Combine and sort chronological timeline
+        const timelineEvents = [
+          ...assetRequests.map(r => ({
+            id: r.id,
+            type: "ticket",
+            title: `Incidente: ${r.title}`,
+            date: new Date(r.createdAt),
+            status: r.status,
+            description: r.description,
+            badgeColor: "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-450 border border-amber-200 dark:border-amber-800/30"
+          })),
+          ...assetWorkOrders.map(o => ({
+            id: o.id,
+            type: "work_order",
+            title: `Orden de Trabajo: ${o.title}`,
+            date: new Date(o.createdAt),
+            status: o.status,
+            description: o.completedAt ? `Completada el ${new Date(o.completedAt).toLocaleDateString()}` : "Programada",
+            badgeColor: o.status === "completado"
+              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-800/30"
+              : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50"
+          }))
+        ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm">
+            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded shadow-2xl space-y-4 text-xs max-h-[85vh] overflow-y-auto">
+              <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div>
+                  <span className="text-[10px] font-mono uppercase bg-slate-100 dark:bg-slate-850 px-2 py-0.5 rounded text-slate-500 font-bold">
+                    FICHA HISTÓRICA DEL ACTIVO — {selectedAssetForHistory.code}
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5 uppercase font-mono">
+                    {selectedAssetForHistory.name}
+                  </h3>
+                </div>
+                <button 
+                  onClick={() => {
+                    setSelectedAssetForHistory(null);
+                    setIsHistoryModalOpen(false);
+                  }} 
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-3 gap-3 text-center font-mono">
+                <div className="border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 p-3 rounded">
+                  <span className="text-[9px] text-slate-500 block uppercase">Horas Totales</span>
+                  <span className="text-sm font-bold text-slate-950 dark:text-white">{selectedAssetForHistory.operatingHours.toLocaleString()} hrs</span>
+                </div>
+                <div className="border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 p-3 rounded">
+                  <span className="text-[9px] text-slate-505 block uppercase">Fallas / Incidentes</span>
+                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{assetRequests.length}</span>
+                </div>
+                <div className="border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 p-3 rounded">
+                  <span className="text-[9px] text-slate-505 block uppercase">OTs Ejecutadas</span>
+                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{assetWorkOrders.length}</span>
+                </div>
+              </div>
+
+              {/* Chronological Timeline Feed */}
+              <div className="space-y-3">
+                <span className="block font-bold text-slate-700 dark:text-slate-300 uppercase font-mono text-[9px] border-b border-slate-100 dark:border-slate-800/60 pb-1.5">
+                  Registro Operacional & Trazabilidad de Fallas
+                </span>
+                
+                {timelineEvents.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500 font-mono text-xs">
+                    Sin historial operacional registrado.
+                  </div>
+                ) : (
+                  <div className="relative border-l border-slate-200 dark:border-slate-800 pl-4 ml-2 space-y-4">
+                    {timelineEvents.map((evt, idx) => (
+                      <div key={idx} className="relative">
+                        {/* Timeline node */}
+                        <span className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border border-white dark:border-slate-900 ${evt.type === 'ticket' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                        
+                        <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-150 dark:border-slate-850 p-3 rounded-sm space-y-1.5">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="font-bold text-slate-855 dark:text-slate-200">{evt.title}</span>
+                            <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded uppercase ${evt.badgeColor}`}>
+                              {evt.status}
+                            </span>
+                          </div>
+                          <p className="text-slate-650 dark:text-slate-400 text-[11px] leading-relaxed break-words whitespace-pre-line">
+                            {evt.description}
+                          </p>
+                          <span className="block text-[9px] font-mono text-slate-500 dark:text-slate-400">
+                            Registrado el: {evt.date.toLocaleDateString("es-CO")} a las {evt.date.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  onClick={() => {
+                    setSelectedAssetForHistory(null);
+                    setIsHistoryModalOpen(false);
+                  }}
+                  className="w-full py-2 bg-slate-950 border border-slate-800 text-white rounded font-mono font-bold uppercase hover:bg-slate-900 transition-colors"
+                >
+                  Cerrar Historial
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Footer */}
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-6 py-4 text-center text-xs text-slate-500 dark:text-slate-400 font-mono mt-8 transition-colors">
         © 2026 CYH - Ventilación Mecánica Industrial. Todos los derechos reservados.
       </footer>
     </div>
+    </>
   );
 }

@@ -1,18 +1,40 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { loginAction, signupAction, recoverPasswordAction } from "@/lib/server-actions/auth";
 import { ArrowRight, Loader2, Mail, Lock, User, Building, Briefcase } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { getTenantBrandingAction } from "@/lib/server-actions/config";
 
 function AuthForm() {
   const [mode, setMode] = useState<"login" | "register" | "recover">("login");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [brandingConfig, setBrandingConfig] = useState<{
+    companyName: string;
+    logoUrl: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+  } | null>(null);
 
   const searchParams = useSearchParams();
   const fromParam = searchParams.get("from");
+
+  useEffect(() => {
+    async function loadBranding() {
+      const res = await getTenantBrandingAction();
+      if (res.success && res.data) {
+        setBrandingConfig({
+          companyName: res.data.config.companyName,
+          logoUrl: res.data.branding.logoUrl,
+          primaryColor: res.data.branding.primaryColor,
+          secondaryColor: res.data.branding.secondaryColor,
+        });
+      }
+    }
+    loadBranding();
+  }, []);
 
   async function formAction(formData: FormData) {
     setIsLoading(true);
@@ -77,16 +99,29 @@ function AuthForm() {
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      {brandingConfig && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --primary-color: ${brandingConfig.primaryColor};
+            --secondary-color: ${brandingConfig.secondaryColor};
+          }
+        `}} />
+      )}
       <div className={`w-full max-w-md border rounded-sm p-8 transition-all duration-500 ${cardClass}`}>
         
         <div className="text-center mb-8 flex flex-col items-center">
-          {IconComponent && (
-            <div className={`mb-3 p-3 rounded-full border transition-all duration-500 ${isPortal ? 'border-emerald-500/20 bg-emerald-950/20 text-emerald-400' : 'border-blue-500/20 bg-blue-950/20 text-blue-400'}`}>
-              <IconComponent className="h-6 w-6" />
-            </div>
+          {brandingConfig?.logoUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={brandingConfig.logoUrl} alt="Logo" className="h-12 object-contain mb-4" />
+          ) : (
+            IconComponent && (
+              <div className={`mb-3 p-3 rounded-full border transition-all duration-500 ${isPortal ? 'border-emerald-500/20 bg-emerald-950/20 text-emerald-400' : 'border-blue-500/20 bg-blue-950/20 text-blue-400'}`}>
+                <IconComponent className="h-6 w-6" />
+              </div>
+            )
           )}
           <h1 className="text-2xl font-bold text-white uppercase tracking-wider font-display transition-all duration-500">
-            {title.split(' ')[0]} <span className="text-slate-400">{title.split(' ').slice(1).join(' ') || 'OS'}</span>
+            {brandingConfig ? brandingConfig.companyName : (title.split(' ')[0])} <span className="text-slate-400">{brandingConfig ? (isPortal ? "PORTAL" : isCrm ? "CRM" : "") : (title.split(' ').slice(1).join(' ') || 'OS')}</span>
           </h1>
           <p className={`text-xs mt-2 font-mono uppercase tracking-widest border py-1 px-3 rounded inline-block transition-all duration-500 ${subtitleColor}`}>
             {subtitle}

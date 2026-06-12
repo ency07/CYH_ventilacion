@@ -16,7 +16,7 @@ function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <div className="w-9 h-9" />;
+    return <div className="w-9 h-9 bg-bg-tertiary rounded-md opacity-50 animate-pulse border border-border-subtle" />;
   }
 
   return (

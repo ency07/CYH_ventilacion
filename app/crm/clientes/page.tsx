@@ -228,6 +228,7 @@ export default async function B2BCustomersPage({
         isActive: true,
         suspendedAt: null,
         suspendedBy: null,
+        tenantId: null,
         createdAt: new Date(),
       }
     ];

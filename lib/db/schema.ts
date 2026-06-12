@@ -165,6 +165,7 @@ export const crmUsers = pgTable("crm_users", {
   isActive: boolean("is_active").default(true).notNull(),
   suspendedAt: timestamp("suspended_at"),
   suspendedBy: uuid("suspended_by").references((): AnyPgColumn => crmUsers.id),
+  tenantId: uuid("tenant_id").references(() => crmTenantConfig.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -276,6 +277,7 @@ export const crmCustomers = pgTable("crm_customers", {
   recurrenceIndex: integer("recurrence_index").default(0).notNull(), // index of loyalty recurrence (0-100)
   ownerId: uuid("owner_id").references((): AnyPgColumn => crmUsers.id, { onDelete: "set null" }),
   backupId: uuid("backup_id").references((): AnyPgColumn => crmUsers.id, { onDelete: "set null" }),
+  tenantId: uuid("tenant_id").references(() => crmTenantConfig.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -328,6 +330,7 @@ export const crmServiceRequests = pgTable("crm_service_requests", {
   status: varchar("status", { length: 50 }).default("abierta").notNull(), // abierta, asignada, en_proceso, cerrada
   createdBy: uuid("created_by").references(() => crmUsers.id).notNull(),
   assignedTo: uuid("assigned_to").references(() => crmUsers.id, { onDelete: "set null" }),
+  assetId: uuid("asset_id").references(() => crmAssets.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -338,6 +341,7 @@ export const crmServiceRequestsRelations = relations(crmServiceRequests, ({ one,
   creator: one(crmUsers, { fields: [crmServiceRequests.createdBy], references: [crmUsers.id] }),
   assigned: one(crmUsers, { fields: [crmServiceRequests.assignedTo], references: [crmUsers.id] }),
   comments: many(crmTicketComments),
+  asset: one(crmAssets, { fields: [crmServiceRequests.assetId], references: [crmAssets.id] }),
 }));
 
 export type AuditLogMetadata = 
@@ -363,6 +367,28 @@ export type AuditLogMetadata =
       previousHours: number;
       increment: number;
       newHours: number;
+    }
+  | {
+      updaterRole: string;
+      companyName: string;
+      primaryColor: string;
+      secondaryColor: string;
+    }
+  | {
+      documentCode: string;
+      ip: string;
+      userAgent: string;
+    }
+  | {
+      proposalId: string;
+      contractId: string;
+      customerId: string;
+    }
+  | {
+      targetUserId: string;
+      email: string;
+      role: string;
+      tenantId: string | null;
     };
 
 export const crmAuditLogs = pgTable("crm_audit_logs", {
@@ -394,6 +420,9 @@ export const crmNotificationEvents = pgTable("crm_notification_events", {
   status: varchar("status", { length: 50 }).default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   sentAt: timestamp("sent_at"),
+  error: text("error"),
+  retries: integer("retries").default(0).notNull(),
+  messageText: text("message_text"),
 });
 
 export const crmTicketComments = pgTable("crm_ticket_comments", {
@@ -627,6 +656,7 @@ export const crmAssetsRelations = relations(crmAssets, ({ one, many }) => ({
   plant: one(crmCustomerPlants, { fields: [crmAssets.plantId], references: [crmCustomerPlants.id] }),
   plans: many(crmMaintenancePlans),
   workOrders: many(crmWorkOrders),
+  serviceRequests: many(crmServiceRequests),
 }));
 
 export const crmMaintenancePlans = pgTable("crm_maintenance_plans", {
@@ -684,5 +714,67 @@ export const crmElectronicSignatures = pgTable("crm_electronic_signatures", {
   signedAt: timestamp("signed_at").defaultNow().notNull(),
   signatureHash: varchar("signature_hash", { length: 255 }).notNull(),
 });
+
+export const crmTenantConfig = pgTable("crm_tenant_config", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  nit: varchar("nit", { length: 50 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  address: text("address"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmTenantBranding = pgTable("crm_tenant_branding", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").references(() => crmTenantConfig.id, { onDelete: "cascade" }),
+  logoUrl: text("logo_url"),
+  primaryColor: varchar("primary_color", { length: 50 }).default("#0f172a").notNull(),
+  secondaryColor: varchar("secondary_color", { length: 50 }).default("#0ea5e9").notNull(),
+  customCss: text("custom_css"),
+  portalName: varchar("portal_name", { length: 255 }).default("Portal Cliente").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmTenantIntegrations = pgTable("crm_tenant_integrations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").references(() => crmTenantConfig.id, { onDelete: "cascade" }),
+  telegramBotToken: text("telegram_bot_token"),
+  telegramChatIdVentas: varchar("telegram_chat_id_ventas", { length: 100 }),
+  telegramChatIdServicio: varchar("telegram_chat_id_servicio", { length: 100 }),
+  telegramChatIdIngenieria: varchar("telegram_chat_id_ingenieria", { length: 100 }),
+  telegramChatIdDireccion: varchar("telegram_chat_id_direccion", { length: 100 }),
+  telegramChatIdPostventa: varchar("telegram_chat_id_postventa", { length: 100 }),
+  resendApiKey: text("resend_api_key"),
+  twilioAccountSid: text("twilio_account_sid"),
+  twilioAuthToken: text("twilio_auth_token"),
+  twilioWhatsappFrom: varchar("twilio_whatsapp_from", { length: 100 }),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmMediaLibrary = pgTable("crm_media_library", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: varchar("mime_type", { length: 100 }),
+  uploadedBy: uuid("uploaded_by").references(() => crmUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmTenantBrandingRelations = relations(crmTenantBranding, ({ one }) => ({
+  tenant: one(crmTenantConfig, { fields: [crmTenantBranding.tenantId], references: [crmTenantConfig.id] }),
+}));
+
+export const crmTenantIntegrationsRelations = relations(crmTenantIntegrations, ({ one }) => ({
+  tenant: one(crmTenantConfig, { fields: [crmTenantIntegrations.tenantId], references: [crmTenantConfig.id] }),
+}));
+
+export const crmMediaLibraryRelations = relations(crmMediaLibrary, ({ one }) => ({
+  uploader: one(crmUsers, { fields: [crmMediaLibrary.uploadedBy], references: [crmUsers.id] }),
+}));
+
 
 

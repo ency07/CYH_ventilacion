@@ -790,7 +790,7 @@ export default function DashboardClient({
             <div className="bg-white p-6 rounded border border-slate-200 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tasa de Agendamiento</span>
-                <Link href="/crm/reuniones" className="text-[9px] font-bold uppercase text-slate-455 hover:text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 transition-colors flex items-center gap-0.5 select-none">
+                <Link href="/crm/agendamientos" className="text-[9px] font-bold uppercase text-slate-455 hover:text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 transition-colors flex items-center gap-0.5 select-none">
                   🔍 Ver Detalle
                 </Link>
               </div>

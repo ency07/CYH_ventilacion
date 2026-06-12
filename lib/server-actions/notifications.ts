@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { crmNotifications, crmCustomerContacts } from "@/lib/db/schema";
+import { crmNotifications, crmCustomerContacts, crmTenantIntegrations, crmNotificationEvents } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/permissions";
 import { eq } from "drizzle-orm";
 import { Resend } from "resend";
@@ -19,6 +19,15 @@ export interface NotificationInput {
   title: string;
   message: string;
   severity: "info" | "warning" | "critical";
+}
+
+export interface NotificationCredentials {
+  telegramBotToken: string;
+  telegramChatIdServicio: string;
+  resendApiKey: string;
+  twilioAccountSid: string;
+  twilioAuthToken: string;
+  twilioWhatsappFrom: string;
 }
 
 /**
@@ -73,24 +82,58 @@ export async function sendNotificationActionInternal(
       }
     }
 
+    // Query active integrations config from DB
+    let dbIntegrations = null;
+    try {
+      const integrationsList = await txOrDb.select().from(crmTenantIntegrations).limit(1);
+      if (integrationsList.length > 0) {
+        dbIntegrations = integrationsList[0];
+      }
+    } catch (e) {
+      console.warn("Could not query crm_tenant_integrations:", e);
+    }
+
+    // Resolve integration credentials with fallback to process.env
+    const telegramBotToken = dbIntegrations?.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
+    const telegramChatIdVentas = dbIntegrations?.telegramChatIdVentas || process.env.TELEGRAM_CHAT_ID_VENTAS || "";
+    const telegramChatIdServicio = dbIntegrations?.telegramChatIdServicio || process.env.TELEGRAM_CHAT_ID_SERVICIO || "";
+    const telegramChatIdIngenieria = dbIntegrations?.telegramChatIdIngenieria || process.env.TELEGRAM_CHAT_ID_INGENIERIA || "";
+    const telegramChatIdDireccion = dbIntegrations?.telegramChatIdDireccion || process.env.TELEGRAM_CHAT_ID_DIRECCION || "";
+    const telegramChatIdPostventa = dbIntegrations?.telegramChatIdPostventa || process.env.TELEGRAM_CHAT_ID_POSTVENTA || "";
+
+    const resendApiKey = dbIntegrations?.resendApiKey || process.env.RESEND_API_KEY || "";
+
+    const twilioAccountSid = dbIntegrations?.twilioAccountSid || process.env.TWILIO_ACCOUNT_SID || "";
+    const twilioAuthToken = dbIntegrations?.twilioAuthToken || process.env.TWILIO_AUTH_TOKEN || "";
+    const twilioWhatsappFrom = dbIntegrations?.twilioWhatsappFrom || process.env.TWILIO_WHATSAPP_FROM || "whatsapp:+14155238886";
+
     // Resolve Telegram Channels based on routing rules
     const telegramChatIds: string[] = [];
     const eventUpper = eventType.toUpperCase();
 
     if (eventUpper.includes("EMERGENCIA") || eventUpper.includes("PARADA_PLANTA")) {
-      if (process.env.TELEGRAM_CHAT_ID_SERVICIO) telegramChatIds.push(process.env.TELEGRAM_CHAT_ID_SERVICIO);
-      if (process.env.TELEGRAM_CHAT_ID_DIRECCION) telegramChatIds.push(process.env.TELEGRAM_CHAT_ID_DIRECCION);
+      if (telegramChatIdServicio) telegramChatIds.push(telegramChatIdServicio);
+      if (telegramChatIdDireccion) telegramChatIds.push(telegramChatIdDireccion);
     } else if (eventUpper.includes("GARANTIA") || eventUpper.includes("POSTVENTA")) {
-      const postVentaId = process.env.TELEGRAM_CHAT_ID_POSTVENTA || process.env.TELEGRAM_CHAT_ID_SERVICIO;
+      const postVentaId = telegramChatIdPostventa || telegramChatIdServicio;
       if (postVentaId) telegramChatIds.push(postVentaId);
     } else if (eventUpper.includes("COMERCIAL") || eventUpper.includes("VENTAS") || eventUpper.includes("PROPOSAL") || eventUpper.includes("MEETING")) {
-      if (process.env.TELEGRAM_CHAT_ID_VENTAS) telegramChatIds.push(process.env.TELEGRAM_CHAT_ID_VENTAS);
+      if (telegramChatIdVentas) telegramChatIds.push(telegramChatIdVentas);
     } else if (eventUpper.includes("INGENIERIA") || eventUpper.includes("DIAGNOSTIC") || eventUpper.includes("DIAGNOSTICO")) {
-      if (process.env.TELEGRAM_CHAT_ID_INGENIERIA) telegramChatIds.push(process.env.TELEGRAM_CHAT_ID_INGENIERIA);
+      if (telegramChatIdIngenieria) telegramChatIds.push(telegramChatIdIngenieria);
     } else {
       // Default fallback
-      if (process.env.TELEGRAM_CHAT_ID_SERVICIO) telegramChatIds.push(process.env.TELEGRAM_CHAT_ID_SERVICIO);
+      if (telegramChatIdServicio) telegramChatIds.push(telegramChatIdServicio);
     }
+
+    const credentials: NotificationCredentials = {
+      telegramBotToken,
+      telegramChatIdServicio,
+      resendApiKey,
+      twilioAccountSid,
+      twilioAuthToken,
+      twilioWhatsappFrom,
+    };
 
     // Insert persistent records for other channels
     for (const channel of channels) {
@@ -108,7 +151,21 @@ export async function sendNotificationActionInternal(
         .returning();
 
       // Trigger asynchronous dispatch (non-blocking)
-      dispatchExternalNotification(notifRecord.id, channel, clientEmail, clientPhone, telegramChatIds, title, message);
+      dispatchExternalNotification(
+        customerId,
+        eventType,
+        "crm_notifications",
+        notifRecord.id,
+        severity === "critical" ? "P1" : severity === "warning" ? "P2" : "P4",
+        notifRecord.id,
+        channel,
+        clientEmail,
+        clientPhone,
+        telegramChatIds,
+        title,
+        message,
+        credentials
+      );
     }
 
     return true;
@@ -134,69 +191,154 @@ export async function sendNotificationAction(input: NotificationInput): Promise<
 
 /**
  * Non-blocking dispatch function that updates database status once resolved
+ * Tracks attempts, errors, and retries in crm_notification_events (Fase 12+)
  */
 function dispatchExternalNotification(
+  customerId: string | null,
+  eventType: string,
+  entityType: string,
+  entityId: string,
+  priority: string,
   notifId: string,
   channel: string,
   email: string,
   phone: string,
   telegramChatIds: string[],
   title: string,
-  message: string
+  message: string,
+  credentials: NotificationCredentials
 ) {
   // Execute asynchronously, catching exceptions to avoid crashing main thread
   (async () => {
     let success = false;
+    let lastError = "";
+    let retries = 0;
+    const maxRetries = 3;
+    let eventRecordId = "";
 
     try {
-      if (channel === "telegram") {
-        if (telegramChatIds.length === 0) {
-          // Fallback to servicio if no mapping matched
-          const fallbackId = process.env.TELEGRAM_CHAT_ID_SERVICIO || "";
-          success = await sendTelegramMessage(fallbackId, `<b>${title}</b>\n\n${message}`);
-        } else {
-          // Send to all matched chats
-          const results = await Promise.all(
-            telegramChatIds.map(chatId => sendTelegramMessage(chatId, `<b>${title}</b>\n\n${message}`))
-          );
-          success = results.some(r => r === true);
+      // 1. Log initial state in crm_notification_events
+      const [eventRecord] = await db
+        .insert(crmNotificationEvents)
+        .values({
+          customerId,
+          eventType,
+          entityType,
+          entityId,
+          priority: priority || "P4",
+          channel,
+          status: "pending",
+          messageText: `${title}\n${message}`,
+          retries: 0,
+        })
+        .returning();
+      
+      eventRecordId = eventRecord.id;
+
+      while (retries < maxRetries && !success) {
+        try {
+          if (channel === "telegram") {
+            if (telegramChatIds.length === 0) {
+              const fallbackId = credentials.telegramChatIdServicio || "";
+              success = await sendTelegramMessage(credentials.telegramBotToken, fallbackId, `<b>${title}</b>\n\n${message}`);
+            } else {
+              const results = await Promise.all(
+                telegramChatIds.map(chatId => sendTelegramMessage(credentials.telegramBotToken, chatId, `<b>${title}</b>\n\n${message}`))
+              );
+              success = results.some(r => r === true);
+            }
+            if (!success) lastError = "Mensaje no pudo ser entregado a ningún chat de Telegram.";
+          } else if (channel === "email") {
+            const subject = `Notificación CYH: ${title}`;
+            const html = `
+              <div style="font-family: sans-serif; padding: 25px; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h2 style="color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 18px;">CYH OS — Centro de Alertas</h2>
+                <p style="font-size: 14px; font-weight: bold; color: #0f172a; margin-top: 15px;">${title}</p>
+                <div style="background-color: #f8fafc; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; font-size: 13px; line-height: 1.6; border-radius: 4px;">
+                  ${message}
+                </div>
+                <p style="font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 25px;">
+                  Este es un correo automatizado enviado por CYH OS. Por favor no responda a esta dirección.
+                </p>
+              </div>
+            `;
+            success = await sendEmailMessage(credentials.resendApiKey, email, subject, html);
+            if (!success) lastError = "Resend falló al despachar el correo electrónico.";
+          } else if (channel === "whatsapp") {
+            const cleanMsg = message.replace(/<[^>]*>/g, "");
+            success = await sendWhatsAppMessage(credentials.twilioAccountSid, credentials.twilioAuthToken, credentials.twilioWhatsappFrom, phone || "+573001234567", `⚠️ *${title}*\n\n${cleanMsg}`);
+            if (!success) lastError = "Twilio falló al despachar el WhatsApp.";
+          }
+        } catch (dispatchErr: any) {
+          lastError = dispatchErr.message || "Excepción no controlada durante el envío.";
         }
-      } else if (channel === "email") {
-        const subject = `Notificación CYH: ${title}`;
-        const html = `
-          <div style="font-family: sans-serif; padding: 25px; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 18px;">CYH OS — Centro de Alertas</h2>
-            <p style="font-size: 14px; font-weight: bold; color: #0f172a; margin-top: 15px;">${title}</p>
-            <div style="background-color: #f8fafc; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; font-size: 13px; line-height: 1.6; border-radius: 4px;">
-              ${message}
-            </div>
-            <p style="font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 25px;">
-              Este es un correo automatizado enviado por CYH OS. Por favor no responda a esta dirección.
-            </p>
-          </div>
-        `;
-        success = await sendEmailMessage(email, subject, html);
-      } else if (channel === "whatsapp") {
-        const cleanMsg = message.replace(/<[^>]*>/g, "");
-        success = await sendWhatsAppMessage(phone || "+573001234567", `⚠️ *${title}*\n\n${cleanMsg}`);
+
+        if (success) {
+          break;
+        }
+
+        retries++;
+        if (retries < maxRetries) {
+          // Wait 1 second before retrying (exponential backoff simulated)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await db
+            .update(crmNotificationEvents)
+            .set({
+              retries,
+              error: lastError,
+              status: "sending"
+            })
+            .where(eq(crmNotificationEvents.id, eventRecordId));
+        }
       }
 
-      // Update delivery status in DB
+      // 2. Finalize status tracking in db
       if (success) {
         await db
+          .update(crmNotificationEvents)
+          .set({
+            status: "success",
+            sentAt: new Date(),
+            retries,
+            error: null
+          })
+          .where(eq(crmNotificationEvents.id, eventRecordId));
+
+        await db
           .update(crmNotifications)
-          .set({ isRead: true }) // Set as processed/read internally for external delivery audit
+          .set({ isRead: true })
           .where(eq(crmNotifications.id, notifId));
+      } else {
+        await db
+          .update(crmNotificationEvents)
+          .set({
+            status: "failed",
+            retries,
+            error: lastError || "Número máximo de reintentos alcanzado sin éxito."
+          })
+          .where(eq(crmNotificationEvents.id, eventRecordId));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(`[Async Dispatch Exception] channel=${channel}:`, err);
+      if (eventRecordId) {
+        try {
+          await db
+            .update(crmNotificationEvents)
+            .set({
+              status: "failed",
+              error: err.message || "Fallo crítico en el proceso de despacho."
+            })
+            .where(eq(crmNotificationEvents.id, eventRecordId));
+        } catch (dbErr) {
+          console.error("Failed to update final crash status in crm_notification_events:", dbErr);
+        }
+      }
     }
   })();
 }
 
 // Telegram Sender API
-async function sendTelegramMessage(chatId: string, text: string): Promise<boolean> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+async function sendTelegramMessage(token: string, chatId: string, text: string): Promise<boolean> {
   if (!token || !chatId) {
     console.warn(`[TELEGRAM MOCK] Chat ID ${chatId} or Bot Token not configured. Message: ${text}`);
     return true; // Mock success in dev
@@ -215,8 +357,7 @@ async function sendTelegramMessage(chatId: string, text: string): Promise<boolea
 }
 
 // Resend Email Sender API
-async function sendEmailMessage(to: string, subject: string, html: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
+async function sendEmailMessage(apiKey: string, to: string, subject: string, html: string): Promise<boolean> {
   if (!apiKey || apiKey.includes("placeholder")) {
     console.warn(`[EMAIL MOCK] Resend API key not configured. To: ${to}. Subject: ${subject}`);
     return true;
@@ -237,37 +378,33 @@ async function sendEmailMessage(to: string, subject: string, html: string): Prom
 }
 
 // Twilio WhatsApp Sender API
-async function sendWhatsAppMessage(phone: string, text: string): Promise<boolean> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromNum = process.env.TWILIO_WHATSAPP_FROM || "whatsapp:+14155238886";
-  
+async function sendWhatsAppMessage(accountSid: string, authToken: string, fromNum: string, phone: string, text: string): Promise<boolean> {
   if (!accountSid || !authToken || !phone) {
     console.warn(`[WHATSAPP MOCK] Credentials or phone missing. Phone: ${phone}. Message: ${text}`);
     return true;
   }
   
-    try {
-      const toNum = phone.startsWith("whatsapp:") ? phone : `whatsapp:${phone}`;
-      const basicAuth = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
-      const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Basic ${basicAuth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          From: fromNum,
-          To: toNum,
-          Body: text,
-        }),
-      });
-      return res.ok;
-    } catch (err) {
-      console.error("[WHATSAPP EXCEPTION]", err);
-      return false;
-    }
+  try {
+    const toNum = phone.startsWith("whatsapp:") ? phone : `whatsapp:${phone}`;
+    const basicAuth = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${basicAuth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        From: fromNum,
+        To: toNum,
+        Body: text,
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("[WHATSAPP EXCEPTION]", err);
+    return false;
   }
+}
 
 /**
  * Mark a persistent notification as read in the database

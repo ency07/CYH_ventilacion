@@ -9,7 +9,9 @@ import {
   crmActivityLogs,
   crmAuditLogs,
   leads,
-  crmProposals
+  crmProposals,
+  crmContracts,
+  crmAssets
 } from "@/lib/db/schema";
 import { eq, and, gte, desc, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -130,6 +132,7 @@ ${validated.description}`;
           urgency: validated.urgency,
           status: "abierta",
           createdBy: userId,
+          assetId: validated.assetId || null,
         })
         .returning();
 
@@ -293,6 +296,79 @@ export async function acceptProposalAction(proposalId: string): Promise<ActionRe
         severity: "warning", // Priority P2
       });
 
+      // --- AUTO-PROVISIONING (Fase 12+) ---
+      // 1. Create a new contract
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setFullYear(startDate.getFullYear() + 1); // 1-year contract
+
+      const [newContract] = await tx
+        .insert(crmContracts)
+        .values({
+          customerId: contact.customerId,
+          title: `Contrato: ${proposal.title}`,
+          value: proposal.totalValue,
+          status: "active",
+          startDate,
+          endDate,
+        })
+        .returning();
+
+      // 2. Resolve Plant
+      const customerPlantsList = await tx
+        .select()
+        .from(crmCustomerPlants)
+        .where(eq(crmCustomerPlants.customerId, contact.customerId));
+
+      let activePlantId: string;
+      if (customerPlantsList.length === 0) {
+        const [newPlant] = await tx
+          .insert(crmCustomerPlants)
+          .values({
+            customerId: contact.customerId,
+            name: "Planta Principal",
+            city: lead.city || "Barranquilla",
+            airflowCfm: 150000,
+          })
+          .returning();
+        activePlantId = newPlant.id;
+      } else {
+        activePlantId = customerPlantsList[0].id;
+      }
+
+      // 3. Provision Default Assets
+      const [existingAsset1] = await tx
+        .select()
+        .from(crmAssets)
+        .where(eq(crmAssets.code, "CYH-AX-500"))
+        .limit(1);
+
+      if (!existingAsset1) {
+        await tx.insert(crmAssets).values({
+          plantId: activePlantId,
+          name: "Extractor Turbocentrífugo AX-500",
+          code: "CYH-AX-500",
+          operatingHours: 0,
+          status: "operativo",
+        });
+      }
+
+      const [existingAsset2] = await tx
+        .select()
+        .from(crmAssets)
+        .where(eq(crmAssets.code, "CYH-IN-300"))
+        .limit(1);
+
+      if (!existingAsset2) {
+        await tx.insert(crmAssets).values({
+          plantId: activePlantId,
+          name: "Inyector de Flujo Axial IN-300",
+          code: "CYH-IN-300",
+          operatingHours: 0,
+          status: "operativo",
+        });
+      }
+
       // Forensic Audit Log (Pilar X)
       await tx.insert(crmAuditLogs).values({
         actorId: userId,
@@ -309,6 +385,20 @@ export async function acceptProposalAction(proposalId: string): Promise<ActionRe
           proposalId: proposalId,
           version: proposal.version,
           termsAccepted: true,
+        } as any,
+      });
+
+      // Audit Log for Auto-Provisioning
+      await tx.insert(crmAuditLogs).values({
+        actorId: userId,
+        action: "auto_provision_contract_assets",
+        entityAffected: `crm_contracts:${newContract.id}`,
+        ipAddress: ipAddress,
+        userAgent: userAgent,
+        metadata: {
+          proposalId: proposalId,
+          contractId: newContract.id,
+          customerId: contact.customerId,
         } as any,
       });
 

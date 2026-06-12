@@ -7,10 +7,25 @@ import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/permissions";
+import { createClient } from "@supabase/supabase-js";
 
 export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
+
+/**
+ * Helper to get a Supabase admin client using the service role key.
+ */
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
 
 export async function getCurrentUserAction(): Promise<ActionResult<typeof crmUsers.$inferSelect>> {
   try {
@@ -39,14 +54,123 @@ export async function getCurrentUserAction(): Promise<ActionResult<typeof crmUse
   }
 }
 
-export async function getAllCrmUsersAction(): Promise<ActionResult<typeof crmUsers.$inferSelect[]>> {
+/**
+ * List all users belonging to the caller's tenant.
+ * root_dev bypasses tenant isolation to see all users.
+ */
+export async function listCrmUsersAction(): Promise<ActionResult<typeof crmUsers.$inferSelect[]>> {
   try {
-    await requireRole(["root_dev", "admin", "super_admin", "director_comercial"]);
+    const currentUser = await requireRole(["root_dev", "admin", "super_admin", "director_comercial"]);
 
-    const users = await db.select().from(crmUsers);
+    if (currentUser.role === "root_dev") {
+      const users = await db.select().from(crmUsers);
+      return { success: true, data: users };
+    }
+
+    if (!currentUser.tenantId) {
+      return { success: true, data: [] };
+    }
+
+    const users = await db
+      .select()
+      .from(crmUsers)
+      .where(eq(crmUsers.tenantId, currentUser.tenantId));
+
     return { success: true, data: users };
   } catch (err: any) {
     return { success: false, error: err.message || "Error al obtener lista de usuarios." };
+  }
+}
+
+export async function getAllCrmUsersAction(): Promise<ActionResult<typeof crmUsers.$inferSelect[]>> {
+  return listCrmUsersAction();
+}
+
+/**
+ * Programmatically registers a user profile in Supabase Auth and crm_users table.
+ * Enforces tenant isolation: admins can only create users under their own tenant.
+ */
+export async function createCrmUserAction(
+  email: string,
+  fullName: string,
+  role: string,
+  password?: string
+): Promise<ActionResult<typeof crmUsers.$inferSelect>> {
+  try {
+    const currentUser = await requireRole(["root_dev", "admin", "super_admin"]);
+    const reqHeaders = headers();
+    const ipAddress = reqHeaders.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
+    const userAgent = reqHeaders.get("user-agent") || "unknown";
+
+    // Enforce Tenant Isolation for non-root admins
+    const targetTenantId = currentUser.role === "root_dev" ? null : currentUser.tenantId;
+
+    if (currentUser.role !== "root_dev" && !targetTenantId) {
+      throw new Error("No tienes un inquilino (Tenant) asignado para crear usuarios.");
+    }
+
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // 1. Create User in Supabase Auth
+    const finalPassword = password || "CYH123456!";
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email.toLowerCase().trim(),
+      password: finalPassword,
+      email_confirm: true,
+      user_metadata: { full_name: fullName }
+    });
+
+    if (authError || !authData?.user) {
+      throw new Error(authError?.message || "No se pudo crear el usuario en el servicio de autenticación.");
+    }
+
+    const newUserId = authData.user.id;
+
+    // 2. Perform DB Profile creation and Audit Logging inside atomic Transaction (Pilar VI & X)
+    let profile: typeof crmUsers.$inferSelect;
+    try {
+      profile = await db.transaction(async (tx) => {
+        const [up] = await tx.insert(crmUsers).values({
+          id: newUserId,
+          email: email.toLowerCase().trim(),
+          fullName,
+          role,
+          isActive: true,
+          tenantId: targetTenantId,
+        }).returning();
+
+        if (!up) {
+          throw new Error("Fallo al registrar perfil de usuario en base de datos.");
+        }
+
+        await tx.insert(crmAuditLogs).values({
+          actorId: currentUser.id,
+          action: "create_user",
+          entityAffected: `crm_users:${newUserId}`,
+          metadata: {
+            targetUserId: newUserId,
+            email: email,
+            role: role,
+            tenantId: targetTenantId,
+          },
+          ipAddress,
+          userAgent,
+        });
+
+        return up;
+      });
+    } catch (dbError) {
+      // Failsafe: Clean up orphaned Auth account if DB transaction rolls back
+      console.error("[Auth Failsafe] Cleaning up orphaned Auth account due to DB error:", dbError);
+      await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      throw dbError;
+    }
+
+    revalidatePath("/crm/usuarios");
+    return { success: true, data: profile };
+  } catch (err: any) {
+    console.error("Create User Error:", err);
+    return { success: false, error: err.message || "Error al crear el usuario." };
   }
 }
 
@@ -76,7 +200,12 @@ export async function updateCrmUserAction(userId: string, data: { fullName?: str
         throw new Error("Usuario no encontrado.");
       }
 
-      // 2. Role Partition security checks
+      // 2. Tenant isolation check
+      if (currentUser.role !== "root_dev" && targetUser.tenantId !== currentUser.tenantId) {
+        throw new Error("Acceso denegado: el usuario pertenece a otro inquilino.");
+      }
+
+      // 3. Role Partition security checks
       if (targetUser.role === "root_dev" && currentUser.role !== "root_dev") {
         throw new Error("Acceso denegado. Solo un root_dev puede modificar a otro root_dev.");
       }
@@ -85,7 +214,7 @@ export async function updateCrmUserAction(userId: string, data: { fullName?: str
         throw new Error("Acceso denegado. Solo un root_dev puede asignar el rol de root_dev.");
       }
 
-      // 3. Perform update
+      // 4. Perform update
       const [up] = await tx.update(crmUsers)
         .set({ 
           ...(data.fullName ? { fullName: data.fullName } : {}),
@@ -98,7 +227,7 @@ export async function updateCrmUserAction(userId: string, data: { fullName?: str
         throw new Error("No se pudo actualizar el perfil.");
       }
 
-      // 4. Log role change
+      // 5. Log role change
       if (data.role && targetUser.role !== data.role) {
         await tx.insert(crmAuditLogs).values({
           actorId: currentUser.id,
@@ -137,6 +266,11 @@ export async function suspendCrmUserAction(userId: string): Promise<ActionResult
       const [targetUser] = await tx.select().from(crmUsers).where(eq(crmUsers.id, userId));
       if (!targetUser) {
         throw new Error("Usuario no encontrado.");
+      }
+
+      // Tenant isolation check
+      if (currentUser.role !== "root_dev" && targetUser.tenantId !== currentUser.tenantId) {
+        throw new Error("Acceso denegado: el usuario pertenece a otro inquilino.");
       }
 
       if (targetUser.role === "root_dev" && currentUser.role !== "root_dev") {
@@ -191,6 +325,11 @@ export async function reactivateCrmUserAction(userId: string): Promise<ActionRes
       const [targetUser] = await tx.select().from(crmUsers).where(eq(crmUsers.id, userId));
       if (!targetUser) {
         throw new Error("Usuario no encontrado.");
+      }
+
+      // Tenant isolation check
+      if (currentUser.role !== "root_dev" && targetUser.tenantId !== currentUser.tenantId) {
+        throw new Error("Acceso denegado: el usuario pertenece a otro inquilino.");
       }
 
       if (targetUser.role === "root_dev" && currentUser.role !== "root_dev") {

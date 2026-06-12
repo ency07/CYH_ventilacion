@@ -10,6 +10,7 @@ export const RequestServiceSchema = z.object({
   serviceType: z.string().optional().nullable(),
   operationalImpact: z.string().optional().nullable(),
   affectedAsset: z.string().optional().nullable(),
+  assetId: z.string().uuid("ID de activo inválido.").optional().nullable(),
 });
 
 export type RequestServiceInput = z.infer<typeof RequestServiceSchema>;

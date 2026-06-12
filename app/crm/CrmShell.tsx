@@ -13,6 +13,7 @@ import { useTheme } from "next-themes";
 import { logoutAction } from "@/lib/server-actions/auth";
 import * as Popover from "@radix-ui/react-popover";
 import { getNotificationAlertsAction, type NotificationAlert } from "@/lib/server-actions/crm";
+import { getTenantBrandingAction } from "@/lib/server-actions/config";
 
 // ─── Navigation Menu Definition ─────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ const menuGroups = [
       { name: "Roles", href: "/crm/roles", icon: ShieldCheck, roles: ["admin", "super_admin"] },
       { name: "Permisos", href: "/crm/permisos", icon: Lock, roles: ["admin", "super_admin"] },
       { name: "Equipo", href: "/crm/equipo", icon: UsersRound, roles: ["admin", "super_admin", "director_comercial"] },
-      { name: "Configuración", href: "/crm/ajustes", icon: Settings, roles: ["admin", "super_admin"] },
+      { name: "Configuración", href: "/crm/configuracion", icon: Settings, roles: ["admin", "super_admin"] },
     ],
   },
 ];
@@ -221,8 +222,29 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
   const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [brandingConfig, setBrandingConfig] = useState<{
+    companyName: string;
+    logoUrl: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+  } | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    async function loadBranding() {
+      const res = await getTenantBrandingAction();
+      if (res.success && res.data) {
+        setBrandingConfig({
+          companyName: res.data.config.companyName,
+          logoUrl: res.data.branding.logoUrl,
+          primaryColor: res.data.branding.primaryColor,
+          secondaryColor: res.data.branding.secondaryColor,
+        });
+      }
+    }
+    loadBranding();
+  }, []);
 
   useEffect(() => {
     if (pathname === "/crm/dashboard" && (userRole === "tecnico" || userRole === "ingeniero")) {
@@ -265,6 +287,14 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
 
   return (
     <>
+      {brandingConfig && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --primary-color: ${brandingConfig.primaryColor};
+            --secondary-color: ${brandingConfig.secondaryColor};
+          }
+        `}} />
+      )}
       {/* Keyframe animation for popover */}
       <style>{`
         @keyframes fadeInScale {
@@ -284,8 +314,15 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
           {/* Sidebar Header */}
           <div className={`flex items-center border-b border-border-subtle h-16 flex-shrink-0 ${isSidebarOpen ? "px-4 justify-between" : "justify-center"}`}>
             <div className={`flex items-center gap-2 overflow-hidden ${isSidebarOpen ? "opacity-100" : "opacity-0 md:opacity-0"}`}>
-              <ShieldCheck className="h-5 w-5 text-accent-cyan flex-shrink-0" />
-              <span className="font-mono text-xs font-bold tracking-widest text-text-primary uppercase whitespace-nowrap">CYH OS</span>
+              {brandingConfig?.logoUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={brandingConfig.logoUrl} alt="Logo" className="h-5 w-auto object-contain flex-shrink-0" />
+              ) : (
+                <ShieldCheck className="h-5 w-5 text-accent-cyan flex-shrink-0" />
+              )}
+              <span className="font-mono text-xs font-bold tracking-widest text-text-primary uppercase whitespace-nowrap">
+                {brandingConfig ? brandingConfig.companyName : "CYH OS"}
+              </span>
             </div>
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -377,7 +414,9 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
 
             <div className="flex items-center gap-2">
               {/* Theme Toggle */}
-              {mounted && (
+              {!mounted ? (
+                <div className="w-8 h-8 rounded-full bg-bg-secondary border border-border-subtle opacity-50 animate-pulse" />
+              ) : (
                 <button
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="p-2 text-text-secondary hover:text-text-primary transition-colors bg-bg-secondary rounded-full border border-border-subtle"
