@@ -225,8 +225,12 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
   const [brandingConfig, setBrandingConfig] = useState<{
     companyName: string;
     logoUrl: string | null;
+    logoDarkUrl: string | null;
     primaryColor: string;
     secondaryColor: string;
+    btnColor: string;
+    sidebarColor: string;
+    crmConfig: any;
   } | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -238,8 +242,12 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
         setBrandingConfig({
           companyName: res.data.config.companyName,
           logoUrl: res.data.branding.logoUrl,
+          logoDarkUrl: res.data.branding.logoDarkUrl,
           primaryColor: res.data.branding.primaryColor,
           secondaryColor: res.data.branding.secondaryColor,
+          btnColor: res.data.branding.btnColor,
+          sidebarColor: res.data.branding.sidebarColor,
+          crmConfig: res.data.branding.crmConfig,
         });
       }
     }
@@ -270,12 +278,26 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
     await logoutAction();
   };
 
-  const filteredGroups = userRole === "admin" || userRole === "super_admin" || userRole === "root_dev"
-    ? menuGroups
-    : menuGroups.map(g => ({
-        ...g,
-        items: g.items.filter(item => item.roles.includes(userRole)),
-      })).filter(g => g.items.length > 0);
+  const filteredGroups = menuGroups.map(g => ({
+    ...g,
+    items: g.items.filter(item => {
+      // Auth filtering
+      const isRoleAllowed = userRole === "admin" || userRole === "super_admin" || userRole === "root_dev" || item.roles.includes(userRole);
+      if (!isRoleAllowed) return false;
+
+      // Module toggle filtering
+      if (brandingConfig?.crmConfig) {
+        const cfg = brandingConfig.crmConfig;
+        if (item.name === "Dashboard" && cfg.showDashboard === false) return false;
+        if (item.name === "Reportes" && cfg.showReports === false) return false;
+        if (item.name === "Alertas" && cfg.showAlerts === false) return false;
+        if (item.name === "Oportunidades" && cfg.showFinances === false) return false;
+        if (item.name === "Diagnósticos" && cfg.showDiagnostics === false) return false;
+        if (item.name === "Revisiones" && cfg.showDiagnostics === false) return false;
+      }
+      return true;
+    })
+  })).filter(g => g.items.length > 0);
 
   const toggleGroup = (groupName: string) => {
     setOpenGroups(prev =>
@@ -292,6 +314,20 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
           :root {
             --primary-color: ${brandingConfig.primaryColor};
             --secondary-color: ${brandingConfig.secondaryColor};
+            --btn-color: ${brandingConfig.btnColor};
+            --sidebar-color: ${brandingConfig.sidebarColor};
+          }
+          aside {
+            background-color: ${brandingConfig.sidebarColor} !important;
+          }
+          .bg-accent-cyan {
+            background-color: ${brandingConfig.btnColor} !important;
+          }
+          .text-accent-cyan {
+            color: ${brandingConfig.btnColor} !important;
+          }
+          .border-accent-cyan {
+            border-color: ${brandingConfig.btnColor} !important;
           }
         `}} />
       )}

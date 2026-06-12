@@ -285,8 +285,13 @@ export default function PortalClient({
   const [brandingConfig, setBrandingConfig] = useState<{
     companyName: string;
     logoUrl: string | null;
+    logoDarkUrl: string | null;
+    portalBgUrl: string | null;
     primaryColor: string;
     secondaryColor: string;
+    btnColor: string;
+    portalColor: string;
+    portalConfig: any;
   } | null>(null);
 
   // Notifications state (Fase 11.3)
@@ -300,8 +305,13 @@ export default function PortalClient({
         setBrandingConfig({
           companyName: res.data.config.companyName,
           logoUrl: res.data.branding.logoUrl,
+          logoDarkUrl: res.data.branding.logoDarkUrl,
+          portalBgUrl: res.data.branding.portalBgUrl,
           primaryColor: res.data.branding.primaryColor,
           secondaryColor: res.data.branding.secondaryColor,
+          btnColor: res.data.branding.btnColor,
+          portalColor: res.data.branding.portalColor,
+          portalConfig: res.data.branding.portalConfig,
         });
       }
     }
@@ -746,6 +756,21 @@ export default function PortalClient({
           :root {
             --primary-color: ${brandingConfig.primaryColor};
             --secondary-color: ${brandingConfig.secondaryColor};
+            --btn-color: ${brandingConfig.btnColor};
+            --portal-color: ${brandingConfig.portalColor};
+          }
+          header {
+            background-color: ${brandingConfig.portalColor}0a !important;
+            border-bottom-color: ${brandingConfig.primaryColor}20 !important;
+          }
+          .bg-emerald-500\/10 {
+            background-color: ${brandingConfig.btnColor}15 !important;
+          }
+          .text-emerald-600, .text-emerald-400 {
+            color: ${brandingConfig.btnColor} !important;
+          }
+          .border-emerald-500\/25 {
+            border-color: ${brandingConfig.btnColor}40 !important;
           }
         `}} />
       )}
@@ -765,9 +790,9 @@ export default function PortalClient({
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              {brandingConfig?.logoUrl ? (
+              {(brandingConfig?.portalBgUrl || brandingConfig?.logoUrl) ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={brandingConfig.logoUrl} alt="Logo" className="h-6 w-auto object-contain shrink-0" />
+                <img src={brandingConfig.portalBgUrl || brandingConfig.logoUrl || ""} alt="Logo" className="h-6 w-auto object-contain shrink-0" />
               ) : (
                 <span className="text-md font-bold tracking-wider text-slate-900 dark:text-slate-100 uppercase font-mono">
                   {brandingConfig ? brandingConfig.companyName : "CYH OS"}
@@ -881,36 +906,80 @@ export default function PortalClient({
           </div>
         )}
 
-        {/* Tab Navigator */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-100/40 dark:bg-slate-900/20 px-2 pt-2 rounded-t gap-1 overflow-x-auto">
-          {[
-            { id: "control", label: "Centro Operacional" },
-            { id: "equipos", label: "Equipos" },
-            { id: "proyectos", label: "Proyectos" },
-            { id: "requests", label: "Solicitudes" },
-            { id: "comercial", label: "Comercial" },
-            { id: "financials", label: "Finanzas & Cartera" },
-            { id: "ingenieria", label: "Ingeniería" },
-            { id: "actividad", label: "Actividad" },
-            { id: "auditoria", label: "Auditoría Cliente" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id as any);
-                setProposalActionError(null);
-                setProposalActionSuccess(null);
-              }}
-              className={`px-4 py-2.5 text-xs font-semibold uppercase tracking-wider font-mono rounded-t border-t border-x transition-all duration-100 whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
-                  : "bg-transparent border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Tab Navigator — Dynamic order & module filtering from branding config */}
+        {(() => {
+          const portalMods = brandingConfig?.portalConfig?.modules || {};
+          const menuOrd: string[] = brandingConfig?.portalConfig?.menuOrder || [];
+
+          // All available tabs with their module gate key
+          const ALL_TABS = [
+            { id: "control", label: "Centro Operacional", moduleKey: null },
+            { id: "requests", label: "Solicitudes", moduleKey: "solicitudes" },
+            { id: "equipos", label: "Equipos", moduleKey: "activos" },
+            { id: "proyectos", label: "Proyectos", moduleKey: null },
+            { id: "comercial", label: "Comercial", moduleKey: null },
+            { id: "financials", label: "Finanzas & Cartera", moduleKey: "facturas" },
+            { id: "ingenieria", label: "Ingeniería", moduleKey: "diagnosticos" },
+            { id: "actividad", label: "Actividad", moduleKey: null },
+            { id: "auditoria", label: "Auditoría Cliente", moduleKey: null },
+          ];
+
+          // Filter by active modules (if module key exists and module is disabled, hide the tab)
+          const visibleTabs = ALL_TABS.filter(tab => {
+            if (!tab.moduleKey) return true;
+            if (Object.keys(portalMods).length === 0) return true; // no config yet, show all
+            return portalMods[tab.moduleKey] !== false;
+          });
+
+          // Sort by menuOrder if configured
+          let orderedTabs = visibleTabs;
+          if (menuOrd.length > 0) {
+            const labelToIndex = (label: string) => {
+              const labelMap: Record<string, string> = {
+                "Inicio": "control",
+                "Solicitudes": "requests",
+                "Activos": "equipos",
+                "Facturas": "financials",
+                "Contratos": "proyectos",
+                "Ingeniería": "ingenieria",
+                "Actividad": "actividad",
+                "Auditoría": "auditoria",
+                "Comercial": "comercial",
+              };
+              return labelMap[label] || label;
+            };
+            orderedTabs = [...visibleTabs].sort((a, b) => {
+              const ai = menuOrd.findIndex(m => labelToIndex(m) === a.id || m.toLowerCase() === a.label.toLowerCase());
+              const bi = menuOrd.findIndex(m => labelToIndex(m) === b.id || m.toLowerCase() === b.label.toLowerCase());
+              if (ai === -1 && bi === -1) return 0;
+              if (ai === -1) return 1;
+              if (bi === -1) return -1;
+              return ai - bi;
+            });
+          }
+
+          return (
+            <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-100/40 dark:bg-slate-900/20 px-2 pt-2 rounded-t gap-1 overflow-x-auto">
+              {orderedTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id as any);
+                    setProposalActionError(null);
+                    setProposalActionSuccess(null);
+                  }}
+                  className={`px-4 py-2.5 text-xs font-semibold uppercase tracking-wider font-mono rounded-t border-t border-x transition-all duration-100 whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
+                      : "bg-transparent border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Dynamic Panels */}
         <section className="bg-white dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 rounded-b p-6 flex-1 shadow-sm">
@@ -927,7 +996,7 @@ export default function PortalClient({
                     {plants[0]?.name || "Planta Principal"} — {plants[0]?.city || "Colombia"}
                   </h2>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed max-w-xl">
-                    Esta interfaz representa el panel de control operacional del sistema de ventilación mecánica de su planta. Para reparaciones de fallas, inspecciones o reportes, use la pestaña de Solicitudes.
+                    {brandingConfig?.portalConfig?.welcomeMessage || "Esta interfaz representa el panel de control operacional del sistema de ventilación mecánica de su planta. Para reparaciones de fallas, inspecciones o reportes, use la pestaña de Solicitudes."}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-6 items-center">

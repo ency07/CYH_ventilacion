@@ -112,13 +112,26 @@ export default function PipelineClient({
   initialLeads = [],
   allCrmUsers = [],
   currentUser,
-  initialView = "kanban"
+  initialView = "kanban",
+  customStages,
 }: {
   initialLeads: CombinedLead[];
   allCrmUsers: CrmUser[];
   currentUser: { id: string; name: string; role: string; email: string };
   initialView?: "kanban" | "list";
+  customStages?: Array<{ name: string; prob: number; color: string }>;
 }) {
+  // Build the effective STAGES array: use customStages from branding if provided
+  const EFFECTIVE_STAGES = (customStages && customStages.length > 0)
+    ? customStages.map((s, i) => ({
+        id: s.name.toLowerCase().replace(/[^a-z0-9]/g, "_") + `_${i}`,
+        name: s.name,
+        bg: "bg-slate-50",
+        border: "border-slate-200",
+        text: "text-slate-700",
+        prob: s.prob,
+      }))
+    : STAGES;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -533,7 +546,7 @@ export default function PipelineClient({
   // Forecast pipeline calculations
   let weightedPipelineValue = 0;
   openLeads.forEach(l => {
-    const stageConf = STAGES.find(s => s.id === l.status);
+    const stageConf = EFFECTIVE_STAGES.find(s => s.id === l.status);
     const prob = stageConf ? stageConf.prob : 10;
     weightedPipelineValue += (l.estimatedBudgetMax || 0) * (prob / 100);
   });
@@ -721,7 +734,7 @@ export default function PipelineClient({
                 </tr>
               </thead>
               <tbody>
-                {STAGES.map((stage) => {
+                {EFFECTIVE_STAGES.map((stage) => {
                   const stageLeads = filteredLeads.filter(l => l.status === stage.id);
                   if (stageLeads.length === 0) return null;
 
@@ -810,7 +823,7 @@ export default function PipelineClient({
                                 }}
                                 className="bg-slate-50 border border-slate-200 text-[10px] font-bold uppercase tracking-wide text-slate-800 rounded px-1.5 py-0.5 focus:outline-none focus:border-slate-400 cursor-pointer font-sans"
                               >
-                                {STAGES.map((s) => (
+                                {EFFECTIVE_STAGES.map((s) => (
                                   <option key={s.id} value={s.id}>{s.name}</option>
                                 ))}
                               </select>
@@ -839,7 +852,7 @@ export default function PipelineClient({
 
           {/* Vista para Pantallas Móviles (Tarjetas de Fila Apiladas) */}
           <div className="block md:hidden space-y-6">
-            {STAGES.map((stage) => {
+            {EFFECTIVE_STAGES.map((stage) => {
               const stageLeads = filteredLeads.filter(l => l.status === stage.id);
               if (stageLeads.length === 0) return null;
 
@@ -968,7 +981,7 @@ export default function PipelineClient({
                                 }}
                                 className="w-full bg-slate-50 border border-slate-200 text-[10px] font-bold uppercase tracking-wide text-slate-800 rounded px-2.5 py-1 focus:outline-none focus:border-slate-400 cursor-pointer font-sans"
                               >
-                                {STAGES.map((s) => (
+                                {EFFECTIVE_STAGES.map((s) => (
                                   <option key={s.id} value={s.id}>{s.name}</option>
                                 ))}
                               </select>
@@ -986,7 +999,7 @@ export default function PipelineClient({
       ) : (
         <div className="flex-grow flex-1 min-h-0 w-full md:overflow-x-auto md:overflow-y-hidden overflow-visible pb-4 scrollbar-thin">
           <div className="flex flex-col md:flex-row gap-4 h-auto md:h-full pb-2">
-            {STAGES.map((stage) => {
+            {EFFECTIVE_STAGES.map((stage) => {
               let stageLeads = filteredLeads.filter(l => l.status === stage.id);
               const colValue = stageLeads.reduce((acc, l) => acc + (l.estimatedBudgetMax || 0), 0);
               const isDraggedOver = draggedOverStage === stage.id;

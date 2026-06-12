@@ -16,6 +16,8 @@ function AuthForm() {
     logoUrl: string | null;
     primaryColor: string;
     secondaryColor: string;
+    loginBgUrl: string | null;
+    loginColor: string;
   } | null>(null);
 
   const searchParams = useSearchParams();
@@ -30,6 +32,8 @@ function AuthForm() {
           logoUrl: res.data.branding.logoUrl,
           primaryColor: res.data.branding.primaryColor,
           secondaryColor: res.data.branding.secondaryColor,
+          loginBgUrl: res.data.branding.loginBgUrl,
+          loginColor: res.data.branding.loginColor,
         });
       }
     }
@@ -98,16 +102,29 @@ function AuthForm() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={brandingConfig?.loginBgUrl ? {
+        backgroundImage: `url('${brandingConfig.loginBgUrl}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      } : { background: brandingConfig?.loginColor || '#0f172a' }}
+    >
+      {/* Overlay for readability when bg image is set */}
+      {brandingConfig?.loginBgUrl && (
+        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" />
+      )}
       {brandingConfig && (
         <style dangerouslySetInnerHTML={{ __html: `
           :root {
             --primary-color: ${brandingConfig.primaryColor};
             --secondary-color: ${brandingConfig.secondaryColor};
+            --login-color: ${brandingConfig.loginColor};
           }
         `}} />
       )}
-      <div className={`w-full max-w-md border rounded-sm p-8 transition-all duration-500 ${cardClass}`}>
+      <div className={`relative z-10 w-full max-w-md border rounded-sm p-8 transition-all duration-500 ${cardClass}`}>
         
         <div className="text-center mb-8 flex flex-col items-center">
           {brandingConfig?.logoUrl ? (

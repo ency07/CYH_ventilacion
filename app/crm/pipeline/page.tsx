@@ -6,7 +6,7 @@ import { crmUsers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import PipelineClient from "./PipelineClient";
-import { Shield } from "lucide-react";
+import { getTenantBrandingAction } from "@/lib/server-actions/config";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +46,13 @@ export default async function PipelinePage({ searchParams }: { searchParams: { v
 
   const initialView = searchParams.view === "list" ? "list" : "kanban";
 
+  // Fetch pipeline stages from branding configuration
+  const brandingRes = await getTenantBrandingAction();
+  const rawStages = brandingRes.success ? (brandingRes.data?.branding?.pipelineStages as any) : null;
+  const customStages = Array.isArray(rawStages) && rawStages.length > 0
+    ? (rawStages as Array<{ name: string; prob: number; color: string }>)
+    : undefined;
+
   return (
     <div className="min-h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] flex flex-col w-full relative md:overflow-hidden overflow-visible bg-[#F8FAFC]">
       <PipelineClient 
@@ -53,7 +60,9 @@ export default async function PipelinePage({ searchParams }: { searchParams: { v
         allCrmUsers={allUsers}
         currentUser={currentUser}
         initialView={initialView}
+        customStages={customStages}
       />
     </div>
   );
 }
+

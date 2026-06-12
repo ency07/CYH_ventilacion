@@ -46,8 +46,16 @@ export default function ConfigForm({
 
   const [branding, setBranding] = useState({
     logoUrl: initialBranding.logoUrl || "",
+    logoDarkUrl: initialBranding.logoDarkUrl || "",
+    faviconUrl: initialBranding.faviconUrl || "",
+    loginBgUrl: initialBranding.loginBgUrl || "",
+    portalBgUrl: initialBranding.portalBgUrl || "",
     primaryColor: initialBranding.primaryColor,
     secondaryColor: initialBranding.secondaryColor,
+    btnColor: initialBranding.btnColor || "#0ea5e9",
+    sidebarColor: initialBranding.sidebarColor || "#0f172a",
+    loginColor: initialBranding.loginColor || "#0f172a",
+    portalColor: initialBranding.portalColor || "#0f172a",
     customCss: initialBranding.customCss || "",
     portalName: initialBranding.portalName,
   });

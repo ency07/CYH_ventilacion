@@ -54,10 +54,44 @@ export async function getTenantBrandingAction(): Promise<ActionResult<{
         [branding] = await tx.insert(crmTenantBranding).values({
           tenantId: config.id,
           logoUrl: null,
+          logoDarkUrl: null,
+          faviconUrl: null,
+          loginBgUrl: null,
+          portalBgUrl: null,
           primaryColor: "#0f172a",
           secondaryColor: "#0ea5e9",
+          btnColor: "#0ea5e9",
+          sidebarColor: "#0f172a",
+          loginColor: "#0f172a",
+          portalColor: "#0f172a",
           customCss: "",
           portalName: "Portal Cliente B2B",
+          crmConfig: {
+            showDashboard: true,
+            showReports: true,
+            showAlerts: true,
+            showFinances: true,
+            showDiagnostics: true
+          },
+          pipelineStages: [
+            { name: "Nuevo Prospecto", prob: 10, color: "bg-slate-500" },
+            { name: "Diagnóstico Técnico", prob: 30, color: "bg-blue-500" },
+            { name: "Propuesta Enviada", prob: 60, color: "bg-amber-500" },
+            { name: "Negociación / Cierre", prob: 80, color: "bg-purple-500" },
+            { name: "Cerrado Ganado", prob: 100, color: "bg-emerald-500" }
+          ],
+          portalConfig: {
+            welcomeMessage: "Bienvenido a su portal corporativo.",
+            modules: {
+              solicitudes: true,
+              facturas: true,
+              activos: true,
+              contratos: true,
+              warRooms: true,
+              diagnosticos: true
+            },
+            menuOrder: ["Inicio", "Solicitudes", "Activos", "Facturas", "Contratos"]
+          }
         }).returning();
       }
 
@@ -124,10 +158,21 @@ export async function updateTenantBrandingAction(
   },
   brandingData: {
     logoUrl?: string | null;
+    logoDarkUrl?: string | null;
+    faviconUrl?: string | null;
+    loginBgUrl?: string | null;
+    portalBgUrl?: string | null;
     primaryColor: string;
     secondaryColor: string;
+    btnColor: string;
+    sidebarColor: string;
+    loginColor: string;
+    portalColor: string;
     customCss?: string | null;
     portalName: string;
+    crmConfig?: any;
+    pipelineStages?: any;
+    portalConfig?: any;
   },
   integrationData?: {
     telegramBotToken?: string | null;
@@ -175,10 +220,21 @@ export async function updateTenantBrandingAction(
         .update(crmTenantBranding)
         .set({
           logoUrl: brandingData.logoUrl,
+          logoDarkUrl: brandingData.logoDarkUrl,
+          faviconUrl: brandingData.faviconUrl,
+          loginBgUrl: brandingData.loginBgUrl,
+          portalBgUrl: brandingData.portalBgUrl,
           primaryColor: brandingData.primaryColor,
           secondaryColor: brandingData.secondaryColor,
+          btnColor: brandingData.btnColor,
+          sidebarColor: brandingData.sidebarColor,
+          loginColor: brandingData.loginColor,
+          portalColor: brandingData.portalColor,
           customCss: brandingData.customCss,
           portalName: brandingData.portalName,
+          crmConfig: brandingData.crmConfig,
+          pipelineStages: brandingData.pipelineStages,
+          portalConfig: brandingData.portalConfig,
           updatedAt: new Date(),
         })
         .where(eq(crmTenantBranding.tenantId, config.id));
