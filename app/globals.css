@@ -213,3 +213,125 @@ body {
     color: black !important;
   }
 }
+
+/* ─── Global Theme Overrides ────────────────────────────────────────────────
+   Remap hardcoded Tailwind bg/text/border classes to CSS vars for non-light themes.
+   Fixes CRM dashboard/detail pages that use bg-white, bg-slate-*, text-slate-*.
+─────────────────────────────────────────────────────────────────────────────── */
+
+.dark .bg-white,
+.industrial .bg-white,
+.siemens .bg-white,
+.high-contrast .bg-white {
+  background-color: var(--surface) !important;
+}
+
+.dark .bg-slate-50, .dark .bg-gray-50,
+.industrial .bg-slate-50, .industrial .bg-gray-50,
+.siemens .bg-slate-50, .siemens .bg-gray-50,
+.high-contrast .bg-slate-50 {
+  background-color: var(--card) !important;
+}
+
+.dark .bg-slate-100, .dark .bg-gray-100,
+.industrial .bg-slate-100, .industrial .bg-gray-100,
+.siemens .bg-slate-100, .siemens .bg-gray-100,
+.high-contrast .bg-slate-100 {
+  background-color: var(--card) !important;
+}
+
+.dark .bg-slate-200, .dark .bg-gray-200,
+.industrial .bg-slate-200, .industrial .bg-gray-200,
+.siemens .bg-slate-200, .siemens .bg-gray-200,
+.high-contrast .bg-slate-200 {
+  background-color: var(--surface) !important;
+}
+
+.dark .border-slate-200, .dark .border-gray-200,
+.industrial .border-slate-200, .industrial .border-gray-200,
+.siemens .border-slate-200, .siemens .border-gray-200,
+.high-contrast .border-slate-200 {
+  border-color: var(--border) !important;
+}
+
+.dark .border-slate-100, .dark .border-gray-100,
+.industrial .border-slate-100, .industrial .border-gray-100,
+.siemens .border-slate-100, .siemens .border-gray-100,
+.high-contrast .border-slate-100 {
+  border-color: var(--border) !important;
+}
+
+.dark .text-slate-900, .dark .text-gray-900,
+.industrial .text-slate-900, .industrial .text-gray-900,
+.siemens .text-slate-900, .siemens .text-gray-900,
+.high-contrast .text-slate-900 {
+  color: var(--text) !important;
+}
+
+.dark .text-slate-800, .dark .text-gray-800,
+.industrial .text-slate-800, .industrial .text-gray-800,
+.siemens .text-slate-800, .siemens .text-gray-800,
+.high-contrast .text-slate-800 {
+  color: var(--text) !important;
+}
+
+.dark .text-slate-700, .dark .text-gray-700,
+.industrial .text-slate-700, .industrial .text-gray-700,
+.siemens .text-slate-700, .siemens .text-gray-700,
+.high-contrast .text-slate-700 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-slate-600, .dark .text-gray-600,
+.industrial .text-slate-600, .industrial .text-gray-600,
+.siemens .text-slate-600, .siemens .text-gray-600,
+.high-contrast .text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-slate-500, .dark .text-gray-500,
+.industrial .text-slate-500, .industrial .text-gray-500,
+.siemens .text-slate-500, .siemens .text-gray-500,
+.high-contrast .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+.dark .hover\:bg-slate-50:hover, .dark .hover\:bg-gray-50:hover,
+.industrial .hover\:bg-slate-50:hover, .industrial .hover\:bg-gray-50:hover,
+.siemens .hover\:bg-slate-50:hover, .siemens .hover\:bg-gray-50:hover,
+.high-contrast .hover\:bg-slate-50:hover {
+  background-color: var(--card) !important;
+}
+
+/* Input/select in non-light themes */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select, .dark textarea,
+.industrial input:not([type="checkbox"]):not([type="radio"]),
+.industrial select, .industrial textarea,
+.siemens input:not([type="checkbox"]):not([type="radio"]),
+.siemens select, .siemens textarea,
+.high-contrast input:not([type="checkbox"]):not([type="radio"]),
+.high-contrast select, .high-contrast textarea {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* ─── Brand Name CSS Classes (fixed, independent of theme) ──────────────────── */
+.brand-venti { color: #1e3a5f; }
+.brand-tech  { color: #00b4d8; }
+
+.dark .brand-venti,
+.industrial .brand-venti,
+.siemens .brand-venti,
+.high-contrast .brand-venti { color: #cce8f8; }
+
+.dark .brand-tech,
+.industrial .brand-tech,
+.siemens .brand-tech,
+.high-contrast .brand-tech  { color: #00d4ff; }
+
+/* ABB theme — light background, so keep original colors */
+.abb .brand-venti { color: #1e3a5f; }
+.abb .brand-tech  { color: #00b4d8; }
+

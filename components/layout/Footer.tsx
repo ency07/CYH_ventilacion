@@ -12,9 +12,11 @@ export default function Footer() {
           
           {/* Brand Info */}
           <div className="space-y-4 md:col-span-2">
-            <div className="flex items-center gap-3.5 mb-2">
+            <div className="flex items-center gap-3 mb-2">
               <img src="/logo-sphere.jpg" alt="" className="h-12 w-12 object-cover rounded-full" />
-              <img src="/logo-text.png" alt="VENTITECH Logo" className="h-8 w-auto object-contain dark:invert" />
+              <span className="font-bold text-xl leading-none select-none">
+                <span className="brand-venti">VENTI</span><span className="brand-tech">TECH</span>
+              </span>
             </div>
             <p className="text-sm text-text-secondary max-w-sm leading-relaxed">
               Diseño, desarrollo y optimización de sistemas de flujo de aire de alta capacidad y ventilación forzada para minería, plantas industriales de manufactura pesada y centros de datos en América Latina.
