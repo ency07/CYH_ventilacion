@@ -64,8 +64,9 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-background/90 backdrop-blur-2xl border-b border-border-subtle h-16 transition-colors duration-300">
       <div className="flex justify-between items-center w-full px-6 md:px-12 h-full max-w-7xl mx-auto">
-        <Link href="/" className="flex items-center gap-3 group">
-          <img src="/logo-ventitech.png" alt="VENTITECH" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+        <Link href="/" className="flex items-center gap-3.5 group">
+          <img src="/logo-sphere.jpg" alt="" className="h-10 w-10 object-cover rounded-full transition-transform group-hover:scale-105" />
+          <img src="/logo-text.png" alt="VENTITECH" className="h-7 w-auto object-contain dark:invert transition-transform group-hover:scale-105" />
         </Link>
 
         <nav className="hidden md:flex gap-7 items-center">

@@ -299,6 +299,18 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
     orderBy: [desc(crmInvoices.createdAt)],
   });
 
+  // Fetch list of all customers for switcher dropdown in Modo Supervisión (Super Powers)
+  let allCustomers: Array<{ id: string; name: string }> = [];
+  const canImpersonate = ["admin", "super_admin", "root_dev", "director_comercial", "director"].includes(userRole);
+  if (canImpersonate) {
+    allCustomers = await db.select({
+      id: crmCustomers.id,
+      name: crmCustomers.name,
+    })
+    .from(crmCustomers)
+    .orderBy(desc(crmCustomers.createdAt));
+  }
+
   const userName = profile?.full_name || user.email?.split("@")[0] || "Cliente CYH";
 
   return (
@@ -320,6 +332,7 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
       workOrders={workOrders}
       user={{ id: user.id, email: user.email || "", fullName: userName, role: userRole }}
       isImpersonating={isImpersonating}
+      allCustomers={allCustomers}
     />
   );
 }

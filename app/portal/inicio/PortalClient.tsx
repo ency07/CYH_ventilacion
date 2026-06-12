@@ -259,6 +259,7 @@ interface PortalClientProps {
     role: string;
   };
   isImpersonating?: boolean;
+  allCustomers?: Array<{ id: string; name: string }>;
 }
 
 export default function PortalClient({
@@ -279,6 +280,7 @@ export default function PortalClient({
   workOrders,
   user,
   isImpersonating = false,
+  allCustomers = [],
 }: PortalClientProps) {
   const [activeTab, setActiveTab] = useState<"control" | "equipos" | "proyectos" | "requests" | "comercial" | "ingenieria" | "financials" | "actividad" | "auditoria">("control");
   const [isPending, startTransition] = useTransition();
@@ -800,9 +802,28 @@ export default function PortalClient({
               )}
               <span className="text-[10px] bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono font-semibold">PORTAL INDUSTRIAL</span>
             </div>
-            <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold block uppercase tracking-wider leading-none mt-1">
-              {customer.name} {customer.nit ? `| NIT ${customer.nit}` : ""}
-            </span>
+            {allCustomers && allCustomers.length > 0 ? (
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-semibold uppercase">Empresa:</span>
+                <select
+                  value={customer.id}
+                  onChange={(e) => {
+                    window.location.href = `/portal/inicio?customerId=${e.target.value}`;
+                  }}
+                  className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent-cyan cursor-pointer font-sans"
+                >
+                  {allCustomers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold block uppercase tracking-wider leading-none mt-1">
+                {customer.name} {customer.nit ? `| NIT ${customer.nit}` : ""}
+              </span>
+            )}
           </div>
         </div>
 
