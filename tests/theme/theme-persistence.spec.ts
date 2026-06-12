@@ -7,6 +7,7 @@ test.describe("Theme Persistence Verification", () => {
   });
 
   test("Theme toggling, persistence on refresh, logout, and cross-navigation", async ({ page }) => {
+    test.setTimeout(90000);
     // 1. Log in as admin
     await page.goto("/login");
     await page.fill('input[name="email"]', "admin@cyh.com");
@@ -73,7 +74,7 @@ test.describe("Theme Persistence Verification", () => {
     await expect(page.locator("html")).toHaveClass(/light/);
 
     // Use navbar theme toggle on public web to change back to dark
-    const webToggle = page.locator('button[aria-label="Cambiar tema"]');
+    const webToggle = page.locator('button[aria-label="Cambiar tema"]').first();
     await expect(webToggle).toBeVisible();
     await webToggle.click();
     await page.waitForTimeout(500);

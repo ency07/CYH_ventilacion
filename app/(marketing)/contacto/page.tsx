@@ -79,7 +79,7 @@ export default function ContactoPage() {
                 <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
                 <div>
                   <span className="font-bold block uppercase">Registro Sincronizado</span>
-                  Hemos recibido su solicitud de ingeniería. Un especialista de CYH residente en Barranquilla se comunicará con usted en menos de 2 horas hábiles.
+                  Hemos recibido su solicitud de ingeniería. Un especialista de VENTITECH residente en Barranquilla se comunicará con usted en menos de 2 horas hábiles.
                 </div>
               </div>
             )}
@@ -228,7 +228,7 @@ export default function ContactoPage() {
                   <div>
                     <span className="text-text-primary font-bold uppercase block">Correo de Ingeniería</span>
                     <p className="text-accent-cyan mt-0.5">
-                      contacto@cyh-ingenieria.com
+                      contacto@ventitech.com
                     </p>
                   </div>
                 </li>

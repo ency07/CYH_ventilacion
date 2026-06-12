@@ -158,6 +158,7 @@ function AuthForm() {
         )}
 
         <form action={formAction} className="space-y-4">
+          <input type="hidden" name="from" value={fromParam || ""} />
           
           {mode === "register" && (
             <>

@@ -25,14 +25,14 @@ export async function sendDiagnosticEmailAction(leadId: string, pdfBase64?: stri
     // Prepare attachments array for Resend
     const attachments = pdfBase64 ? [
       {
-        filename: "Preingenieria-Estimada-CYH.pdf",
+        filename: "Preingenieria-Estimada-VENTITECH.pdf",
         content: Buffer.from(pdfBase64, "base64"),
         contentType: "application/pdf"
       }
     ] : [];
 
     const whatsappMessage = encodeURIComponent(
-      `Hola, solicito asistencia técnica para el diagnóstico de preingeniería CYH OS para mi planta en ${lead.city || "Colombia"}.`
+      `Hola, solicito asistencia técnica para el diagnóstico de preingeniería VENTITECH OS para mi planta en ${lead.city || "Colombia"}.`
     );
     const whatsappUrl = `https://api.whatsapp.com/send?phone=573001234567&text=${whatsappMessage}`;
 
@@ -50,11 +50,11 @@ export async function sendDiagnosticEmailAction(leadId: string, pdfBase64?: stri
 
     // Configuration of real routing to client and internal CYH copy (Temporary Dev Override)
     const { data, error } = await resend.emails.send({
-      from: "CYH Ingeniería <onboarding@resend.dev>",
+      from: "VENTITECH <onboarding@resend.dev>",
       to: ["cyhingenieria5@gmail.com"], // OVERRIDE FOR DEV/TESTING (Free Resend tier)
       cc: [], // No cc needed in dev since to is already the test email
       replyTo: ["cyhingenieria5@gmail.com"], // Reply-to CYH
-      subject: "Estimación Preliminar — CYH Ingeniería",
+      subject: "Estimación Preliminar — VENTITECH",
       attachments: attachments,
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #ffffff; padding: 40px; color: #1e293b; max-width: 600px; margin: 0 auto; line-height: 1.6;">
@@ -94,11 +94,11 @@ export async function sendDiagnosticEmailAction(leadId: string, pdfBase64?: stri
           <div style="border-top: 1px solid #e2e8f0; padding-top: 24px;">
             <p style="font-size: 14px; margin: 0; color: #475569;"><em>Atentamente,</em></p>
             <p style="font-size: 14px; margin: 4px 0 0 0; font-weight: bold; color: #0f172a;">Dirección de Proyectos y Preingeniería</p>
-            <p style="font-size: 14px; margin: 0; color: #475569;">CYH Ventilación Industrial</p>
+            <p style="font-size: 14px; margin: 0; color: #475569;">VENTITECH Ventilación Industrial</p>
             <p style="font-size: 12px; margin: 4px 0 0 0; color: #64748b;"><em>Especialistas en control de contaminantes y transferencia de calor</em></p>
           </div>
           <p style="font-size: 11px; line-height: 1.5; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 32px;">
-            * Cumplimiento obligatorio bajo reglamentación técnica <strong>RETIE</strong> y código eléctrico colombiano <strong>NTC 2050</strong>. Para cotizaciones comerciales definitivas y visitas técnicas, comuníquese a proyectos@cyhventilacion.com o vía celular al +57 300 123 4567.
+            * Cumplimiento obligatorio bajo reglamentación técnica <strong>RETIE</strong> y código eléctrico colombiano <strong>NTC 2050</strong>. Para cotizaciones comerciales definitivas y visitas técnicas, comuníquese a proyectos@ventitech.com o vía celular al +57 300 123 4567.
           </p>
         </div>
       `

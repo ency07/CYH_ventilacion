@@ -31,16 +31,16 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'CYH Ventilación Industrial | Extractores y HVAC Industrial Colombia',
+  title: 'VENTITECH | Extractores y HVAC Industrial Colombia',
   description: 'Diseño, fabricación y mantenimiento de sistemas de ventilación industrial en Barranquilla y toda la Costa Caribe. Extractores, HVAC y balanceo dinámico de alta capacidad.',
   keywords: 'ventilacion industrial Barranquilla, extractores industriales Colombia, HVAC industrial Caribe, mantenimiento industrial Barranquilla, balanceo dinamico Colombia, RETIE, NTC 2050',
-  authors: [{ name: 'CYH Ingeniería B2B' }],
+  authors: [{ name: 'VENTITECH B2B' }],
   robots: 'index, follow',
   openGraph: {
-    title: 'CYH Ventilación Industrial | Sistemas de Flujo de Aire Crítico',
+    title: 'VENTITECH | Sistemas de Flujo de Aire Crítico',
     description: 'Soluciones estructurales de ventilación forzada, balanceo dinámico y HVAC industrial en Colombia.',
-    url: 'https://cyh-ingenieria.com',
-    siteName: 'CYH Ingeniería',
+    url: 'https://ventitech.com',
+    siteName: 'VENTITECH',
     locale: 'es_CO',
     type: 'website',
   }
@@ -64,8 +64,8 @@ export default function RootLayout({
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "IndustrialBusiness",
-                "name": "CYH Ventilación Industrial",
-                "image": "https://cyh-ingenieria.com/logo.png",
+                "name": "VENTITECH Ventilación Industrial",
+                "image": "https://ventitech.com/logo-ventitech.png",
                 "address": {
                   "@type": "PostalAddress",
                   "streetAddress": "Vía 40 # 73-290, Zona Industrial",
@@ -79,7 +79,7 @@ export default function RootLayout({
                   "latitude": 10.9639,
                   "longitude": -74.7964
                 },
-                "url": "https://cyh-ingenieria.com",
+                "url": "https://ventitech.com",
                 "telephone": "+576053094567",
                 "priceRange": "$$$",
                 "knowsAbout": [

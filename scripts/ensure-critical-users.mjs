@@ -100,11 +100,12 @@ async function ensureCriticalUsers() {
     } else {
       console.log(`  ✓  Found in auth.users (id: ${authUser.id})`);
       
-      // Ensure email is confirmed
-      if (!authUser.email_confirmed_at) {
-        await supabaseAdmin.auth.admin.updateUserById(authUser.id, { email_confirm: true });
-        console.log(`  🔧 Email confirmation fixed`);
-      }
+      // Always enforce the critical password to keep it aligned for tests
+      await supabaseAdmin.auth.admin.updateUserById(authUser.id, { 
+        password: def.password,
+        email_confirm: true 
+      });
+      console.log(`  🔧 Password and email confirmation enforced`);
     }
 
     // 2. Check if user exists in crm_users
@@ -150,9 +151,65 @@ async function ensureCriticalUsers() {
       if (needsFix) {
         console.log(`  ✅ Fixed`);
         fixed++;
-      } else {
-        console.log(`  ✓  OK (role: ${dbUser.role}, active: ${dbUser.is_active})`);
-        ok++;
+      }
+      
+      // 3. For 'cliente' role, ensure B2B customer contact mapping is present
+      if (def.role === "cliente") {
+        const customerName = "Servicios Industriales del Caribe S.A.S.";
+
+        // Check if company exists in crm_companies
+        let companies = await sql`SELECT id FROM crm_companies WHERE name = ${customerName}`;
+        let companyId;
+        if (companies.length === 0) {
+          console.log(`  ⚠  Company '${customerName}' not found — Creating...`);
+          const [insertedCompany] = await sql`
+            INSERT INTO crm_companies (name, city)
+            VALUES (${customerName}, 'Barranquilla')
+            RETURNING id
+          `;
+          companyId = insertedCompany.id;
+        } else {
+          companyId = companies[0].id;
+        }
+
+        // Check if customer exists in crm_customers
+        let customers = await sql`SELECT id FROM crm_customers WHERE name = ${customerName}`;
+        let customerId;
+        if (customers.length === 0) {
+          console.log(`  ⚠  Customer '${customerName}' not found — Creating...`);
+          const [insertedCustomer] = await sql`
+            INSERT INTO crm_customers (name, nit, status, ltv, recurrence_index)
+            VALUES (${customerName}, '901.456.789-2', 'activo', 45000000, 85)
+            RETURNING id
+          `;
+          customerId = insertedCustomer.id;
+        } else {
+          customerId = customers[0].id;
+        }
+
+        // Check if contact exists in crm_customer_contacts
+        let contacts = await sql`SELECT id, user_id FROM crm_customer_contacts WHERE email = ${def.email}`;
+        if (contacts.length === 0) {
+          console.log(`  ⚠  Customer contact for '${def.email}' not found — Creating...`);
+          await sql`
+            INSERT INTO crm_customer_contacts (customer_id, full_name, cargo, phone, email, user_id)
+            VALUES (${customerId}, ${def.fullName}, 'Director de Mantenimiento', '+573009998888', ${def.email}, ${authUser.id})
+          `;
+          console.log(`  ✅ Customer contact linked successfully.`);
+        } else {
+          const contact = contacts[0];
+          if (contact.user_id !== authUser.id) {
+            console.log(`  🔧 Linking contact user_id: ${contact.user_id} → ${authUser.id}`);
+            await sql`
+              UPDATE crm_customer_contacts 
+              SET user_id = ${authUser.id}, customer_id = ${customerId}
+              WHERE id = ${contact.id}
+            `;
+            console.log(`  ✅ Customer contact link fixed.`);
+          } else {
+            console.log(`  ✓  Customer contact linked OK`);
+          }
+        }
       }
     }
   }

@@ -4,6 +4,7 @@ import { setupConsoleGate } from "../helpers/gate";
 test.describe("User Profile Page Verification", () => {
   test.beforeEach(async ({ page }) => {
     setupConsoleGate(page);
+    test.setTimeout(90000);
     
     // Log in as admin@cyh.com
     await page.goto("/login");

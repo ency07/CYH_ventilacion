@@ -12,9 +12,7 @@ export default function Footer() {
           
           {/* Brand Info */}
           <div className="space-y-4 md:col-span-2">
-            <h3 className="font-display text-2xl tracking-wider text-text-primary">
-              CYH <span className="font-sans text-xs tracking-[0.2em] font-semibold text-text-secondary">INGENIERÍA</span>
-            </h3>
+            <img src="/logo-ventitech.png" alt="VENTITECH Logo" className="h-12 w-auto object-contain mb-2" />
             <p className="text-sm text-text-secondary max-w-sm leading-relaxed">
               Diseño, desarrollo y optimización de sistemas de flujo de aire de alta capacidad y ventilación forzada para minería, plantas industriales de manufactura pesada y centros de datos en América Latina.
             </p>
@@ -69,7 +67,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-2.5 text-sm text-text-secondary">
                 <Mail className="h-4 w-4 text-accent-cyan" />
-                <span>contacto@cyh-ingenieria.com</span>
+                <span>contacto@ventitech.com</span>
               </li>
               <li className="flex items-center gap-2.5 text-sm text-text-secondary">
                 <Phone className="h-4 w-4 text-accent-cyan" />
@@ -87,7 +85,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-16 pt-8 border-t border-border-subtle flex flex-col md:flex-row justify-between items-center gap-6">
           <span className="font-mono text-[10px] text-text-muted tracking-widest uppercase">
-            © {currentYear} CYH VENTILACIÓN INDUSTRIAL. TODOS LOS DERECHOS RESERVADOS.
+            © {currentYear} VENTITECH. TODOS LOS DERECHOS RESERVADOS.
           </span>
           <div className="flex gap-6 items-center">
             <span className="text-[10px] font-mono text-text-muted hover:text-accent-cyan cursor-pointer transition-colors flex items-center gap-1.5">

@@ -223,7 +223,7 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [brandingConfig, setBrandingConfig] = useState<{
     companyName: string;
@@ -459,7 +459,7 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
                 <button
                   id="crm-theme-toggle"
                   onClick={async () => {
-                    const next = theme === "dark" ? "light" : "dark";
+                    const next = resolvedTheme === "dark" ? "light" : "dark";
                     setTheme(next);
                     // Persist to DB (fire-and-forget)
                     updateThemePreferenceAction(next).catch(() => {});
@@ -467,7 +467,7 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
                   className="p-2 text-text-secondary hover:text-text-primary transition-colors bg-bg-secondary rounded-full border border-border-subtle"
                   aria-label="Alternar tema"
                 >
-                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
               )}
 

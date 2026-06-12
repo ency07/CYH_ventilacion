@@ -40,7 +40,7 @@ const TIMELINE_DATA: TimelineItem[] = [
   },
   {
     year: "2024",
-    title: "Lanzamiento de CYH OS",
+    title: "Lanzamiento de VENTITECH OS",
     desc: "Digitalización de la preingeniería termodinámica y el dimensionamiento de ventilación, permitiendo cotizaciones computacionales de alta velocidad y diagnósticos B2B."
   }
 ];
@@ -60,7 +60,7 @@ export default function EmpresaPage() {
               <span className="text-accent-cyan">Confiabilidad Absoluta</span>
             </h1>
             <p className="text-xl md:text-2xl text-text-secondary leading-relaxed font-medium">
-              En CYH Ventilación Industrial desarrollamos soluciones mecánicas, térmicas y fluidodinámicas forjadas bajo estándares de alta ingeniería en Barranquilla, Colombia, para abastecer infraestructuras críticas en LATAM.
+              En VENTITECH Ventilación Industrial desarrollamos soluciones mecánicas, térmicas y fluidodinámicas forjadas bajo estándares de alta ingeniería en Barranquilla, Colombia, para abastecer infraestructuras críticas en LATAM.
             </p>
           </div>
         </div>
@@ -203,7 +203,7 @@ export default function EmpresaPage() {
                     Cultura de Cero Accidentes HSEQ
                   </h4>
                   <p className="text-base text-text-secondary leading-relaxed">
-                    En CYH Ingeniería priorizamos la vida humana sobre cualquier factor productivo. Toda intervención en sitio de nuestro personal de campo cuenta con protocolos estrictos de bloqueo de energías (LOTO), análisis de trabajo seguro (ATS) y el debido cumplimiento de las resoluciones de seguridad vigentes en Colombia.
+                    En VENTITECH priorizamos la vida humana sobre cualquier factor productivo. Toda intervención en sitio de nuestro personal de campo cuenta con protocolos estrictos de bloqueo de energías (LOTO), análisis de trabajo seguro (ATS) y el debido cumplimiento de las resoluciones de seguridad vigentes en Colombia.
                   </p>
                 </div>
 

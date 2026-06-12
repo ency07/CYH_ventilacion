@@ -119,9 +119,16 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
       } as any,
     });
   } else {
-    // Prevent root_dev from entering the client B2B portal directly as client (per requirements)
-    if (userRole === "root_dev") {
-      redirect("/crm/dashboard");
+    // If the user role is authorized to impersonate, redirect them to the first customer's view
+    const canImpersonate = ["admin", "super_admin", "root_dev", "director_comercial", "director"].includes(userRole);
+    if (canImpersonate) {
+      const firstCustomer = await db.query.crmCustomers.findFirst({
+        orderBy: desc(crmCustomers.createdAt),
+      });
+
+      if (firstCustomer) {
+        redirect(`/portal/inicio?customerId=${firstCustomer.id}`);
+      }
     }
 
     const isCrmStaff = ["vendedor", "comercial", "tecnico", "ingeniero"].includes(userRole);

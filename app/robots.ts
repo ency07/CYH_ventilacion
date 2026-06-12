@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/crm", "/crm/"],
     },
-    sitemap: "https://cyh-ingenieria.com/sitemap.xml",
+    sitemap: "https://ventitech.com/sitemap.xml",
   };
 }

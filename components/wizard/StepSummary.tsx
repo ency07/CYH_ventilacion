@@ -57,7 +57,7 @@ export default function StepSummary() {
 
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent(
-      `Hola, solicito asistencia técnica para el diagnóstico de preingeniería CYH OS para mi planta en ${leadData?.ciudad || "Colombia"}. Razón social: ${leadData?.empresa || "N/A"}.`
+      `Hola, solicito asistencia técnica para el diagnóstico de preingeniería VENTITECH OS para mi planta en ${leadData?.ciudad || "Colombia"}. Razón social: ${leadData?.empresa || "N/A"}.`
     );
     window.open(`https://api.whatsapp.com/send?phone=573001234567&text=${message}`, "_blank");
   };
@@ -103,7 +103,7 @@ export default function StepSummary() {
         format: "a4"
       });
 
-      const docId = `CYH-OS-${Math.floor(100000 + Math.random() * 900000)}`;
+      const docId = `VENTITECH-OS-${Math.floor(100000 + Math.random() * 900000)}`;
       const dateStr = formatDate();
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -121,12 +121,12 @@ export default function StepSummary() {
       doc.setTextColor(15, 23, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
-      doc.text("CYH", 32, 18);
+      doc.text("VENTITECH", 32, 18);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(100, 100, 100);
-      doc.text("INGENIERÍA DE VENTILACIÓN", 32, 22);
+      doc.text("VENTILACIÓN INDUSTRIAL", 32, 22);
 
       // Title Block
       doc.setTextColor(15, 23, 42);
@@ -154,7 +154,7 @@ export default function StepSummary() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.5);
       
-      const disclaimerLead = "Este documento corresponde a una preingeniería automatizada de carácter referencial. Los valores, configuraciones y capacidades descritas deben ser validadas mediante visita técnica, levantamiento en sitio e ingeniería de detalle por parte del equipo especializado de CYH Ingeniería.";
+      const disclaimerLead = "Este documento corresponde a una preingeniería automatizada de carácter referencial. Los valores, configuraciones y capacidades descritas deben ser validadas mediante visita técnica, levantamiento en sitio e ingeniería de detalle por parte del equipo especializado de VENTITECH.";
       const wrappedDisclaimerLead = doc.splitTextToSize(disclaimerLead, 160);
       doc.text(wrappedDisclaimerLead, 25, 104);
 
@@ -195,7 +195,7 @@ export default function StepSummary() {
       doc.setFontSize(7.5);
       doc.setTextColor(148, 163, 184);
       doc.text("ESTE DOCUMENTO ES UN ANÁLISIS PRELIMINAR DE PREINGENIERÍA PARA USO INTERNO B2B.", 20, 260);
-      doc.text("PROPIEDAD INDUSTRIAL DE CYH INGENIERÍA. REPRODUCCIÓN TOTAL O PARCIAL PROHIBIDA.", 20, 265);
+      doc.text("PROPIEDAD INDUSTRIAL DE VENTITECH. REPRODUCCIÓN TOTAL O PARCIAL PROHIBIDA.", 20, 265);
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // PAGE 2: RESUMEN EJECUTIVO & PARÁMETROS OPERATIVOS
@@ -208,7 +208,7 @@ export default function StepSummary() {
       doc.setTextColor(71, 85, 105);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7);
-      doc.text(`CYH PREINGENIERÍA  |  CÓDIGO: PRE-ING-2026 REV A`, 15, 8);
+      doc.text(`VENTITECH PREINGENIERÍA  |  CÓDIGO: PRE-ING-2026 REV A`, 15, 8);
 
       // Section 1: Executive Summary
       doc.setTextColor(15, 23, 42);
@@ -289,7 +289,7 @@ export default function StepSummary() {
       doc.setTextColor(71, 85, 105);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7);
-      doc.text(`CYH PREINGENIERÍA  |  CÓDIGO: PRE-ING-2026 REV A`, 15, 8);
+      doc.text(`VENTITECH PREINGENIERÍA  |  CÓDIGO: PRE-ING-2026 REV A`, 15, 8);
 
       // Section 3: Engineering Recommendations
       doc.setTextColor(15, 23, 42);
@@ -355,7 +355,7 @@ export default function StepSummary() {
       doc.text("5. DECLARACIÓN DE LÍMITE DE RESPONSABILIDAD LEGAL (DISCLAIMER)", 15, 162);
       doc.line(15, 164, 195, 164);
 
-      const disclaimerText = "Este reporte técnico preliminar es una modelación teórica basada en algoritmos de pre-cálculo y los datos de entrada provistos por el usuario. No representa un compromiso contractual, diseño de detalle de ingeniería final o un presupuesto comercial vinculante. Toda especificación técnica definitiva y cotización formal de compra están sujetas obligatoriamente a una visita técnica en sitio por ingenieros de campo certificados de CYH y a la formalización comercial correspondiente.";
+      const disclaimerText = "Este reporte técnico preliminar es una modelación teórica basada en algoritmos de pre-cálculo y los datos de entrada provistos por el usuario. No representa un compromiso contractual, diseño de detalle de ingeniería final o un presupuesto comercial vinculante. Toda especificación técnica definitiva y cotización formal de compra están sujetas obligatoriamente a una visita técnica en sitio por ingenieros de campo certificados de VENTITECH y a la formalización comercial correspondiente.";
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
@@ -394,19 +394,19 @@ export default function StepSummary() {
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.text("CYH INGENIERÍA DE VENTILACIÓN INDUSTRIAL S.A.", 15, 248);
+      doc.text("VENTITECH S.A.S.", 15, 248);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(203, 213, 225);
       doc.text("Soporte B2B y Comisionamiento de Caudales LATAM", 15, 254);
-      doc.text("Contacto Proyectos: proyectos@cyhventilacion.com | www.cyhventilacion.com", 15, 259);
+      doc.text("Contacto Proyectos: proyectos@ventitech.com | www.ventitech.com", 15, 259);
       doc.text("Presencia Sede Caribe: Barranquilla (Atlántico, Colombia) | Cumplimiento RETIE / NTC 2050", 15, 264);
 
       doc.setTextColor(248, 250, 252);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
-      doc.text("CYH OS • PLATAFORMA CORPORATIVA", 138, 254);
+      doc.text("VENTITECH OS • PLATAFORMA CORPORATIVA", 138, 254);
 
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "normal");
@@ -433,7 +433,7 @@ export default function StepSummary() {
         setIsEmailSent(true);
         setEmailStatusMsg("Enviado al correo");
       } else {
-        doc.save(`Preingenieria-Estimada-CYH.pdf`);
+        doc.save(`Preingenieria-Estimada-VENTITECH.pdf`);
       }
       
     } catch (e: any) {
@@ -486,7 +486,7 @@ export default function StepSummary() {
           DIAGNÓSTICO PRELIMINAR COMPLETADO
         </h2>
         <p className="text-sm font-sans text-text-secondary max-w-2xl mx-auto leading-relaxed">
-          Los algoritmos de evaluación técnica de CYH han procesado la información suministrada y generado una configuración preliminar de referencia.
+          Los algoritmos de evaluación técnica de VENTITECH han procesado la información suministrada y generado una configuración preliminar de referencia.
         </p>
       </div>
 

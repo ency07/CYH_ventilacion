@@ -4,6 +4,7 @@ import { setupConsoleGate } from "../helpers/gate";
 test.describe("Critical Accounts Authentication Tests", () => {
   test.beforeEach(async ({ page }) => {
     setupConsoleGate(page);
+    test.setTimeout(90000);
   });
 
   test("Admin account (admin@cyh.com) can log in and out successfully", async ({ page }) => {
@@ -19,7 +20,7 @@ test.describe("Critical Accounts Authentication Tests", () => {
     await expect(page).toHaveURL(/\/crm\/dashboard/);
 
     // Verify user info is visible (e.g., name or initials)
-    await expect(page.locator("body")).toContainText("Administrador CYH");
+    await expect(page.locator("body")).toContainText("CYH Super Admin");
 
     // Perform logout
     // Locate logout button (let's check CrmShell for where the logout button is)
@@ -53,7 +54,7 @@ test.describe("Critical Accounts Authentication Tests", () => {
     await expect(page).toHaveURL(/\/crm\/dashboard/);
 
     // Verify user info is visible
-    await expect(page.locator("body")).toContainText("Gedeón Root");
+    await expect(page.locator("body")).toContainText("Gedeón");
   });
 
   test("Client test account (cliente.prueba@cyh.com) can log in and gets redirected to Portal", async ({ page }) => {

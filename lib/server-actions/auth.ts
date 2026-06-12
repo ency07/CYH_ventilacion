@@ -36,8 +36,13 @@ export async function loginAction(formData: FormData) {
   }
 
   const role = profile.role || "cliente";
+  const fromParam = formData.get("from") as string;
 
   revalidatePath("/", "layout");
+
+  if (fromParam === "portal") {
+    redirect("/portal/inicio");
+  }
 
   if (role === "root_dev" || role === "admin" || role === "super_admin" || role === "director" || role === "director_comercial") {
     redirect("/crm/dashboard");

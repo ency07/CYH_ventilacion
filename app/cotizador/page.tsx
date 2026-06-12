@@ -7,7 +7,7 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: "COTIZADOR TÉCNICO V.04 | CYH VENTILACIÓN INDUSTRIAL",
+  title: "COTIZADOR TÉCNICO V.04 | VENTITECH",
   description: "Configure los parámetros técnicos tridimensionales para el cálculo estimado de caudal, recomendación de turbinas e índice de severidad de fallas.",
   robots: "noindex, nofollow", // Keep private wizard details away from crawlers
 };

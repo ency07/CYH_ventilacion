@@ -15,6 +15,7 @@ import {
   updateThemePreferenceAction,
   updateLanguagePreferenceAction,
 } from "@/lib/server-actions/profile";
+import { uploadMediaAction } from "@/lib/server-actions/config";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -124,6 +125,30 @@ export default function PerfilClient({ user, authUser, auditHistory }: Props) {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
   }
+
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await uploadMediaAction(formData);
+      if (res.success) {
+        setAvatarUrl(res.data);
+        showToast("Imagen de avatar subida correctamente.", "success");
+      } else {
+        showToast(res.error, "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Fallo al subir la imagen.", "error");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
   function handleSaveProfile() {
@@ -357,19 +382,32 @@ export default function PerfilClient({ user, authUser, auditHistory }: Props) {
                     />
                   </div>
 
-                  {/* Avatar URL */}
+                  {/* Avatar URL / Upload */}
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300 font-mono mb-1">
-                      URL de Avatar (imagen)
+                      Avatar (Subir imagen o URL)
                     </label>
-                    <input
-                      id="perfil-avatar"
-                      type="url"
-                      value={avatarUrl}
-                      onChange={e => setAvatarUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 transition-colors"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        id="perfil-avatar"
+                        type="url"
+                        value={avatarUrl}
+                        onChange={e => setAvatarUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 transition-colors"
+                      />
+                      <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-sm text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1 shrink-0">
+                        {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                        {isUploading ? "Subiendo..." : "Subir"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                          disabled={isUploading}
+                        />
+                      </label>
+                    </div>
                     {avatarUrl && (
                       <div className="mt-2">
                         <img src={avatarUrl} alt="preview" className="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
