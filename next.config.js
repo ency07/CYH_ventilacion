@@ -20,6 +20,9 @@ const nextConfig = {
       }
     ],
   },
+  experimental: {
+    instrumentationHook: true,
+  },
   webpack: (config) => {
     config.externals = [...(config.externals || []), { 
       canvas: 'canvas',

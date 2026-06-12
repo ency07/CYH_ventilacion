@@ -160,12 +160,20 @@ export const crmUsers = pgTable("crm_users", {
   id: uuid("id").primaryKey(), // maps to auth.users id
   email: varchar("email", { length: 255 }).notNull().unique(),
   fullName: varchar("full_name", { length: 255 }),
-  role: varchar("role", { length: 50 }).default("vendedor").notNull(), // admin | vendedor | tecnico
+  role: varchar("role", { length: 50 }).default("vendedor").notNull(),
   avatarUrl: text("avatar_url"),
+  phone: varchar("phone", { length: 50 }),
+  position: varchar("position", { length: 100 }),
   isActive: boolean("is_active").default(true).notNull(),
   suspendedAt: timestamp("suspended_at"),
   suspendedBy: uuid("suspended_by").references((): AnyPgColumn => crmUsers.id),
   tenantId: uuid("tenant_id").references(() => crmTenantConfig.id, { onDelete: "set null" }),
+  preferences: jsonb("preferences").$type<{
+    theme: "dark" | "light" | "system";
+    language: "es" | "en";
+    notifications: boolean;
+  }>(),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -786,6 +794,27 @@ export const crmTenantIntegrationsRelations = relations(crmTenantIntegrations, (
 export const crmMediaLibraryRelations = relations(crmMediaLibrary, ({ one }) => ({
   uploader: one(crmUsers, { fields: [crmMediaLibrary.uploadedBy], references: [crmUsers.id] }),
 }));
+
+export const crmProducts = pgTable("crm_products", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  rpm: varchar("rpm", { length: 100 }),
+  caudal: varchar("caudal", { length: 100 }),
+  presion: varchar("presion", { length: 100 }),
+  potencia: varchar("potencia", { length: 100 }),
+  voltaje: varchar("voltaje", { length: 100 }),
+  proteccion: varchar("proteccion", { length: 100 }),
+  material: text("material"),
+  aplicacion: text("aplicacion"),
+  normas: text("normas"),
+  eficiencia: varchar("eficiencia", { length: 50 }),
+  image: text("image").notNull(),
+  curvaPoints: text("curva_points"),
+  gallery: jsonb("gallery").default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 
 
 

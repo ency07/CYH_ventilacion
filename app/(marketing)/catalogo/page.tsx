@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCatalogProductsAction } from "@/lib/server-actions/config";
 import { 
   ShieldCheck, 
   Download, 
@@ -259,8 +260,37 @@ const PRODUCTS: ProductSpec[] = [
 export default function CatalogoPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [productsList, setProductsList] = useState<ProductSpec[]>(PRODUCTS);
 
-  const filteredProducts = PRODUCTS.filter((product) => {
+  useEffect(() => {
+    async function loadProducts() {
+      const res = await getCatalogProductsAction();
+      if (res.success && res.data && res.data.length > 0) {
+        // Map database fields to the ProductSpec shape if needed
+        const mapped = res.data.map(p => ({
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          rpm: p.rpm || "N/A",
+          caudal: p.caudal || "N/A",
+          presion: p.presion || "N/A",
+          potencia: p.potencia || "N/A",
+          voltaje: p.voltaje || "N/A",
+          proteccion: p.proteccion || "N/A",
+          material: p.material || "N/A",
+          aplicacion: p.aplicacion || "N/A",
+          normas: p.normas || "N/A",
+          eficiencia: (p.eficiencia || "N/A") as any,
+          image: p.image,
+          curvaPoints: p.curvaPoints || "M 10 50 L 90 50"
+        }));
+        setProductsList(mapped);
+      }
+    }
+    loadProducts();
+  }, []);
+
+  const filteredProducts = productsList.filter((product) => {
     const matchesCategory = activeCategory === "all" || product.category === activeCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.id.toLowerCase().includes(searchQuery.toLowerCase()) ||

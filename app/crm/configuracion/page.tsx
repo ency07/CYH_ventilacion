@@ -9,7 +9,7 @@ export const metadata = {
   description: "Panel de administración de marca, integraciones y seguridad RLS.",
 };
 
-export default async function ConfiguracionPage() {
+export default async function ConfiguracionPage({ searchParams }: { searchParams?: { tab?: string } }) {
   const currentUser = await getCurrentUser();
 
   // Enforce administrative permissions
@@ -24,6 +24,7 @@ export default async function ConfiguracionPage() {
     <ConfiguracionClient 
       currentUser={currentUser} 
       initialBranding={brandingData} 
+      initialTab={searchParams?.tab || "empresa"}
     />
   );
 }

@@ -230,6 +230,10 @@ export default async function B2BCustomersPage({
         suspendedBy: null,
         tenantId: null,
         createdAt: new Date(),
+        phone: null,
+        position: null,
+        preferences: null,
+        lastLoginAt: null,
       }
     ];
   }

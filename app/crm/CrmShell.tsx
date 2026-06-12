@@ -5,7 +5,7 @@ import {
   Activity, ShieldCheck, LogOut, LayoutDashboard, Settings, FileSignature, Kanban,
   Menu, X, Building2, Calendar, Target, Wrench, DollarSign, PhoneCall, CheckSquare,
   BellRing, LineChart, UsersRound, Lock, User, ChevronDown, Moon, Sun,
-  AlertTriangle, Clock, CheckCircle2, ArrowRight,
+  AlertTriangle, Clock, CheckCircle2, ArrowRight, Image, Sliders
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { logoutAction } from "@/lib/server-actions/auth";
 import * as Popover from "@radix-ui/react-popover";
 import { getNotificationAlertsAction, type NotificationAlert } from "@/lib/server-actions/crm";
 import { getTenantBrandingAction } from "@/lib/server-actions/config";
+import { updateThemePreferenceAction } from "@/lib/server-actions/profile";
 
 // ─── Navigation Menu Definition ─────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ const menuGroups = [
       { name: "Roles", href: "/crm/roles", icon: ShieldCheck, roles: ["admin", "super_admin"] },
       { name: "Permisos", href: "/crm/permisos", icon: Lock, roles: ["admin", "super_admin"] },
       { name: "Equipo", href: "/crm/equipo", icon: UsersRound, roles: ["admin", "super_admin", "director_comercial"] },
+      { name: "Biblioteca Multimedia", href: "/crm/configuracion?tab=media", icon: Image, roles: ["admin", "super_admin"] },
+      { name: "Catálogo Admin", href: "/crm/configuracion?tab=catalog", icon: Sliders, roles: ["admin", "super_admin"] },
       { name: "Configuración", href: "/crm/configuracion", icon: Settings, roles: ["admin", "super_admin"] },
     ],
   },
@@ -454,7 +457,13 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
                 <div className="w-8 h-8 rounded-full bg-bg-secondary border border-border-subtle opacity-50 animate-pulse" />
               ) : (
                 <button
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  id="crm-theme-toggle"
+                  onClick={async () => {
+                    const next = theme === "dark" ? "light" : "dark";
+                    setTheme(next);
+                    // Persist to DB (fire-and-forget)
+                    updateThemePreferenceAction(next).catch(() => {});
+                  }}
                   className="p-2 text-text-secondary hover:text-text-primary transition-colors bg-bg-secondary rounded-full border border-border-subtle"
                   aria-label="Alternar tema"
                 >
