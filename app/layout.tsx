@@ -54,9 +54,10 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning className="scroll-smooth">
       <body
+        suppressHydrationWarning
         className={`${inter.variable} ${bebasNeue.variable} ${jetbrainsMono.variable} font-sans bg-background text-text-primary antialiased min-h-screen flex flex-col justify-between transition-colors duration-300`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem themes={["light", "dark", "industrial", "siemens", "abb", "high-contrast"]}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="ventitech-web-theme" themes={["light", "dark"]}>
           {/* Schema.org IndustrialBusiness JSON-LD microdata */}
           <script
             type="application/ld+json"

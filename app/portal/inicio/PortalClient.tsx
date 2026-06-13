@@ -2,9 +2,8 @@
 
 import React, { useState, useTransition, useEffect, useRef } from "react";
 import { logoutAction } from "@/lib/server-actions/auth";
-import { useTheme } from "next-themes";
-import { updateThemePreferenceAction } from "@/lib/server-actions/profile";
 import { getTenantBrandingAction } from "@/lib/server-actions/config";
+import AppThemeDropdown from "@/components/theme/AppThemeDropdown";
 import { 
   requestTechnicalServiceAction, 
   acceptProposalAction, 
@@ -48,7 +47,7 @@ import {
   AlertOctagon,
   ChevronRight,
   Hammer,
-  Bell,
+  BellRing,
   MessageSquare,
   Send,
   ChevronDown,
@@ -285,7 +284,6 @@ export default function PortalClient({
   allCustomers = [],
 }: PortalClientProps) {
   const [activeTab, setActiveTab] = useState<"control" | "equipos" | "proyectos" | "requests" | "comercial" | "ingenieria" | "financials" | "actividad" | "auditoria">("control");
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -840,42 +838,18 @@ export default function PortalClient({
 
         <div className="flex items-center space-x-4">
           {/* Theme Selector Dropdown */}
-          {!mounted ? (
-            <div className="w-24 h-8 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-sm opacity-50 animate-pulse shrink-0" />
-          ) : (
-            <select
-              id="portal-theme-selector"
-              value={theme}
-              onChange={async (e) => {
-                const next = e.target.value as any;
-                setTheme(next);
-                // Persist theme to DB
-                updateThemePreferenceAction(next).catch(() => {});
-              }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-accent-cyan cursor-pointer font-sans"
-              aria-label="Selector de tema"
-            >
-              <option value="light">Claro</option>
-              <option value="dark">Oscuro</option>
-              <option value="industrial">Industrial</option>
-              <option value="siemens">Siemens</option>
-              <option value="abb">ABB</option>
-              <option value="high-contrast">Alto Contraste</option>
-            </select>
-          )}
+          <AppThemeDropdown />
 
           {/* Notification Bell Dropdown (Fase 11.3) */}
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 transition-colors"
+              className="relative p-2 text-text-secondary hover:text-text-primary transition-colors duration-150 bg-bg-secondary rounded-full border border-border-subtle focus:outline-none"
               title="Notificaciones"
             >
-              <Bell className="h-4.5 w-4.5" />
+              <BellRing className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-emerald-600 dark:bg-emerald-500 text-white text-[9px] font-bold h-4.5 w-4.5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">
-                  {unreadCount}
-                </span>
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-600 rounded-full border border-bg-primary animate-pulse" />
               )}
             </button>
 

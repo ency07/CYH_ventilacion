@@ -9,12 +9,11 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { logoutAction } from "@/lib/server-actions/auth";
 import * as Popover from "@radix-ui/react-popover";
 import { getNotificationAlertsAction, type NotificationAlert } from "@/lib/server-actions/crm";
 import { getTenantBrandingAction } from "@/lib/server-actions/config";
-import { updateThemePreferenceAction } from "@/lib/server-actions/profile";
+import AppThemeDropdown from "@/components/theme/AppThemeDropdown";
 
 // ─── Navigation Menu Definition ─────────────────────────────────────────────
 
@@ -223,7 +222,6 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
-  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [brandingConfig, setBrandingConfig] = useState<{
     companyName: string;
@@ -456,29 +454,7 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
 
             <div className="flex items-center gap-2">
               {/* Theme Selector Dropdown */}
-              {!mounted ? (
-                <div className="w-24 h-8 bg-bg-secondary border border-border-subtle rounded-sm opacity-50 animate-pulse" />
-              ) : (
-                <select
-                  id="crm-theme-selector"
-                  value={theme}
-                  onChange={async (e) => {
-                    const next = e.target.value as any;
-                    setTheme(next);
-                    // Persist to DB
-                    updateThemePreferenceAction(next).catch(() => {});
-                  }}
-                  className="bg-bg-secondary border border-border-subtle text-text-secondary hover:text-text-primary text-xs rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-accent-cyan cursor-pointer font-sans"
-                  aria-label="Selector de tema"
-                >
-                  <option value="light">Claro</option>
-                  <option value="dark">Oscuro</option>
-                  <option value="industrial">Industrial</option>
-                  <option value="siemens">Siemens</option>
-                  <option value="abb">ABB</option>
-                  <option value="high-contrast">Alto Contraste</option>
-                </select>
-              )}
+              <AppThemeDropdown />
 
               {/* 🔔 Notification Bell — Interactive Popover */}
               <NotificationBell />

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  :root, .light {
+  :root, .light, .light1 {
     --bg: #FFFFFF;
     --surface: #F3F4F6;
     --card: #E5E7EB;
@@ -29,7 +29,7 @@
     --brand-logo: url('/logo-text.png');
   }
 
-  .dark {
+  .dark, .dark1 {
     --bg: #111827;
     --surface: #1F2937;
     --card: #374151;
@@ -50,28 +50,74 @@
     --info-subtle: rgba(14, 165, 233, 0.1);
   }
 
-  .industrial {
-    --bg: #1A202C;
-    --surface: #2D3748;
-    --card: #4A5568;
-    --text: #EDF2F7;
-    --text-secondary: #CBD5E0;
-    --text-muted: #718096;
-    --border: #2D3748;
-    --border-medium: #4A5568;
-    --border-active: #DD6B20; /* Technical Amber */
+  .light2 {
+    /* Platino Industrial (silver/steel light) */
+    --bg: #EAECEF;
+    --surface: #F1F3F5;
+    --card: #DEE2E6;
+    --text: #212529;
+    --text-secondary: #495057;
+    --text-muted: #868E96;
+    --border: #CED4DA;
+    --border-medium: #ADB5BD;
+    --border-active: #495057;
     
-    --success: #38A169;
-    --success-subtle: rgba(56, 161, 105, 0.1);
-    --warning: #DD6B20;
-    --warning-subtle: rgba(221, 107, 32, 0.1);
-    --danger: #E53E3E;
-    --danger-subtle: rgba(229, 62, 62, 0.1);
-    --info: #3182CE;
-    --info-subtle: rgba(49, 130, 206, 0.1);
+    --success: #2b8a3e;
+    --success-subtle: #d3f9d8;
+    --warning: #e8590c;
+    --warning-subtle: #ffe8cc;
+    --danger: #c92a2a;
+    --danger-subtle: #ffe3e3;
+    --info: #1c7ed6;
+    --info-subtle: #e7f5ff;
   }
 
-  .siemens {
+  .light3 {
+    /* Ejecutivo Marfil (warm ivory/cream) */
+    --bg: #FDFBF7;
+    --surface: #FAF6EE;
+    --card: #F4ECE1;
+    --text: #1A1A1A;
+    --text-secondary: #4A453A;
+    --text-muted: #8C857B;
+    --border: #E8DFD0;
+    --border-medium: #D1C5B0;
+    --border-active: #8C857B;
+    
+    --success: #2d6a4f;
+    --success-subtle: #d8f3dc;
+    --warning: #d97706;
+    --warning-subtle: #fef3c7;
+    --danger: #9b2226;
+    --danger-subtle: #f8d7da;
+    --info: #0077b6;
+    --info-subtle: #caf0f8;
+  }
+
+  .dark2 {
+    /* Carbón Sigilo (charcoal matte) */
+    --bg: #121212;
+    --surface: #1E1E1E;
+    --card: #2A2A2A;
+    --text: #E0E0E0;
+    --text-secondary: #A0A0A0;
+    --text-muted: #666666;
+    --border: #2D2D2D;
+    --border-medium: #404040;
+    --border-active: #888888;
+    
+    --success: #2b8a3e;
+    --success-subtle: rgba(43, 138, 62, 0.15);
+    --warning: #e8590c;
+    --warning-subtle: rgba(232, 89, 12, 0.15);
+    --danger: #c92a2a;
+    --danger-subtle: rgba(201, 42, 42, 0.15);
+    --info: #1c7ed6;
+    --info-subtle: rgba(28, 126, 214, 0.15);
+  }
+
+  .dark3 {
+    /* Zafiro Técnico (deep blue petrol / old siemens) */
     --bg: #0A1118;
     --surface: #101F30;
     --card: #162E45;
@@ -92,6 +138,47 @@
     --info-subtle: rgba(14, 165, 233, 0.1);
   }
 
+  /* Keep legacy themes mapped as aliases for backwards compatibility/safety if referenced */
+  .industrial {
+    --bg: #1A202C;
+    --surface: #2D3748;
+    --card: #4A5568;
+    --text: #EDF2F7;
+    --text-secondary: #CBD5E0;
+    --text-muted: #718096;
+    --border: #2D3748;
+    --border-medium: #4A5568;
+    --border-active: #DD6B20;
+    --success: #38A169;
+    --success-subtle: rgba(56, 161, 105, 0.1);
+    --warning: #DD6B20;
+    --warning-subtle: rgba(221, 107, 32, 0.1);
+    --danger: #E53E3E;
+    --danger-subtle: rgba(229, 62, 62, 0.1);
+    --info: #3182CE;
+    --info-subtle: rgba(49, 130, 206, 0.1);
+  }
+
+  .siemens {
+    --bg: #0A1118;
+    --surface: #101F30;
+    --card: #162E45;
+    --text: #E2F1FF;
+    --text-secondary: #93C5FD;
+    --text-muted: #475569;
+    --border: #1E3A8A;
+    --border-medium: #2563EB;
+    --border-active: #38BDF8;
+    --success: #10B981;
+    --success-subtle: rgba(16, 185, 129, 0.1);
+    --warning: #F59E0B;
+    --warning-subtle: rgba(245, 158, 11, 0.1);
+    --danger: #EF4444;
+    --danger-subtle: rgba(239, 68, 68, 0.1);
+    --info: #0EA5E9;
+    --info-subtle: rgba(14, 165, 233, 0.1);
+  }
+
   .abb {
     --bg: #FAFAFA;
     --surface: #F4F4F5;
@@ -101,8 +188,7 @@
     --text-muted: #A1A1AA;
     --border: #E4E4E7;
     --border-medium: #D4D4D8;
-    --border-active: #FF0000; /* ABB Corporate Red */
-    
+    --border-active: #FF0000;
     --success: #16A34A;
     --success-subtle: #DCFCE7;
     --warning: #EA580C;
@@ -118,12 +204,11 @@
     --surface: #000000;
     --card: #121212;
     --text: #FFFFFF;
-    --text-secondary: #FFFF00; /* High Contrast Yellow */
+    --text-secondary: #FFFF00;
     --text-muted: #FFFFFF;
     --border: #FFFFFF;
     --border-medium: #FFFFFF;
     --border-active: #FFFF00;
-    
     --success: #00FF00;
     --success-subtle: rgba(0, 255, 0, 0.15);
     --warning: #FFFF00;
@@ -140,7 +225,13 @@ body {
   color: var(--text);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Universal Transition System */
+body, div, nav, header, main {
+  transition-property: color, background-color, border-color;
+  transition-duration: 300ms;
+  transition-timing-function: ease-in-out;
 }
 
 ::-webkit-scrollbar {
@@ -180,7 +271,6 @@ body {
     background: white !important;
     color: black !important;
   }
-  /* Ocultar elementos de navegación y control */
   aside, 
   header, 
   nav, 
@@ -189,14 +279,10 @@ body {
   footer {
     display: none !important;
   }
-
-  /* Reset margins for print to avoid white spaces from sidebar margins */
   [class*="md:ml-64"], [class*="md:ml-16"], [class*="ml-"] {
     margin-left: 0 !important;
     padding: 0 !important;
   }
-
-  /* Mostrar y aislar el área de impresión seleccionada */
   #printable-proposal, 
   #printable-lead-drawer {
     display: block !important;
@@ -217,86 +303,141 @@ body {
 /* ─── Global Theme Overrides ────────────────────────────────────────────────
    Remap hardcoded Tailwind bg/text/border classes to CSS vars for non-light themes.
    Fixes CRM dashboard/detail pages that use bg-white, bg-slate-*, text-slate-*.
+   Supports light2, light3, dark1, dark2, dark3, dark, industrial, siemens, abb, high-contrast.
 ─────────────────────────────────────────────────────────────────────────────── */
 
-.dark .bg-white,
-.industrial .bg-white,
-.siemens .bg-white,
-.high-contrast .bg-white {
+.dark1 .bg-white, .dark2 .bg-white, .dark3 .bg-white, .dark .bg-white,
+.light2 .bg-white, .light3 .bg-white,
+.industrial .bg-white, .siemens .bg-white, .high-contrast .bg-white {
   background-color: var(--surface) !important;
 }
 
+.dark1 .bg-slate-50, .dark1 .bg-gray-50,
+.dark2 .bg-slate-50, .dark2 .bg-gray-50,
+.dark3 .bg-slate-50, .dark3 .bg-gray-50,
 .dark .bg-slate-50, .dark .bg-gray-50,
+.light2 .bg-slate-50, .light2 .bg-gray-50,
+.light3 .bg-slate-50, .light3 .bg-gray-50,
 .industrial .bg-slate-50, .industrial .bg-gray-50,
 .siemens .bg-slate-50, .siemens .bg-gray-50,
 .high-contrast .bg-slate-50 {
   background-color: var(--card) !important;
 }
 
+.dark1 .bg-slate-100, .dark1 .bg-gray-100,
+.dark2 .bg-slate-100, .dark2 .bg-gray-100,
+.dark3 .bg-slate-100, .dark3 .bg-gray-100,
 .dark .bg-slate-100, .dark .bg-gray-100,
+.light2 .bg-slate-100, .light2 .bg-gray-100,
+.light3 .bg-slate-100, .light3 .bg-gray-100,
 .industrial .bg-slate-100, .industrial .bg-gray-100,
 .siemens .bg-slate-100, .siemens .bg-gray-100,
 .high-contrast .bg-slate-100 {
   background-color: var(--card) !important;
 }
 
+.dark1 .bg-slate-200, .dark1 .bg-gray-200,
+.dark2 .bg-slate-200, .dark2 .bg-gray-200,
+.dark3 .bg-slate-200, .dark3 .bg-gray-200,
 .dark .bg-slate-200, .dark .bg-gray-200,
+.light2 .bg-slate-200, .light2 .bg-gray-200,
+.light3 .bg-slate-200, .light3 .bg-gray-200,
 .industrial .bg-slate-200, .industrial .bg-gray-200,
 .siemens .bg-slate-200, .siemens .bg-gray-200,
 .high-contrast .bg-slate-200 {
   background-color: var(--surface) !important;
 }
 
+.dark1 .border-slate-200, .dark1 .border-gray-200,
+.dark2 .border-slate-200, .dark2 .border-gray-200,
+.dark3 .border-slate-200, .dark3 .border-gray-200,
 .dark .border-slate-200, .dark .border-gray-200,
+.light2 .border-slate-200, .light2 .border-gray-200,
+.light3 .border-slate-200, .light3 .border-gray-200,
 .industrial .border-slate-200, .industrial .border-gray-200,
 .siemens .border-slate-200, .siemens .border-gray-200,
 .high-contrast .border-slate-200 {
   border-color: var(--border) !important;
 }
 
+.dark1 .border-slate-100, .dark1 .border-gray-100,
+.dark2 .border-slate-100, .dark2 .border-gray-100,
+.dark3 .border-slate-100, .dark3 .border-gray-100,
 .dark .border-slate-100, .dark .border-gray-100,
+.light2 .border-slate-100, .light2 .border-gray-100,
+.light3 .border-slate-100, .light3 .border-gray-100,
 .industrial .border-slate-100, .industrial .border-gray-100,
 .siemens .border-slate-100, .siemens .border-gray-100,
 .high-contrast .border-slate-100 {
   border-color: var(--border) !important;
 }
 
+.dark1 .text-slate-900, .dark1 .text-gray-900,
+.dark2 .text-slate-900, .dark2 .text-gray-900,
+.dark3 .text-slate-900, .dark3 .text-gray-900,
 .dark .text-slate-900, .dark .text-gray-900,
+.light2 .text-slate-900, .light2 .text-gray-900,
+.light3 .text-slate-900, .light3 .text-gray-900,
 .industrial .text-slate-900, .industrial .text-gray-900,
 .siemens .text-slate-900, .siemens .text-gray-900,
 .high-contrast .text-slate-900 {
   color: var(--text) !important;
 }
 
+.dark1 .text-slate-800, .dark1 .text-gray-800,
+.dark2 .text-slate-800, .dark2 .text-gray-800,
+.dark3 .text-slate-800, .dark3 .text-gray-800,
 .dark .text-slate-800, .dark .text-gray-800,
+.light2 .text-slate-800, .light2 .text-gray-800,
+.light3 .text-slate-800, .light3 .text-gray-800,
 .industrial .text-slate-800, .industrial .text-gray-800,
 .siemens .text-slate-800, .siemens .text-gray-800,
 .high-contrast .text-slate-800 {
   color: var(--text) !important;
 }
 
+.dark1 .text-slate-700, .dark1 .text-gray-700,
+.dark2 .text-slate-700, .dark2 .text-gray-700,
+.dark3 .text-slate-700, .dark3 .text-gray-700,
 .dark .text-slate-700, .dark .text-gray-700,
+.light2 .text-slate-700, .light2 .text-gray-700,
+.light3 .text-slate-700, .light3 .text-gray-700,
 .industrial .text-slate-700, .industrial .text-gray-700,
 .siemens .text-slate-700, .siemens .text-gray-700,
 .high-contrast .text-slate-700 {
   color: var(--text-secondary) !important;
 }
 
+.dark1 .text-slate-600, .dark1 .text-gray-600,
+.dark2 .text-slate-600, .dark2 .text-gray-600,
+.dark3 .text-slate-600, .dark3 .text-gray-600,
 .dark .text-slate-600, .dark .text-gray-600,
+.light2 .text-slate-600, .light2 .text-gray-600,
+.light3 .text-slate-600, .light3 .text-gray-600,
 .industrial .text-slate-600, .industrial .text-gray-600,
 .siemens .text-slate-600, .siemens .text-gray-600,
 .high-contrast .text-slate-600 {
   color: var(--text-secondary) !important;
 }
 
+.dark1 .text-slate-500, .dark1 .text-gray-500,
+.dark2 .text-slate-500, .dark2 .text-gray-500,
+.dark3 .text-slate-500, .dark3 .text-gray-500,
 .dark .text-slate-500, .dark .text-gray-500,
+.light2 .text-slate-500, .light2 .text-gray-500,
+.light3 .text-slate-500, .light3 .text-gray-500,
 .industrial .text-slate-500, .industrial .text-gray-500,
 .siemens .text-slate-500, .siemens .text-gray-500,
 .high-contrast .text-slate-500 {
   color: var(--text-muted) !important;
 }
 
+.dark1 .hover\:bg-slate-50:hover, .dark1 .hover\:bg-gray-50:hover,
+.dark2 .hover\:bg-slate-50:hover, .dark2 .hover\:bg-gray-50:hover,
+.dark3 .hover\:bg-slate-50:hover, .dark3 .hover\:bg-gray-50:hover,
 .dark .hover\:bg-slate-50:hover, .dark .hover\:bg-gray-50:hover,
+.light2 .hover\:bg-slate-50:hover, .light2 .hover\:bg-gray-50:hover,
+.light3 .hover\:bg-slate-50:hover, .light3 .hover\:bg-gray-50:hover,
 .industrial .hover\:bg-slate-50:hover, .industrial .hover\:bg-gray-50:hover,
 .siemens .hover\:bg-slate-50:hover, .siemens .hover\:bg-gray-50:hover,
 .high-contrast .hover\:bg-slate-50:hover {
@@ -304,8 +445,18 @@ body {
 }
 
 /* Input/select in non-light themes */
+.dark1 input:not([type="checkbox"]):not([type="radio"]),
+.dark1 select, .dark1 textarea,
+.dark2 input:not([type="checkbox"]):not([type="radio"]),
+.dark2 select, .dark2 textarea,
+.dark3 input:not([type="checkbox"]):not([type="radio"]),
+.dark3 select, .dark3 textarea,
 .dark input:not([type="checkbox"]):not([type="radio"]),
 .dark select, .dark textarea,
+.light2 input:not([type="checkbox"]):not([type="radio"]),
+.light2 select, .light2 textarea,
+.light3 input:not([type="checkbox"]):not([type="radio"]),
+.light3 select, .light3 textarea,
 .industrial input:not([type="checkbox"]):not([type="radio"]),
 .industrial select, .industrial textarea,
 .siemens input:not([type="checkbox"]):not([type="radio"]),
@@ -321,15 +472,25 @@ body {
 .brand-venti { color: #1e3a5f; }
 .brand-tech  { color: #00b4d8; }
 
+.dark1 .brand-venti,
+.dark2 .brand-venti,
+.dark3 .brand-venti,
 .dark .brand-venti,
 .industrial .brand-venti,
 .siemens .brand-venti,
 .high-contrast .brand-venti { color: #cce8f8; }
 
+.dark1 .brand-tech,
+.dark2 .brand-tech,
+.dark3 .brand-tech,
 .dark .brand-tech,
 .industrial .brand-tech,
 .siemens .brand-tech,
 .high-contrast .brand-tech  { color: #00d4ff; }
+
+/* light2, light3 brand classes - keep high contrast brand ventitech */
+.light2 .brand-venti, .light3 .brand-venti { color: #1e3a5f; }
+.light2 .brand-tech, .light3 .brand-tech { color: #00b4d8; }
 
 /* ABB theme — light background, so keep original colors */
 .abb .brand-venti { color: #1e3a5f; }

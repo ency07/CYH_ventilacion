@@ -75,7 +75,7 @@ export async function updateProfileAction(data: {
 }
 
 // ─── Update theme preference ──────────────────────────────────────────────────
-export async function updateThemePreferenceAction(theme: "dark" | "light" | "system") {
+export async function updateThemePreferenceAction(theme: string) {
   try {
     const supabase = getSupabaseServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -87,7 +87,7 @@ export async function updateThemePreferenceAction(theme: "dark" | "light" | "sys
     await db
       .update(crmUsers)
       .set({
-        preferences: { ...currentPrefs, theme },
+        preferences: { ...currentPrefs, theme: theme as any },
       })
       .where(eq(crmUsers.id, user.id));
 

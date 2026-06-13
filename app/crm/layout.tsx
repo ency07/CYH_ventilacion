@@ -2,6 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import CrmShell from "./CrmShell";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export default async function CrmLayout({
   children,
@@ -36,8 +37,16 @@ export default async function CrmLayout({
   }
 
   return (
-    <CrmShell userName={userName} userEmail={userEmail} userRole={userRole}>
-      {children}
-    </CrmShell>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark1"
+      enableSystem={false}
+      storageKey="ventitech-crm-theme"
+      themes={["light1", "light2", "light3", "dark1", "dark2", "dark3"]}
+    >
+      <CrmShell userName={userName} userEmail={userEmail} userRole={userRole}>
+        {children}
+      </CrmShell>
+    </ThemeProvider>
   );
 }

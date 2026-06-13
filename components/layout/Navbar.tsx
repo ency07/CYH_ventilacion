@@ -5,30 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, BriefcaseBusiness, Menu, Moon, Sun, X, User } from "lucide-react";
-import { useTheme } from "next-themes";
-
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <div className="w-9 h-9 bg-bg-tertiary rounded-md opacity-50 animate-pulse border border-border-subtle" />;
-  }
-
-  return (
-    <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
-      aria-label="Cambiar tema"
-    >
-      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-    </button>
-  );
-}
+import WebThemeDropdown from "@/components/theme/WebThemeDropdown";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -99,7 +76,7 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <ThemeToggle />
+          <WebThemeDropdown />
           <Link
             href="/cotizador"
             className="px-6 py-2.5 bg-accent-cyan hover:bg-accent-cyan/90 text-white dark:text-background font-semibold text-sm rounded-md transition-all flex items-center gap-2"
@@ -110,7 +87,7 @@ export default function Navbar() {
         </div>
 
         <div className="md:hidden flex items-center gap-4">
-          <ThemeToggle />
+          <WebThemeDropdown />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="text-text-secondary hover:text-text-primary p-2 focus:outline-none"
