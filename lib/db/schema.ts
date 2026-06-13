@@ -397,6 +397,12 @@ export type AuditLogMetadata =
       email: string;
       role: string;
       tenantId: string | null;
+    }
+  | {
+      productionOrderId: string;
+      orderNumber: string;
+      previousStatus: string;
+      newStatus: string;
     };
 
 export const crmAuditLogs = pgTable("crm_audit_logs", {
@@ -814,6 +820,25 @@ export const crmProducts = pgTable("crm_products", {
   gallery: jsonb("gallery").default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const crmProductionOrders = pgTable("crm_production_orders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id").references(() => crmCustomers.id, { onDelete: "cascade" }).notNull(),
+  invoiceId: uuid("invoice_id").references(() => crmInvoices.id, { onDelete: "cascade" }),
+  orderNumber: varchar("order_number", { length: 100 }).notNull().unique(),
+  status: varchar("status", { length: 50 }).default("pago_confirmado").notNull(),
+  approvedBy: uuid("approved_by").references(() => crmUsers.id, { onDelete: "set null" }),
+  approvedAt: timestamp("approved_at"),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmProductionOrdersRelations = relations(crmProductionOrders, ({ one }) => ({
+  customer: one(crmCustomers, { fields: [crmProductionOrders.customerId], references: [crmCustomers.id] }),
+  invoice: one(crmInvoices, { fields: [crmProductionOrders.invoiceId], references: [crmInvoices.id] }),
+  approver: one(crmUsers, { fields: [crmProductionOrders.approvedBy], references: [crmUsers.id] }),
+}));
 
 
 

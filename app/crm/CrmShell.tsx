@@ -5,7 +5,8 @@ import {
   Activity, ShieldCheck, LogOut, LayoutDashboard, Settings, FileSignature, Kanban,
   Menu, X, Building2, Calendar, Target, Wrench, DollarSign, PhoneCall, CheckSquare,
   BellRing, LineChart, UsersRound, Lock, User, ChevronDown, Moon, Sun,
-  AlertTriangle, Clock, CheckCircle2, ArrowRight, Image, Sliders
+  AlertTriangle, Clock, CheckCircle2, ArrowRight, Image, Sliders,
+  Factory, Landmark, BookOpen, Download
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -35,6 +36,22 @@ const menuGroups = [
       { name: "Diagnósticos", href: "/crm/diagnosticos", icon: Activity, roles: ["admin", "super_admin", "director_comercial", "ingeniero"] },
       { name: "Revisiones", href: "/crm/revisiones", icon: Wrench, roles: ["admin", "super_admin", "director_comercial", "ingeniero"] },
       { name: "Calendario", href: "/crm/calendario", icon: Calendar, roles: ["admin", "super_admin", "director_comercial", "comercial", "ingeniero"] },
+    ],
+  },
+  {
+    group: "PRODUCCIÓN",
+    items: [
+      { name: "Control de OF", href: "/crm/produccion", icon: Factory, roles: ["admin", "super_admin", "director_comercial", "ingeniero", "tecnico"] },
+    ],
+  },
+  {
+    group: "FINANZAS",
+    items: [
+      { name: "CxC", href: "/crm/finanzas/cxc", icon: Landmark, roles: ["admin", "super_admin", "director_comercial", "comercial"] },
+      { name: "Recaudos", href: "/crm/finanzas/recaudos", icon: DollarSign, roles: ["admin", "super_admin", "director_comercial", "comercial"] },
+      { name: "Ledger", href: "/crm/finanzas/ledger", icon: BookOpen, roles: ["admin", "super_admin", "director_comercial", "comercial"] },
+      { name: "Conciliación", href: "/crm/finanzas/conciliacion", icon: CheckCircle2, roles: ["admin", "super_admin", "director_comercial", "comercial"] },
+      { name: "Exportaciones", href: "/crm/finanzas/exportaciones", icon: Download, roles: ["admin", "super_admin", "director_comercial", "comercial"] },
     ],
   },
   {
@@ -231,7 +248,7 @@ export default function CrmShell({ userName, userEmail, userRole, children, init
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
+  const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "PRODUCCIÓN", "FINANZAS", "GESTIÓN", "ADMINISTRACIÓN"]);
   const [mounted, setMounted] = useState(false);
   const [brandingConfig, setBrandingConfig] = useState(initialBranding);
 
