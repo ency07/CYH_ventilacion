@@ -27,6 +27,12 @@
     --brand-primary: #0F766E;
     --brand-secondary: rgba(15, 118, 110, 0.08);
     --brand-logo: url('/logo-text.png');
+
+    /* Sidebar Theme Styles */
+    --sidebar-bg: #1E293B;
+    --sidebar-text: #F9FAFB;
+    --sidebar-text-muted: #94A3B8;
+    --sidebar-border: #334155;
   }
 
   .dark, .dark1 {
@@ -48,6 +54,12 @@
     --danger-subtle: rgba(239, 68, 68, 0.1);
     --info: #0EA5E9;
     --info-subtle: rgba(14, 165, 233, 0.1);
+
+    /* Sidebar Theme Styles */
+    --sidebar-bg: #0B0F19;
+    --sidebar-text: #F9FAFB;
+    --sidebar-text-muted: #9CA3AF;
+    --sidebar-border: #1E293B;
   }
 
   .light2 {
@@ -70,6 +82,12 @@
     --danger-subtle: #ffe3e3;
     --info: #1c7ed6;
     --info-subtle: #e7f5ff;
+
+    /* Sidebar Theme Styles */
+    --sidebar-bg: #DEE2E6;
+    --sidebar-text: #212529;
+    --sidebar-text-muted: #495057;
+    --sidebar-border: #CED4DA;
   }
 
   .light3 {
@@ -92,6 +110,12 @@
     --danger-subtle: #f8d7da;
     --info: #0077b6;
     --info-subtle: #caf0f8;
+
+    /* Sidebar Theme Styles */
+    --sidebar-bg: #FAF6EE;
+    --sidebar-text: #1A1A1A;
+    --sidebar-text-muted: #4A453A;
+    --sidebar-border: #E8DFD0;
   }
 
   .dark2 {
@@ -114,6 +138,12 @@
     --danger-subtle: rgba(201, 42, 42, 0.15);
     --info: #1c7ed6;
     --info-subtle: rgba(28, 126, 214, 0.15);
+
+    /* Sidebar Theme Styles */
+    --sidebar-bg: #121212;
+    --sidebar-text: #E0E0E0;
+    --sidebar-text-muted: #A0A0A0;
+    --sidebar-border: #2D2D2D;
   }
 
   .dark3 {
@@ -136,6 +166,12 @@
     --danger-subtle: rgba(239, 68, 68, 0.1);
     --info: #0EA5E9;
     --info-subtle: rgba(14, 165, 233, 0.1);
+
+    /* Sidebar Theme Styles */
+    --sidebar-bg: #0A1118;
+    --sidebar-text: #E2F1FF;
+    --sidebar-text-muted: #93C5FD;
+    --sidebar-border: #162E45;
   }
 
   /* Keep legacy themes mapped as aliases for backwards compatibility/safety if referenced */
@@ -495,4 +531,16 @@ body, div, nav, header, main {
 /* ABB theme — light background, so keep original colors */
 .abb .brand-venti { color: #1e3a5f; }
 .abb .brand-tech  { color: #00b4d8; }
+
+/* ─── Client Portal Accent Color Overrides ────────────────────────────────────── */
+.text-accent-emerald {
+  color: var(--brand-primary) !important;
+}
+.bg-accent-emerald {
+  background-color: var(--brand-secondary) !important;
+}
+.border-accent-emerald {
+  border-color: var(--brand-primary) !important;
+}
+
 

@@ -212,18 +212,7 @@ interface CrmShellProps {
   userEmail: string;
   userRole: string;
   children: React.ReactNode;
-}
-
-// ─── Main Component ──────────────────────────────────────────────────────────
-
-export default function CrmShell({ userName, userEmail, userRole, children }: CrmShellProps) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
-  const [mounted, setMounted] = useState(false);
-  const [brandingConfig, setBrandingConfig] = useState<{
+  initialBranding: {
     companyName: string;
     logoUrl: string | null;
     logoDarkUrl: string | null;
@@ -232,28 +221,21 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
     btnColor: string;
     sidebarColor: string;
     crmConfig: any;
-  } | null>(null);
+  } | null;
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+
+export default function CrmShell({ userName, userEmail, userRole, children, initialBranding }: CrmShellProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<string[]>(["COMERCIAL", "OPERACIONES", "GESTIÓN", "ADMINISTRACIÓN"]);
+  const [mounted, setMounted] = useState(false);
+  const [brandingConfig, setBrandingConfig] = useState(initialBranding);
 
   useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    async function loadBranding() {
-      const res = await getTenantBrandingAction();
-      if (res.success && res.data) {
-        setBrandingConfig({
-          companyName: res.data.config.companyName,
-          logoUrl: res.data.branding.logoUrl,
-          logoDarkUrl: res.data.branding.logoDarkUrl,
-          primaryColor: res.data.branding.primaryColor,
-          secondaryColor: res.data.branding.secondaryColor,
-          btnColor: res.data.branding.btnColor,
-          sidebarColor: res.data.branding.sidebarColor,
-          crmConfig: res.data.branding.crmConfig,
-        });
-      }
-    }
-    loadBranding();
-  }, []);
 
   useEffect(() => {
     if (pathname === "/crm/dashboard" && (userRole === "tecnico" || userRole === "ingeniero")) {
@@ -321,17 +303,14 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
             --btn-color: ${brandingConfig.btnColor};
             --sidebar-color: ${brandingConfig.sidebarColor};
           }
-          aside {
-            background-color: ${brandingConfig.sidebarColor} !important;
-          }
           .bg-accent-cyan {
-            background-color: ${brandingConfig.btnColor} !important;
+            background-color: var(--brand-primary) !important;
           }
           .text-accent-cyan {
-            color: ${brandingConfig.btnColor} !important;
+            color: var(--brand-primary) !important;
           }
           .border-accent-cyan {
-            border-color: ${brandingConfig.btnColor} !important;
+            border-color: var(--brand-primary) !important;
           }
         `}} />
       )}
@@ -350,9 +329,9 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
         )}
 
         {/* Sidebar */}
-        <aside className={`fixed top-0 left-0 z-50 h-screen bg-bg-primary transition-all duration-300 ease-in-out flex flex-col ${isSidebarOpen ? "w-64 translate-x-0 border-r border-border-subtle" : "w-64 -translate-x-full border-r-0 md:w-16 md:translate-x-0 md:border-r md:border-border-subtle"}`}>
+        <aside className={`fixed top-0 left-0 z-50 h-screen bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] transition-all duration-300 ease-in-out flex flex-col ${isSidebarOpen ? "w-64 translate-x-0 border-r" : "w-64 -translate-x-full border-r-0 md:w-16 md:translate-x-0 md:border-r"}`}>
           {/* Sidebar Header */}
-          <div className={`flex items-center border-b border-border-subtle h-16 flex-shrink-0 ${isSidebarOpen ? "px-4 justify-between" : "justify-center"}`}>
+          <div className={`flex items-center border-b border-[var(--sidebar-border)] h-16 flex-shrink-0 ${isSidebarOpen ? "px-4 justify-between" : "justify-center"}`}>
             <div className={`flex items-center gap-2 overflow-hidden ${isSidebarOpen ? "opacity-100" : "opacity-0 md:opacity-0"}`}>
               {brandingConfig?.logoUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -360,18 +339,18 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
               ) : (
                 <ShieldCheck className="h-5 w-5 text-accent-cyan flex-shrink-0" />
               )}
-              <span className="font-mono text-xs font-bold tracking-widest text-text-primary uppercase whitespace-nowrap">
-                {brandingConfig ? brandingConfig.companyName : "CYH OS"}
+              <span className="font-mono text-xs font-bold tracking-widest text-[var(--sidebar-text)] uppercase whitespace-nowrap">
+                {brandingConfig ? brandingConfig.companyName : "VENTITECH OS"}
               </span>
             </div>
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-1.5 rounded-md text-text-secondary hover:bg-bg-tertiary transition-all flex-shrink-0 hidden md:block"
+              className="p-1.5 rounded-md text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] transition-all flex-shrink-0 hidden md:block"
               aria-label="Toggle sidebar"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <button className="md:hidden text-text-secondary" onClick={() => setIsSidebarOpen(false)} aria-label="Cerrar menú">
+            <button className="md:hidden text-[var(--sidebar-text-muted)]" onClick={() => setIsSidebarOpen(false)} aria-label="Cerrar menú">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -383,11 +362,11 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
               return (
                 <div key={group.group} className="space-y-0.5">
                   {isSidebarOpen ? (
-                    <button onClick={() => toggleGroup(group.group)} className="w-full flex items-center justify-between px-2 py-1 hover:bg-bg-tertiary rounded transition-colors group">
-                      <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
+                    <button onClick={() => toggleGroup(group.group)} className="w-full flex items-center justify-between px-2 py-1 hover:bg-[var(--sidebar-border)] rounded transition-colors group">
+                      <span className="text-[9px] font-bold text-[var(--sidebar-text-muted)] uppercase tracking-wider group-hover:text-[var(--sidebar-text)] transition-colors">
                         {group.group}
                       </span>
-                      <ChevronDown className={`w-3 h-3 text-text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                      <ChevronDown className={`w-3 h-3 text-[var(--sidebar-text-muted)] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                     </button>
                   ) : <div className="h-3" />}
 
@@ -404,7 +383,7 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
                           key={item.name}
                           href={itemHref}
                           title={!isSidebarOpen ? item.name : undefined}
-                          className={`flex items-center rounded-md text-sm font-medium transition-all whitespace-nowrap ${isSidebarOpen ? "gap-2.5 px-3 py-2" : "w-10 h-10 justify-center mx-auto"} ${isActive ? "bg-accent-cyan/10 text-accent-cyan" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"}`}
+                          className={`flex items-center rounded-md text-sm font-medium transition-all whitespace-nowrap ${isSidebarOpen ? "gap-2.5 px-3 py-2" : "w-10 h-10 justify-center mx-auto"} ${isActive ? "bg-accent-cyan/10 text-accent-cyan" : "text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text)]"}`}
                         >
                           <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-accent-cyan" : ""}`} />
                           {isSidebarOpen && <span>{item.name}</span>}
@@ -418,14 +397,14 @@ export default function CrmShell({ userName, userEmail, userRole, children }: Cr
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="p-2 border-t border-border-subtle flex flex-col gap-1 flex-shrink-0">
+          <div className="p-2 border-t border-[var(--sidebar-border)] flex flex-col gap-1 flex-shrink-0">
             <Link href="/crm/perfil" title={!isSidebarOpen ? "Mi Perfil" : undefined}
-              className={`flex items-center rounded-md text-sm font-medium text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors ${isSidebarOpen ? "gap-2.5 px-3 py-2" : "w-10 h-10 justify-center mx-auto"}`}>
+              className={`flex items-center rounded-md text-sm font-medium text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text)] transition-colors ${isSidebarOpen ? "gap-2.5 px-3 py-2" : "w-10 h-10 justify-center mx-auto"}`}>
               <User className="h-4 w-4 flex-shrink-0" />
               {isSidebarOpen && <span>Mi Perfil</span>}
             </Link>
             <button onClick={handleLogout} title={!isSidebarOpen ? "Cerrar Sesión" : undefined}
-              className={`flex items-center rounded-md text-sm font-medium text-text-secondary hover:bg-danger/10 hover:text-danger transition-colors ${isSidebarOpen ? "gap-2.5 px-3 py-2 w-full" : "w-10 h-10 justify-center mx-auto"}`}>
+              className={`flex items-center rounded-md text-sm font-medium text-[var(--sidebar-text-muted)] hover:bg-danger/10 hover:text-danger transition-colors ${isSidebarOpen ? "gap-2.5 px-3 py-2 w-full" : "w-10 h-10 justify-center mx-auto"}`}>
               <LogOut className="h-4 w-4 flex-shrink-0" />
               {isSidebarOpen && <span>Cerrar Sesión</span>}
             </button>

@@ -2,6 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { logoutAction } from "@/lib/server-actions/auth";
+import { getTenantBrandingAction } from "@/lib/server-actions/config";
 import { db } from "@/lib/db";
 import { 
   crmCustomers, 
@@ -313,6 +314,20 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
 
   const userName = profile?.full_name || user.email?.split("@")[0] || "Cliente CYH";
 
+  // Fetch tenant branding on the server (SSR)
+  const brandingRes = await getTenantBrandingAction();
+  const initialBranding = brandingRes.success && brandingRes.data ? {
+    companyName: brandingRes.data.config.companyName,
+    logoUrl: brandingRes.data.branding.logoUrl,
+    logoDarkUrl: brandingRes.data.branding.logoDarkUrl,
+    portalBgUrl: brandingRes.data.branding.portalBgUrl,
+    primaryColor: brandingRes.data.branding.primaryColor,
+    secondaryColor: brandingRes.data.branding.secondaryColor,
+    btnColor: brandingRes.data.branding.btnColor,
+    portalColor: brandingRes.data.branding.portalColor,
+    portalConfig: brandingRes.data.branding.portalConfig,
+  } : null;
+
   return (
     <PortalClient
       customer={customer}
@@ -333,6 +348,7 @@ export default async function PortalInicioPage({ searchParams }: PageProps) {
       user={{ id: user.id, email: user.email || "", fullName: userName, role: userRole }}
       isImpersonating={isImpersonating}
       allCustomers={allCustomers}
+      initialBranding={initialBranding}
     />
   );
 }

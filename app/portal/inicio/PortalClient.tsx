@@ -261,6 +261,17 @@ interface PortalClientProps {
   };
   isImpersonating?: boolean;
   allCustomers?: Array<{ id: string; name: string }>;
+  initialBranding: {
+    companyName: string;
+    logoUrl: string | null;
+    logoDarkUrl: string | null;
+    portalBgUrl: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+    btnColor: string;
+    portalColor: string;
+    portalConfig: any;
+  } | null;
 }
 
 export default function PortalClient({
@@ -282,6 +293,7 @@ export default function PortalClient({
   user,
   isImpersonating = false,
   allCustomers = [],
+  initialBranding,
 }: PortalClientProps) {
   const [activeTab, setActiveTab] = useState<"control" | "equipos" | "proyectos" | "requests" | "comercial" | "ingenieria" | "financials" | "actividad" | "auditoria">("control");
   const [mounted, setMounted] = useState(false);
@@ -290,41 +302,11 @@ export default function PortalClient({
   useEffect(() => {
     setMounted(true);
   }, []);
-  const [brandingConfig, setBrandingConfig] = useState<{
-    companyName: string;
-    logoUrl: string | null;
-    logoDarkUrl: string | null;
-    portalBgUrl: string | null;
-    primaryColor: string;
-    secondaryColor: string;
-    btnColor: string;
-    portalColor: string;
-    portalConfig: any;
-  } | null>(null);
+  const [brandingConfig, setBrandingConfig] = useState(initialBranding);
 
   // Notifications state (Fase 11.3)
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    async function loadBranding() {
-      const res = await getTenantBrandingAction();
-      if (res.success && res.data) {
-        setBrandingConfig({
-          companyName: res.data.config.companyName,
-          logoUrl: res.data.branding.logoUrl,
-          logoDarkUrl: res.data.branding.logoDarkUrl,
-          portalBgUrl: res.data.branding.portalBgUrl,
-          primaryColor: res.data.branding.primaryColor,
-          secondaryColor: res.data.branding.secondaryColor,
-          btnColor: res.data.branding.btnColor,
-          portalColor: res.data.branding.portalColor,
-          portalConfig: res.data.branding.portalConfig,
-        });
-      }
-    }
-    loadBranding();
-  }, []);
 
   useEffect(() => {
     setUnreadCount(notifications ? notifications.filter(n => !n.isRead && n.channel === "bell").length : 0);
@@ -770,22 +752,18 @@ export default function PortalClient({
             --btn-color: ${brandingConfig.btnColor};
             --portal-color: ${brandingConfig.portalColor};
           }
-          header {
-            background-color: ${brandingConfig.portalColor}0a !important;
-            border-bottom-color: ${brandingConfig.primaryColor}20 !important;
-          }
           .bg-emerald-500\/10 {
-            background-color: ${brandingConfig.btnColor}15 !important;
+            background-color: var(--brand-secondary) !important;
           }
           .text-emerald-600, .text-emerald-400 {
-            color: ${brandingConfig.btnColor} !important;
+            color: var(--brand-primary) !important;
           }
           .border-emerald-500\/25 {
-            border-color: ${brandingConfig.btnColor}40 !important;
+            border-color: var(--brand-primary) !important;
           }
         `}} />
       )}
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-950 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-800 dark:selection:text-emerald-300 transition-colors duration-300">
+      <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-800 dark:selection:text-emerald-300 transition-colors duration-300">
       {isImpersonating && (
         <div className="bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-b border-amber-200 dark:border-amber-800/40 text-[11px] px-6 py-2 flex items-center gap-2 font-mono font-semibold">
           <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-pulse shrink-0" />
@@ -805,8 +783,8 @@ export default function PortalClient({
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={brandingConfig.portalBgUrl || brandingConfig.logoUrl || ""} alt="Logo" className="h-6 w-auto object-contain shrink-0" />
               ) : (
-                <span className="text-md font-bold tracking-wider text-slate-900 dark:text-slate-100 uppercase font-mono">
-                  {brandingConfig ? brandingConfig.companyName : "CYH OS"}
+                <span className="font-bold text-sm select-none tracking-tight">
+                  {brandingConfig ? brandingConfig.companyName : "VENTITECH OS"}
                 </span>
               )}
               <span className="text-[10px] bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono font-semibold">PORTAL INDUSTRIAL</span>
@@ -2856,8 +2834,8 @@ export default function PortalClient({
       })()}
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-6 py-4 text-center text-xs text-slate-500 dark:text-slate-400 font-mono mt-8 transition-colors">
-        © 2026 CYH - Ventilación Mecánica Industrial. Todos los derechos reservados.
+      <footer className="border-t border-border-subtle bg-bg-primary px-6 py-4 text-center text-xs text-text-secondary font-mono mt-8 transition-colors">
+        © 2026 {brandingConfig ? brandingConfig.companyName : "VentiTech"} - Ventilación Mecánica Industrial. Todos los derechos reservados.
       </footer>
     </div>
     </>

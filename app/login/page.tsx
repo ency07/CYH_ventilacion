@@ -72,7 +72,7 @@ function AuthForm() {
   const isPortal = fromParam === "portal";
   const isCrm = fromParam === "crm";
 
-  let title = "CYH OS";
+  let title = "VENTITECH OS";
   let subtitle = "Acceso Corporativo";
   let subtitleColor = "text-slate-400 border-slate-700/50 bg-slate-900/45";
   let cardClass = "border-slate-700 shadow-2xl bg-slate-800";
@@ -81,14 +81,14 @@ function AuthForm() {
 
   if (mode === "login") {
     if (isPortal) {
-      title = "CYH PORTAL";
+      title = "VENTITECH PORTAL";
       subtitle = "Acceso Clientes B2B";
       subtitleColor = "text-emerald-400 border-emerald-500/30 bg-emerald-950/30";
       cardClass = "border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.08)] bg-slate-800/95";
       buttonClass = "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20";
       IconComponent = Building;
     } else if (isCrm) {
-      title = "CYH CRM";
+      title = "VENTITECH CRM";
       subtitle = "CRM Operativo Interno";
       subtitleColor = "text-blue-400 border-blue-500/30 bg-blue-950/30";
       cardClass = "border-blue-500/20 shadow-[0_0_50px_rgba(59,130,246,0.08)] bg-slate-800/95";
